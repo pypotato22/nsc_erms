@@ -1,3 +1,4 @@
+import path from 'node:path';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -83,8 +84,14 @@ export function createApp() {
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/users', usersRouter);
 
-  // Serve existing Vite SPA folder in Phase 0; production will use built assets
-  app.use(express.static(config.clientDist));
+  // Prefer renderer/dist (Vite build); falls back to renderer/ when dist is missing
+  app.use(express.static(config.clientDist, { index: false }));
+
+  app.get(/^(?!\/api(?:\/|$)).*/, (req, res, next) => {
+    res.sendFile(path.join(config.clientDist, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
 
   app.use(notFound);
   app.use(errorHandler);

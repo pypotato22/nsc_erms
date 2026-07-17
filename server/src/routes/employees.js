@@ -124,6 +124,24 @@ employeesRouter.get('/', async (req, res, next) => {
       ? null
       : Math.min(100, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 25));
 
+    const SORT_MAP = {
+      name: 'e.last_name, e.first_name',
+      employeeNo: 'e.employee_no',
+      contact: 'e.contact_number',
+      position: 'p.name',
+      department: 'd.name',
+      status: 'es.name',
+    };
+    const sortKey = String(req.query.sort || 'name');
+    const sortExpr = SORT_MAP[sortKey] || SORT_MAP.name;
+    const dir =
+      String(req.query.dir || 'asc').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+    // Apply ASC/DESC to each comma-separated key (name uses two columns)
+    const orderBy = sortExpr
+      .split(',')
+      .map((part) => `${part.trim()} ${dir}`)
+      .join(', ');
+
     const params = [];
     let where = `
   FROM employees e
@@ -192,7 +210,7 @@ employeesRouter.get('/', async (req, res, next) => {
     es.name AS employment_status_name
 `;
 
-    let sql = `SELECT ${selectCols} ${where} ORDER BY e.last_name, e.first_name`;
+    let sql = `SELECT ${selectCols} ${where} ORDER BY ${orderBy}, e.id ASC`;
     const listParams = [...params];
     let totalPages = 1;
     let pageOut = 1;
@@ -212,6 +230,8 @@ employeesRouter.get('/', async (req, res, next) => {
       limit: limit ?? total,
       total,
       totalPages: limit == null ? 1 : totalPages,
+      sort: SORT_MAP[sortKey] ? sortKey : 'name',
+      dir: dir.toLowerCase(),
     });
   } catch (err) {
     next(err);

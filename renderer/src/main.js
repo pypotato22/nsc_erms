@@ -27,6 +27,7 @@ import {
   initDepartments as initDepartmentComponent,
   renderDepartmentPage,
 } from './js/components/departments.js';
+import { initPositions, renderPositionsPage } from './js/components/positions.js';
 import { initBackup, renderBackupPage } from './js/components/backup.js';
 import { initSettings, renderSettingsPage } from './js/components/settings.js';
 import { initExport } from './js/components/export.js';
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initScanInbox();
   initTrash();
   initDepartmentComponent();
+  initPositions();
   initBackup();
   initSettings(
     () => App.prefs,
@@ -228,6 +230,7 @@ function navTo(pageName, linkEl) {
 
   closeProfilePanel();
   if (pageName === 'departments') renderDepartmentPage();
+  if (pageName === 'positions') renderPositionsPage().catch(() => {});
   if (pageName === 'scan-inbox') renderScanInboxPage().catch(() => {});
   if (pageName === 'trash') renderTrashPage().catch(() => {});
   if (pageName === 'backup') renderBackupPage();

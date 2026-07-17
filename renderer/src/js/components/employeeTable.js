@@ -7,6 +7,8 @@ import { showToast } from '../utils/toast.js';
 
 const PAGE_SIZE = 12;
 let _page = 1;
+let _sort = 'name';
+let _dir = 'asc';
 
 export function initEmployeeTable() {
   getEl('filter-dept').addEventListener('change', () => {
@@ -25,6 +27,40 @@ export function initEmployeeTable() {
   getEl('emp-next')?.addEventListener('click', () => {
     _page += 1;
     renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+  });
+
+  document.querySelectorAll('#emp-table thead th[data-sort]').forEach((th) => {
+    const activate = () => {
+      const key = th.dataset.sort;
+      if (!key) return;
+      if (_sort === key) {
+        _dir = _dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        _sort = key;
+        _dir = 'asc';
+      }
+      _page = 1;
+      paintSortHeaders();
+      renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+    };
+    th.addEventListener('click', activate);
+    th.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activate();
+      }
+    });
+  });
+  paintSortHeaders();
+}
+
+function paintSortHeaders() {
+  document.querySelectorAll('#emp-table thead th[data-sort]').forEach((th) => {
+    const active = th.dataset.sort === _sort;
+    th.classList.toggle('is-sorted', active);
+    th.setAttribute('aria-sort', active ? (_dir === 'asc' ? 'ascending' : 'descending') : 'none');
+    const marker = th.querySelector('.sort-marker');
+    if (marker) marker.textContent = active ? (_dir === 'asc' ? '▲' : '▼') : '';
   });
 }
 
@@ -73,15 +109,22 @@ export async function renderEmployeeTable(searchQuery = '') {
     page,
     total,
     totalPages,
+    sort,
+    dir,
   } = await listEmployees({
     q: searchQuery,
     departmentId,
     statusId,
     page: _page,
     limit: PAGE_SIZE,
+    sort: _sort,
+    dir: _dir,
   });
 
   _page = page || 1;
+  if (sort) _sort = sort;
+  if (dir) _dir = dir;
+  paintSortHeaders();
 
   const emptyEl = getEl('emp-empty');
   const tbody = getEl('emp-tbody');

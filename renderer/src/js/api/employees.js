@@ -8,6 +8,8 @@ export function listEmployees(params = {}) {
   if (params.all) qs.set('all', '1');
   if (params.page) qs.set('page', String(params.page));
   if (params.limit) qs.set('limit', String(params.limit));
+  if (params.sort) qs.set('sort', params.sort);
+  if (params.dir) qs.set('dir', params.dir);
   const query = qs.toString();
   return api(`/employees${query ? `?${query}` : ''}`);
 }

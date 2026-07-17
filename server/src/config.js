@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -5,6 +6,12 @@ import dotenv from 'dotenv';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../..');
 dotenv.config({ path: path.join(projectRoot, '.env') });
+
+const rendererDist = path.resolve(projectRoot, 'renderer/dist');
+const rendererSrc = path.resolve(projectRoot, 'renderer');
+const clientDist = fs.existsSync(path.join(rendererDist, 'index.html'))
+  ? rendererDist
+  : rendererSrc;
 
 /**
  * Prefer discrete DB_* vars (as in .env) over DATABASE_URL.
@@ -51,6 +58,7 @@ export const config = {
   pgDumpPath: process.env.PG_DUMP_PATH || '',
   scanInboxPath: process.env.SCAN_INBOX_PATH || '',
   maxUploadBytes: Number(process.env.MAX_UPLOAD_BYTES || 31457280),
-  clientDist: path.resolve(projectRoot, 'renderer'),
+  /** Prefer Vite build output when present; fall back to source for local API-only runs. */
+  clientDist,
   projectRoot,
 };

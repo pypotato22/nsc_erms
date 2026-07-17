@@ -9,7 +9,7 @@ Northern Samar Colleges — Employee Records Management System.
 Working end-to-end for registrar workflows:
 
 - Auth (login / logout / sessions / change-password) + first-run setup wizard
-- Employees, departments, positions (catalog + per-department links)
+- Employees, departments, **Positions** catalog page + per-department links
 - 201 File documents (upload, versioning, trash, restore)
 - Scan Inbox (assign / reject drop-folder scans)
 - Users + RBAC (superadmin / admin / staff / viewer)
@@ -44,6 +44,15 @@ npm run dev:client
 ```
 
 Health: `http://localhost:3443/api/v1/health`
+
+## Production build
+
+```bash
+npm run build          # Vite → renderer/dist
+npm start              # Express on PORT (default 3443)
+```
+
+The API serves `renderer/dist` when `index.html` exists there; otherwise it falls back to the source `renderer/` folder (handy for API-only local runs). Open `http://localhost:3443/` (or HTTPS if TLS is configured).
 
 ### Seeded superadmin
 
@@ -99,12 +108,13 @@ NODE_ENV=production
 
 ## Next phases
 
-1. Production Vite `dist` packaging / optional Electron shell
+1. Optional Electron shell
 2. Optional in-app restore wizard (ops restore remains documented)
 3. Login rate limiting
 
 ## Phase E (done)
 
-- Employee + trash list pagination (25 per page; export/scan still load all)
+- Employee + trash list pagination (12 / 25 per page; export/scan still load all)
 - Audit log viewer in Settings (admin/superadmin)
 - Audit writes for failed login + logout
+- Positions catalog page + Vite production build (`npm run build` → `npm start`)

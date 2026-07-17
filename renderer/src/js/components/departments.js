@@ -13,7 +13,11 @@ import { showToast } from '../utils/toast.js';
 import { refreshFilterDropdowns } from './employeeTable.js';
 import { canWrite } from '../utils/authz.js';
 
+const CHIP_LIMIT = 3;
+
 let _editingDeptId = null;
+/** @type {Array<object>} */
+let _departmentsCache = [];
 /** @type {{ id: string, name: string }[]} */
 let _allPositions = [];
 /** @type {Set<string>} */
@@ -39,63 +43,134 @@ export function initDepartments() {
       addNewPosition().catch(showErr);
     }
   });
+
+  let filterTimer = null;
+  getEl('dept-filter')?.addEventListener('input', () => {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => paintDepartmentGrid(), 150);
+  });
 }
 
 export async function renderDepartmentPage() {
   try {
     const { departments } = await listDepartments();
-    if (!departments.length) {
-      setHTML('dept-grid', '<div class="empty">No departments yet.</div>');
-      return;
-    }
-    setHTML(
-      'dept-grid',
-      departments
-        .map((dept) => {
-          const positions = dept.positions || [];
-          const chips = positions.length
-            ? positions
-                .map(
-                  (p) =>
-                    `<span class="dept-pos-chip">${escapeHtml(p.name)}</span>`,
-                )
-                .join('')
-            : `<span class="dept-pos-empty">No positions linked</span>`;
-          const count = dept.employeeCount ?? dept.employee_count ?? 0;
-          return `
-      <div class="dept-card">
-        <div class="dept-card-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
-        <h4>${escapeHtml(dept.name)}</h4>
-        <div class="dsub">${escapeHtml(dept.description || 'No description')}</div>
-        <div class="dept-pos-list">${chips}</div>
-        <div class="dcount">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          ${count} employee(s) · ${positions.length} position(s)
-        </div>
-        <div style="display:flex;gap:7px;">
-          ${canWrite()
-            ? `<button class="btn btn-sm btn-edit" data-edit-dept="${dept.id}">Edit</button>
-          <button class="btn btn-sm btn-del" data-delete-dept="${dept.id}">Delete</button>`
-            : ''}
-        </div>
-      </div>`;
-        })
-        .join(''),
-    );
-
-    document.querySelectorAll('[data-edit-dept]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        openDeptModal(btn.dataset.editDept).catch(showErr);
-      });
-    });
-    document.querySelectorAll('[data-delete-dept]').forEach((btn) => {
-      btn.addEventListener('click', () => handleDeleteDept(btn.dataset.deleteDept));
-    });
+    _departmentsCache = departments || [];
+    paintDepartmentGrid();
   } catch (err) {
     showErr(err);
   }
+}
+
+function paintDepartmentGrid() {
+  const q = (getEl('dept-filter')?.value || '').trim().toLowerCase();
+  const departments = q
+    ? _departmentsCache.filter((d) => {
+        const hay = `${d.name || ''} ${d.description || ''}`.toLowerCase();
+        return hay.includes(q);
+      })
+    : _departmentsCache;
+
+  if (!_departmentsCache.length) {
+    setHTML('dept-grid', '<div class="empty">No departments yet.</div>');
+    return;
+  }
+  if (!departments.length) {
+    setHTML(
+      'dept-grid',
+      '<div class="empty">No departments match your search.</div>',
+    );
+    return;
+  }
+
+  const writable = canWrite();
+
+  setHTML(
+    'dept-grid',
+    departments.map((dept) => buildDeptCard(dept, writable)).join(''),
+  );
+
+  document.querySelectorAll('[data-open-dept]').forEach((card) => {
+    if (!writable) return;
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-dept], [data-edit-dept], button, a')) {
+        return;
+      }
+      openDeptModal(card.dataset.openDept).catch(showErr);
+    });
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDeptModal(card.dataset.openDept).catch(showErr);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-edit-dept]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDeptModal(btn.dataset.editDept).catch(showErr);
+    });
+  });
+  document.querySelectorAll('[data-delete-dept]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleDeleteDept(btn.dataset.deleteDept);
+    });
+  });
+}
+
+function buildDeptCard(dept, writable) {
+  const positions = dept.positions || [];
+  const count = dept.employeeCount ?? dept.employee_count ?? 0;
+  const initial = (dept.name || '?').trim().charAt(0).toUpperCase() || '?';
+  const desc = (dept.description || '').trim();
+  const shown = positions.slice(0, CHIP_LIMIT);
+  const extra = positions.length - shown.length;
+
+  let positionsBlock;
+  if (!positions.length) {
+    positionsBlock = writable
+      ? `<button type="button" class="dept-link-pos" data-edit-dept="${dept.id}">Link positions</button>`
+      : `<span class="dept-pos-empty">No positions linked</span>`;
+  } else {
+    const chips = shown
+      .map((p) => `<span class="dept-pos-chip">${escapeHtml(p.name)}</span>`)
+      .join('');
+    const more =
+      extra > 0
+        ? `<span class="dept-pos-more" title="${positions
+            .slice(CHIP_LIMIT)
+            .map((p) => p.name)
+            .join(', ')}">+${extra} more</span>`
+        : '';
+    positionsBlock = `<div class="dept-pos-list">${chips}${more}</div>`;
+  }
+
+  const actions = writable
+    ? `<div class="dept-card-actions">
+        <button type="button" class="btn btn-sm btn-edit" data-edit-dept="${dept.id}">Edit</button>
+        <button type="button" class="btn btn-sm btn-del" data-delete-dept="${dept.id}">Delete</button>
+      </div>`
+    : '';
+
+  return `
+    <div class="dept-card${writable ? ' dept-card--interactive' : ''}"
+         ${writable ? `data-open-dept="${dept.id}" role="button" tabindex="0"` : ''}>
+      <div class="dept-card-top">
+        <div class="dept-card-initial" aria-hidden="true">${escapeHtml(initial)}</div>
+        <div class="dept-card-heading">
+          <h4>${escapeHtml(dept.name)}</h4>
+          <div class="dept-meta">
+            <span class="dept-emp-count">${count} employee${count === 1 ? '' : 's'}</span>
+            <span class="dept-meta-sep">·</span>
+            <span class="dept-pos-count">${positions.length} position${positions.length === 1 ? '' : 's'}</span>
+          </div>
+        </div>
+      </div>
+      ${desc ? `<p class="dsub">${escapeHtml(desc)}</p>` : ''}
+      ${positionsBlock}
+      ${actions}
+    </div>`;
 }
 
 async function openDeptModal(deptId = null) {
@@ -109,6 +184,7 @@ async function openDeptModal(deptId = null) {
     listDepartments(),
   ]);
   _allPositions = positions.map((p) => ({ id: p.id, name: p.name }));
+  _departmentsCache = departments || [];
 
   if (deptId) {
     const d = departments.find((x) => x.id === deptId);
