@@ -62,3 +62,13 @@ export async function writeEmployeePhoto({ employeeId, originalName, buffer }) {
     .join('/');
   return { root, storedName, relativePath: relative, absolutePath: abs };
 }
+
+/** Permanently remove a file under FILES_ROOT. Returns true if deleted. */
+export async function removeStoredFile(relativePath) {
+  if (!relativePath) return false;
+  const root = await getFilesRoot();
+  const abs = absoluteFromRelative(root, relativePath);
+  if (!fs.existsSync(abs)) return false;
+  fs.unlinkSync(abs);
+  return true;
+}

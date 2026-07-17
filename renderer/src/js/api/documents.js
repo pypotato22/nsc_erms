@@ -40,6 +40,18 @@ export function deleteDocument(documentId) {
   return api(`/documents/${documentId}`, { method: 'DELETE' });
 }
 
+export function restoreDocument(documentId) {
+  return api(`/documents/${documentId}/restore`, { method: 'POST', body: '{}' });
+}
+
+export function listTrashDocuments() {
+  return api('/documents/trash');
+}
+
+export function permanentDeleteDocument(documentId) {
+  return api(`/documents/${documentId}/permanent`, { method: 'DELETE' });
+}
+
 export function downloadDocumentUrl(documentId) {
   return `/api/v1/documents/${documentId}/download`;
 }

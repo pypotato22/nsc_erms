@@ -1905,6 +1905,27 @@ body.dark .avatar {
 #toast.show {
     opacity: 1;
     transform: translateY(0);
+    pointer-events: auto;
+}
+
+#toast .toast-msg {
+    flex: 1;
+}
+
+#toast .toast-action {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 2px 4px;
+    flex-shrink: 0;
+}
+
+#toast .toast-action:hover {
+    opacity: 0.85;
 }
 
 #toast.t-success {

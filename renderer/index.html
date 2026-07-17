@@ -108,6 +108,14 @@
                     Scan Inbox
                     <span class="nav-badge" id="scan-inbox-badge">0</span>
                 </a>
+                <a data-page="trash">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    Trash
+                    <span class="nav-badge" id="trash-badge">0</span>
+                </a>
                 <!-- <div class="nav-section-label" style="margin-top:8px;">Tools</div> -->
                 <a data-page="backup">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -233,6 +241,21 @@
                     </div>
                     <div class="card" style="padding:8px 14px;">
                         <div class="bk-list" id="scan-inbox-list"></div>
+                    </div>
+                </div>
+
+                <!-- Trash Page -->
+                <div id="page-trash" class="page">
+                    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <p style="font-size:13px;color:var(--text-2);margin:0 0 4px;">
+                                Soft-deleted 201 File documents. Restore to put them back, or delete forever to remove the file from disk.
+                            </p>
+                        </div>
+                        <button type="button" id="trash-refresh" class="btn btn-sm btn-edit">Refresh</button>
+                    </div>
+                    <div class="card" style="padding:8px 14px;">
+                        <div class="bk-list" id="trash-list"></div>
                     </div>
                 </div>
 

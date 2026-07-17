@@ -3,6 +3,7 @@ import {
   listDocumentTypes,
   uploadEmployeeDocument,
   deleteDocument,
+  restoreDocument,
   downloadDocumentUrl,
 } from '../api/documents.js';
 import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js';
@@ -93,12 +94,27 @@ export async function renderTabDocs(emp) {
 
     document.querySelectorAll('[data-delete-doc]').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Remove this document version?')) return;
+        if (!confirm('Move this document to Trash?')) return;
+        const docId = btn.dataset.deleteDoc;
         try {
-          await deleteDocument(btn.dataset.deleteDoc);
-          showToast('Document removed.', 'success');
+          const result = await deleteDocument(docId);
           await renderTabDocs(emp);
           refreshPanelHeader();
+          showToast('Moved to Trash.', 'info', {
+            actionLabel: 'Undo',
+            duration: 8000,
+            onAction: async () => {
+              try {
+                await restoreDocument(docId);
+                showToast('Document restored.', 'success');
+                await renderTabDocs(emp);
+                refreshPanelHeader();
+              } catch (err) {
+                showToast(err.message || 'Restore failed.', 'error');
+              }
+            },
+          });
+          void result;
         } catch (err) {
           showToast(err.message || 'Delete failed.', 'error');
         }

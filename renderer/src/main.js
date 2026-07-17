@@ -22,6 +22,7 @@ import { initProfilePanel, closeProfilePanel } from './js/components/profilePane
 import { initDocuments } from './js/components/documents.js';
 import { initScanModal } from './js/components/scanModal.js';
 import { initScanInbox, renderScanInboxPage } from './js/components/scanInbox.js';
+import { initTrash, renderTrashPage } from './js/components/trash.js';
 import {
   initDepartments as initDepartmentComponent,
   renderDepartmentPage,
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDocuments();
   initScanModal();
   initScanInbox();
+  initTrash();
   initDepartmentComponent();
   initBackup();
   initSettings(() => App.prefs, () => App.savePrefs());
@@ -149,6 +151,7 @@ async function showAppShell(user) {
     await refreshFilterDropdowns();
     await renderEmployeeTable();
     await renderScanInboxPage();
+    await renderTrashPage();
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
   }
@@ -215,6 +218,7 @@ function navTo(pageName, linkEl) {
   closeProfilePanel();
   if (pageName === 'departments') renderDepartmentPage();
   if (pageName === 'scan-inbox') renderScanInboxPage().catch(() => {});
+  if (pageName === 'trash') renderTrashPage().catch(() => {});
   if (pageName === 'backup') renderBackupPage();
   if (pageName === 'settings') renderSettingsPage();
   if (pageName === 'employees') {
