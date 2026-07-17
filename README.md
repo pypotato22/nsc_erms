@@ -110,7 +110,22 @@ NODE_ENV=production
 
 1. Optional Electron shell
 2. Optional in-app restore wizard (ops restore remains documented)
-3. Login rate limiting
+3. Nav RBAC + lookup admin UI
+
+## Phase F — Security hardening (done)
+
+- Login rate limiting (5 attempts / 15 min per account, 30 / IP)
+- API blocked until forced password change (`PASSWORD_CHANGE_REQUIRED`)
+- Production `SESSION_SECRET` validation (min 32 chars, not default)
+- CORS tightened: dev allows localhost; production uses `CORS_ORIGINS` or same-origin only
+
+### Production checklist
+
+1. Set strong `SESSION_SECRET` (32+ random chars)
+2. Set `NODE_ENV=production`, TLS paths, `ALLOW_HTTP_DEV=false`
+3. If using Vite dev against LAN API, set `CORS_ORIGINS`
+4. Trust mkcert CA on staff PCs
+5. Smoke test: login → change password → employee → upload → backup
 
 ## Phase E (done)
 

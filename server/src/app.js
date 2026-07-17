@@ -5,7 +5,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import { config } from './config.js';
+import { config, validateProductionConfig, createCorsOptions } from './config.js';
+import { passwordChangeGate } from './middleware/passwordGate.js';
 import { pool } from './db/pool.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { healthRouter } from './routes/health.js';
@@ -36,10 +37,7 @@ export function createApp() {
   );
 
   app.use(
-    cors({
-      origin: true,
-      credentials: true,
-    }),
+    cors(createCorsOptions(config)),
   );
 
   app.use(express.json({ limit: '1mb' }));
@@ -69,6 +67,8 @@ export function createApp() {
       },
     }),
   );
+
+  app.use(passwordChangeGate);
 
   app.use('/api/v1/health', healthRouter);
   app.use('/api/v1/setup', setupRouter);

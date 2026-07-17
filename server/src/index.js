@@ -2,10 +2,12 @@ import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import { createApp } from './app.js';
-import { config } from './config.js';
+import { config, validateProductionConfig } from './config.js';
 import { checkConnection } from './db/pool.js';
 
 async function main() {
+  validateProductionConfig(config);
+
   const ok = await checkConnection();
   if (!ok) {
     throw new Error('Database connection failed');

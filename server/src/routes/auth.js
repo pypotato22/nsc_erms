@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
+import { loginByAccountLimiter, loginByIpLimiter } from '../middleware/rateLimit.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { writeAudit, clientIp } from '../services/audit.js';
@@ -31,7 +32,7 @@ const USER_SELECT = `
   JOIN user_roles ur ON ur.id = u.role_id
 `;
 
-authRouter.post('/login', async (req, res, next) => {
+authRouter.post('/login', loginByIpLimiter, loginByAccountLimiter, async (req, res, next) => {
   try {
     const username = String(req.body?.username || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
