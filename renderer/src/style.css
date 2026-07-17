@@ -1531,7 +1531,11 @@ body.dark .dept-pos-chip {
 
 /* ── Settings ─────────────────────────────────────────────────── */
 .settings-wrap {
-    max-width: 620px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+    max-width: 1100px;
 }
 
 .settings-card {
@@ -1539,8 +1543,23 @@ body.dark .dept-pos-chip {
     border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 24px;
-    margin-bottom: 18px;
+    margin-bottom: 0;
     box-shadow: var(--shadow-sm);
+    min-width: 0;
+}
+
+.settings-card--wide {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+    .settings-wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-card--wide {
+        grid-column: auto;
+    }
 }
 
 .settings-card h4 {
@@ -2062,6 +2081,84 @@ body:not(.dark) #toast.t-info {
 
 #print-area {
     display: none;
+}
+
+/* ── Pagination ──────────────────────────────────────────────── */
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 0 4px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.pager-info {
+    font-size: 12px;
+    color: var(--text-3);
+    font-family: 'DM Mono', monospace;
+}
+
+.audit-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.audit-toolbar input,
+.audit-toolbar select {
+    flex: 1;
+    min-width: 140px;
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-base);
+    color: var(--text-1);
+}
+
+.audit-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-base);
+}
+
+.audit-row {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.audit-row:last-child {
+    border-bottom: none;
+}
+
+.audit-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: baseline;
+}
+
+.audit-action {
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    color: var(--blue-700);
+}
+
+.audit-who {
+    font-size: 12px;
+    color: var(--text-1);
+}
+
+.audit-meta {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
 }
 
 /* ── Role-based UI ─────────────────────────────────────────────── */

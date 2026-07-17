@@ -17,7 +17,7 @@ export function initExport() {
 }
 
 async function exportToCSV() {
-  const { employees } = await listEmployees();
+  const { employees } = await listEmployees({ all: true });
   const headers = [
     'Employee No',
     'First Name',
@@ -53,7 +53,7 @@ async function exportToCSV() {
 }
 
 async function exportToPDF() {
-  const { employees } = await listEmployees();
+  const { employees } = await listEmployees({ all: true });
   const rows = employees
     .map(
       (e) =>

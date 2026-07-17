@@ -99,6 +99,12 @@ NODE_ENV=production
 
 ## Next phases
 
-1. Pagination for large employee lists
-2. Audit log viewer (read API + Settings page)
-3. Production Vite `dist` packaging / optional Electron shell
+1. Production Vite `dist` packaging / optional Electron shell
+2. Optional in-app restore wizard (ops restore remains documented)
+3. Login rate limiting
+
+## Phase E (done)
+
+- Employee + trash list pagination (25 per page; export/scan still load all)
+- Audit log viewer in Settings (admin/superadmin)
+- Audit writes for failed login + logout

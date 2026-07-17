@@ -249,17 +249,40 @@ export const documentItemRouter = Router();
 
 documentItemRouter.use(requireAuth);
 
-documentItemRouter.get('/trash', async (_req, res, next) => {
+documentItemRouter.get('/trash', async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT d.*, dt.name AS document_type_name, dt.is_required,
+    const wantAll = String(req.query.all || '') === '1' || String(req.query.all || '') === 'true';
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limitRaw = Number(req.query.limit);
+    const limit = wantAll
+      ? null
+      : Math.min(100, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 25));
+
+    const { rows: countRows } = await query(
+      `SELECT COUNT(*)::int AS total FROM documents WHERE deleted_at IS NOT NULL`,
+    );
+    const total = countRows[0]?.total ?? 0;
+
+    let sql = `
+      SELECT d.*, dt.name AS document_type_name, dt.is_required,
               e.first_name, e.last_name, e.employee_no
        FROM documents d
        JOIN document_types dt ON dt.id = d.document_type_id
        JOIN employees e ON e.id = d.employee_id
        WHERE d.deleted_at IS NOT NULL
-       ORDER BY d.deleted_at DESC`,
-    );
+       ORDER BY d.deleted_at DESC`;
+    const params = [];
+    let totalPages = 1;
+    let pageOut = 1;
+    if (limit != null) {
+      totalPages = Math.max(1, Math.ceil(total / limit));
+      pageOut = Math.min(page, totalPages);
+      const offset = (pageOut - 1) * limit;
+      params.push(limit, offset);
+      sql += ` LIMIT $1 OFFSET $2`;
+    }
+
+    const { rows } = await query(sql, params);
     res.json({
       documents: rows.map((row) => ({
         ...mapDoc(row),
@@ -271,6 +294,10 @@ documentItemRouter.get('/trash', async (_req, res, next) => {
           lastName: row.last_name,
         },
       })),
+      page: pageOut,
+      limit: limit ?? total,
+      total,
+      totalPages: limit == null ? 1 : totalPages,
     });
   } catch (err) {
     next(err);

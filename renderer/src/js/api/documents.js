@@ -44,8 +44,13 @@ export function restoreDocument(documentId) {
   return api(`/documents/${documentId}/restore`, { method: 'POST', body: '{}' });
 }
 
-export function listTrashDocuments() {
-  return api('/documents/trash');
+export function listTrashDocuments(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.all) qs.set('all', '1');
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  return api(`/documents/trash${query ? `?${query}` : ''}`);
 }
 
 export function permanentDeleteDocument(documentId) {

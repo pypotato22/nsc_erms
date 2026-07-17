@@ -210,6 +210,11 @@
                             <tbody id="emp-tbody"></tbody>
                         </table>
                         <div id="emp-empty" class="empty" style="display:none;">No employees found.</div>
+                        <div class="pager" id="emp-pager">
+                            <button type="button" class="btn btn-sm btn-edit" id="emp-prev">Prev</button>
+                            <span class="pager-info" id="emp-page-info">—</span>
+                            <button type="button" class="btn btn-sm btn-edit" id="emp-next">Next</button>
+                        </div>
                     </div>
                 </div>
 
@@ -256,6 +261,11 @@
                     </div>
                     <div class="card" style="padding:8px 14px;">
                         <div class="bk-list" id="trash-list"></div>
+                        <div class="pager" id="trash-pager">
+                            <button type="button" class="btn btn-sm btn-edit" id="trash-prev">Prev</button>
+                            <span class="pager-info" id="trash-page-info">—</span>
+                            <button type="button" class="btn btn-sm btn-edit" id="trash-next">Next</button>
+                        </div>
                     </div>
                 </div>
 
@@ -367,18 +377,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="settings-card needs-admin">
-                            <h4>User Accounts</h4>
-                            <table class="user-table" id="user-table"></table>
-                            <button id="add-user-btn" class="btn btn-primary" style="margin-top:16px">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5">
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                                Add User
-                            </button>
-                        </div>
                         <div class="settings-card">
                             <h4>System Info</h4>
                             <div class="setting-row">
@@ -394,6 +392,48 @@
                                     <div class="sl-desc" id="db-stats">—</div>
                                 </div>
                                 <button id="refresh" class="btn btn-sm btn-edit">Refresh</button>
+                            </div>
+                        </div>
+                        <div class="settings-card settings-card--wide needs-admin">
+                            <h4>User Accounts</h4>
+                            <table class="user-table" id="user-table"></table>
+                            <button id="add-user-btn" class="btn btn-primary" style="margin-top:16px">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Add User
+                            </button>
+                        </div>
+                        <div class="settings-card settings-card--wide needs-admin">
+                            <h4>Audit log</h4>
+                            <div class="audit-toolbar">
+                                <input type="search" id="audit-q" placeholder="Search action, user, IP…" />
+                                <select id="audit-action">
+                                    <option value="">All actions</option>
+                                    <option value="auth.login">Login</option>
+                                    <option value="auth.login_failed">Login failed</option>
+                                    <option value="auth.logout">Logout</option>
+                                    <option value="auth.change_password">Password change</option>
+                                    <option value="employee.create">Employee create</option>
+                                    <option value="employee.update">Employee update</option>
+                                    <option value="employee.delete">Employee delete</option>
+                                    <option value="document.upload">Document upload</option>
+                                    <option value="document.soft_delete">Document trash</option>
+                                    <option value="document.restore">Document restore</option>
+                                    <option value="document.permanent_delete">Document purge</option>
+                                    <option value="backup.create">Backup create</option>
+                                    <option value="user.create">User create</option>
+                                    <option value="user.update">User update</option>
+                                </select>
+                                <button type="button" id="audit-refresh" class="btn btn-sm btn-edit">Refresh</button>
+                            </div>
+                            <div id="audit-list" class="audit-list"></div>
+                            <div class="pager">
+                                <button type="button" class="btn btn-sm btn-edit" id="audit-prev">Prev</button>
+                                <span class="pager-info" id="audit-page-info">—</span>
+                                <button type="button" class="btn btn-sm btn-edit" id="audit-next">Next</button>
                             </div>
                         </div>
                     </div>

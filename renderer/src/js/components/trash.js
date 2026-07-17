@@ -9,8 +9,21 @@ import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js'
 import { showToast } from '../utils/toast.js';
 import { canWrite } from '../utils/authz.js';
 
+const PAGE_SIZE = 25;
+let _page = 1;
+
 export function initTrash() {
   getEl('trash-refresh')?.addEventListener('click', () => {
+    _page = 1;
+    renderTrashPage().catch(showErr);
+  });
+  getEl('trash-prev')?.addEventListener('click', () => {
+    if (_page <= 1) return;
+    _page -= 1;
+    renderTrashPage().catch(showErr);
+  });
+  getEl('trash-next')?.addEventListener('click', () => {
+    _page += 1;
     renderTrashPage().catch(showErr);
   });
 }
@@ -18,9 +31,26 @@ export function initTrash() {
 export async function renderTrashPage() {
   setHTML('trash-list', '<div class="empty">Loading trash…</div>');
   try {
-    const { documents } = await listTrashDocuments();
+    const { documents, page, total, totalPages } = await listTrashDocuments({
+      page: _page,
+      limit: PAGE_SIZE,
+    });
+    _page = page || 1;
+
     const badge = document.getElementById('trash-badge');
-    if (badge) badge.textContent = String(documents.length);
+    if (badge) badge.textContent = String(total ?? documents.length);
+
+    const info = getEl('trash-page-info');
+    if (info) {
+      info.textContent =
+        total === 0
+          ? 'Trash empty'
+          : `Page ${page} of ${totalPages} · ${total} item(s)`;
+    }
+    const prev = getEl('trash-prev');
+    const next = getEl('trash-next');
+    if (prev) prev.disabled = !total || page <= 1;
+    if (next) next.disabled = !total || page >= totalPages;
 
     if (!documents.length) {
       setHTML(

@@ -5,11 +5,25 @@ import { getAvatarHTML, getStatusBadge, getEl, escapeHtml } from '../utils/helpe
 import { openProfilePanel } from './profilePanel.js';
 import { showToast } from '../utils/toast.js';
 
+const PAGE_SIZE = 25;
+let _page = 1;
+
 export function initEmployeeTable() {
   getEl('filter-dept').addEventListener('change', () => {
+    _page = 1;
     renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
   });
   getEl('filter-status').addEventListener('change', () => {
+    _page = 1;
+    renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+  });
+  getEl('emp-prev')?.addEventListener('click', () => {
+    if (_page <= 1) return;
+    _page -= 1;
+    renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+  });
+  getEl('emp-next')?.addEventListener('click', () => {
+    _page += 1;
     renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
   });
 }
@@ -47,19 +61,35 @@ export async function refreshFilterDropdowns() {
   }
 }
 
+export function resetEmployeePage() {
+  _page = 1;
+}
+
 export async function renderEmployeeTable(searchQuery = '') {
   const departmentId = getEl('filter-dept').value;
   const statusId = getEl('filter-status').value;
-  const { employees } = await listEmployees({
+  const {
+    employees,
+    page,
+    total,
+    totalPages,
+  } = await listEmployees({
     q: searchQuery,
     departmentId,
     statusId,
+    page: _page,
+    limit: PAGE_SIZE,
   });
+
+  _page = page || 1;
 
   const emptyEl = getEl('emp-empty');
   const tbody = getEl('emp-tbody');
   emptyEl.style.display = employees.length ? 'none' : 'block';
-  tbody.innerHTML = employees.map((emp, i) => buildEmployeeRow(emp, i + 1)).join('');
+  const startNum = (page - 1) * PAGE_SIZE;
+  tbody.innerHTML = employees
+    .map((emp, i) => buildEmployeeRow(emp, startNum + i + 1))
+    .join('');
 
   tbody.querySelectorAll('tr').forEach((row, i) => {
     const emp = employees[i];
@@ -69,7 +99,19 @@ export async function renderEmployeeTable(searchQuery = '') {
   });
 
   const badge = document.getElementById('emp-count-badge');
-  if (badge) badge.textContent = String(employees.length);
+  if (badge) badge.textContent = String(total ?? employees.length);
+
+  const info = getEl('emp-page-info');
+  if (info) {
+    info.textContent =
+      total === 0
+        ? 'No results'
+        : `Page ${page} of ${totalPages} · ${total} employee(s)`;
+  }
+  const prev = getEl('emp-prev');
+  const next = getEl('emp-next');
+  if (prev) prev.disabled = page <= 1;
+  if (next) next.disabled = page >= totalPages;
 }
 
 function buildEmployeeRow(emp, rowNumber) {

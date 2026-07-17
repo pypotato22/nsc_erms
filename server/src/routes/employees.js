@@ -117,13 +117,33 @@ employeesRouter.get('/', async (req, res, next) => {
     const q = String(req.query.q || '').trim().toLowerCase();
     const departmentId = String(req.query.departmentId || '').trim();
     const statusId = String(req.query.statusId || '').trim();
+    const wantAll = String(req.query.all || '') === '1' || String(req.query.all || '') === 'true';
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limitRaw = Number(req.query.limit);
+    const limit = wantAll
+      ? null
+      : Math.min(100, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 25));
 
     const params = [];
-    let sql = EMPLOYEE_LIST_SQL;
+    let where = `
+  FROM employees e
+  LEFT JOIN employee_assignments ea
+    ON ea.employee_id = e.id
+   AND ea.is_primary = TRUE
+   AND ea.is_active = TRUE
+   AND ea.end_date IS NULL
+  LEFT JOIN department_positions dp ON dp.id = ea.department_position_id
+  LEFT JOIN departments d ON d.id = dp.department_id
+  LEFT JOIN positions p ON p.id = dp.position_id
+  LEFT JOIN employment_types et ON et.id = ea.employment_type_id
+  LEFT JOIN employment_statuses es ON es.id = ea.employment_status_id
+  WHERE e.deleted_at IS NULL
+    AND e.is_archived = FALSE
+`;
 
     if (q) {
       params.push(`%${q}%`);
-      sql += ` AND (
+      where += ` AND (
         lower(e.first_name) LIKE $${params.length}
         OR lower(e.last_name) LIKE $${params.length}
         OR lower(e.email) LIKE $${params.length}
@@ -134,17 +154,65 @@ employeesRouter.get('/', async (req, res, next) => {
     }
     if (departmentId) {
       params.push(departmentId);
-      sql += ` AND d.id = $${params.length}`;
+      where += ` AND d.id = $${params.length}`;
     }
     if (statusId) {
       params.push(statusId);
-      sql += ` AND es.id = $${params.length}`;
+      where += ` AND es.id = $${params.length}`;
     }
 
-    sql += ' ORDER BY e.last_name, e.first_name';
+    const countSql = `SELECT COUNT(*)::int AS total ${where}`;
+    const { rows: countRows } = await query(countSql, params);
+    const total = countRows[0]?.total ?? 0;
 
-    const { rows } = await query(sql, params);
-    res.json({ employees: rows.map(mapEmployee) });
+    const selectCols = `
+    e.id,
+    e.employee_no,
+    e.first_name,
+    e.middle_name,
+    e.last_name,
+    e.name_extension,
+    e.email,
+    e.contact_number,
+    e.address,
+    e.profile_picture_path,
+    e.remarks,
+    ea.id AS assignment_id,
+    ea.start_date,
+    ea.end_date,
+    ea.is_primary,
+    ea.department_position_id,
+    d.id AS department_id,
+    d.name AS department_name,
+    p.id AS position_id,
+    p.name AS position_name,
+    et.id AS employment_type_id,
+    et.name AS employment_type_name,
+    es.id AS employment_status_id,
+    es.name AS employment_status_name
+`;
+
+    let sql = `SELECT ${selectCols} ${where} ORDER BY e.last_name, e.first_name`;
+    const listParams = [...params];
+    let totalPages = 1;
+    let pageOut = 1;
+
+    if (limit != null) {
+      totalPages = Math.max(1, Math.ceil(total / limit));
+      pageOut = Math.min(page, totalPages);
+      const offset = (pageOut - 1) * limit;
+      listParams.push(limit, offset);
+      sql += ` LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`;
+    }
+
+    const { rows } = await query(sql, listParams);
+    res.json({
+      employees: rows.map(mapEmployee),
+      page: pageOut,
+      limit: limit ?? total,
+      total,
+      totalPages: limit == null ? 1 : totalPages,
+    });
   } catch (err) {
     next(err);
   }

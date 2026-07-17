@@ -6,6 +6,7 @@ import {
 } from '../api/users.js';
 import { listEmployees } from '../api/employees.js';
 import { listDepartments } from '../api/departments.js';
+import { listAuditLogs } from '../api/audit.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
@@ -15,6 +16,8 @@ let _getPrefs = null;
 let _savePrefs = null;
 let _getCurrentUser = () => null;
 let _roles = [];
+let _auditPage = 1;
+const AUDIT_PAGE_SIZE = 20;
 
 export function initSettings(getPrefs, savePrefs, getCurrentUser) {
   _getPrefs = getPrefs;
@@ -44,11 +47,38 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
   getEl('refresh')?.addEventListener('click', () => {
     refreshStats().catch(() => {});
   });
+
+  getEl('audit-refresh')?.addEventListener('click', () => {
+    _auditPage = 1;
+    renderAuditLogs().catch(() => {});
+  });
+  getEl('audit-action')?.addEventListener('change', () => {
+    _auditPage = 1;
+    renderAuditLogs().catch(() => {});
+  });
+  let auditTimer = null;
+  getEl('audit-q')?.addEventListener('input', () => {
+    clearTimeout(auditTimer);
+    auditTimer = setTimeout(() => {
+      _auditPage = 1;
+      renderAuditLogs().catch(() => {});
+    }, 300);
+  });
+  getEl('audit-prev')?.addEventListener('click', () => {
+    if (_auditPage <= 1) return;
+    _auditPage -= 1;
+    renderAuditLogs().catch(() => {});
+  });
+  getEl('audit-next')?.addEventListener('click', () => {
+    _auditPage += 1;
+    renderAuditLogs().catch(() => {});
+  });
 }
 
 export async function renderSettingsPage() {
   syncRoleFromSession();
   await renderUserTable();
+  await renderAuditLogs();
   await refreshStats();
 }
 
@@ -220,11 +250,90 @@ async function refreshStats() {
   if (!el) return;
   try {
     const [{ employees }, { departments }] = await Promise.all([
-      listEmployees(),
+      listEmployees({ all: true }),
       listDepartments(),
     ]);
     el.textContent = `${employees.length} employees · ${departments.length} departments`;
   } catch {
     el.textContent = '—';
+  }
+}
+
+async function renderAuditLogs() {
+  const host = getEl('audit-list');
+  if (!host) return;
+  syncRoleFromSession();
+
+  if (!canManageUsers()) {
+    setHTML(
+      'audit-list',
+      `<p style="font-size:12px;color:var(--text-3);">Only administrators can view audit logs.</p>`,
+    );
+    return;
+  }
+
+  setHTML('audit-list', `<p style="font-size:12px;color:var(--text-3);">Loading…</p>`);
+
+  try {
+    const q = getEl('audit-q')?.value.trim() || '';
+    const action = getEl('audit-action')?.value || '';
+    const { logs, page, total, totalPages } = await listAuditLogs({
+      page: _auditPage,
+      limit: AUDIT_PAGE_SIZE,
+      q,
+      action,
+    });
+    _auditPage = page || 1;
+
+    const info = getEl('audit-page-info');
+    if (info) {
+      info.textContent =
+        total === 0
+          ? 'No entries'
+          : `Page ${page} of ${totalPages} · ${total} entr${total === 1 ? 'y' : 'ies'}`;
+    }
+    const prev = getEl('audit-prev');
+    const next = getEl('audit-next');
+    if (prev) prev.disabled = !total || page <= 1;
+    if (next) next.disabled = !total || page >= totalPages;
+
+    if (!logs.length) {
+      setHTML(
+        'audit-list',
+        `<p style="font-size:12px;color:var(--text-3);padding:8px 0;">No matching audit entries.</p>`,
+      );
+      return;
+    }
+
+    setHTML(
+      'audit-list',
+      logs
+        .map((log) => {
+          const when = log.createdAt
+            ? new Date(log.createdAt).toLocaleString('en-PH')
+            : '—';
+          const who = log.actor
+            ? escapeHtml(log.actor.displayName || log.actor.username)
+            : '<span style="color:var(--text-3)">system / unknown</span>';
+          const metaBits = [];
+          if (log.entityType) metaBits.push(escapeHtml(log.entityType));
+          if (log.entityId) metaBits.push(`<code>${escapeHtml(String(log.entityId).slice(0, 26))}</code>`);
+          if (log.ip) metaBits.push(escapeHtml(log.ip));
+          return `
+        <div class="audit-row">
+          <div class="audit-main">
+            <span class="audit-action">${escapeHtml(log.action)}</span>
+            <span class="audit-who">${who}</span>
+          </div>
+          <div class="audit-meta">${when}${metaBits.length ? ` · ${metaBits.join(' · ')}` : ''}</div>
+        </div>`;
+        })
+        .join(''),
+    );
+  } catch (err) {
+    setHTML(
+      'audit-list',
+      `<p style="font-size:12px;color:var(--text-3);">${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load audit logs')}</p>`,
+    );
   }
 }

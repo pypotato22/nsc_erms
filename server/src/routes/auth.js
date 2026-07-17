@@ -35,6 +35,8 @@ authRouter.post('/login', async (req, res, next) => {
   try {
     const username = String(req.body?.username || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
+    const ip = clientIp(req);
+
     if (!username || !password) {
       throw new HttpError(400, 'Username and password are required', 'VALIDATION');
     }
@@ -45,11 +47,27 @@ authRouter.post('/login', async (req, res, next) => {
     );
     const user = rows[0];
     if (!user || !user.is_active) {
+      await writeAudit({
+        actorUserId: null,
+        action: 'auth.login_failed',
+        entityType: 'user',
+        entityId: null,
+        meta: { username },
+        ip,
+      });
       throw new HttpError(401, 'Invalid username or password', 'INVALID_CREDENTIALS');
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
+      await writeAudit({
+        actorUserId: user.id,
+        action: 'auth.login_failed',
+        entityType: 'user',
+        entityId: user.id,
+        meta: { username },
+        ip,
+      });
       throw new HttpError(401, 'Invalid username or password', 'INVALID_CREDENTIALS');
     }
 
@@ -66,7 +84,7 @@ authRouter.post('/login', async (req, res, next) => {
       entityType: 'user',
       entityId: user.id,
       meta: { username: user.username },
-      ip: clientIp(req),
+      ip,
     });
 
     res.json({ user: publicUser(user) });
@@ -75,12 +93,28 @@ authRouter.post('/login', async (req, res, next) => {
   }
 });
 
-authRouter.post('/logout', (req, res, next) => {
-  req.session.destroy((err) => {
-    if (err) return next(err);
-    res.clearCookie('nsc_erms.sid');
-    res.json({ ok: true });
-  });
+authRouter.post('/logout', async (req, res, next) => {
+  try {
+    const userId = req.session?.userId || null;
+    const ip = clientIp(req);
+    if (userId) {
+      await writeAudit({
+        actorUserId: userId,
+        action: 'auth.logout',
+        entityType: 'user',
+        entityId: userId,
+        ip,
+      });
+    }
+
+    req.session.destroy((err) => {
+      if (err) return next(err);
+      res.clearCookie('nsc_erms.sid');
+      res.json({ ok: true });
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 authRouter.get('/me', requireAuth, async (req, res, next) => {

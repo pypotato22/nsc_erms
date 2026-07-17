@@ -16,6 +16,7 @@ import {
   initEmployeeTable,
   renderEmployeeTable,
   refreshFilterDropdowns,
+  resetEmployeePage,
 } from './js/components/employeeTable.js';
 import { initEmployeeModal } from './js/components/employeeModal.js';
 import { initProfilePanel, closeProfilePanel } from './js/components/profilePanel.js';
@@ -223,6 +224,7 @@ function navTo(pageName, linkEl) {
   getEl('search-box').style.display = pageName === 'employees' ? 'block' : 'none';
   getEl('search-input').value = '';
   App.searchQuery = '';
+  resetEmployeePage();
 
   closeProfilePanel();
   if (pageName === 'departments') renderDepartmentPage();
@@ -241,6 +243,7 @@ function wireSearch() {
     App.searchQuery = e.target.value;
     clearTimeout(timer);
     timer = setTimeout(() => {
+      resetEmployeePage();
       renderEmployeeTable(App.searchQuery).catch(showLoadError);
     }, 250);
   });

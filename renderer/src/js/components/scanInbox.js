@@ -110,7 +110,7 @@ async function openAssignModal(fileName) {
   getEl('scan-assign-remarks').value = '';
 
   const [{ employees }, { documentTypes }] = await Promise.all([
-    listEmployees(),
+    listEmployees({ all: true }),
     listDocumentTypes(),
   ]);
   _documentTypes = documentTypes;
