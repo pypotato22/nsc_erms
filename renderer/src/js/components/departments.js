@@ -13,7 +13,7 @@ import { showToast } from '../utils/toast.js';
 import { refreshFilterDropdowns } from './employeeTable.js';
 import { canWrite } from '../utils/authz.js';
 
-const CHIP_LIMIT = 3;
+const CHIP_LIMIT = 4;
 
 let _editingDeptId = null;
 /** @type {Array<object>} */
@@ -47,7 +47,7 @@ export function initDepartments() {
   let filterTimer = null;
   getEl('dept-filter')?.addEventListener('input', () => {
     clearTimeout(filterTimer);
-    filterTimer = setTimeout(() => paintDepartmentGrid(), 150);
+    filterTimer = setTimeout(() => paintDepartmentTable(), 150);
   });
 }
 
@@ -55,13 +55,13 @@ export async function renderDepartmentPage() {
   try {
     const { departments } = await listDepartments();
     _departmentsCache = departments || [];
-    paintDepartmentGrid();
+    paintDepartmentTable();
   } catch (err) {
     showErr(err);
   }
 }
 
-function paintDepartmentGrid() {
+function paintDepartmentTable() {
   const q = (getEl('dept-filter')?.value || '').trim().toLowerCase();
   const departments = q
     ? _departmentsCache.filter((d) => {
@@ -70,107 +70,100 @@ function paintDepartmentGrid() {
       })
     : _departmentsCache;
 
-  if (!_departmentsCache.length) {
-    setHTML('dept-grid', '<div class="empty">No departments yet.</div>');
-    return;
-  }
-  if (!departments.length) {
-    setHTML(
-      'dept-grid',
-      '<div class="empty">No departments match your search.</div>',
-    );
-    return;
-  }
+  const emptyEl = getEl('dept-empty');
+  const tbody = getEl('dept-tbody');
+  if (!tbody || !emptyEl) return;
 
   const writable = canWrite();
 
-  setHTML(
-    'dept-grid',
-    departments.map((dept) => buildDeptCard(dept, writable)).join(''),
-  );
+  if (!_departmentsCache.length) {
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'No departments yet.';
+    return;
+  }
+  if (!departments.length) {
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'No departments match your search.';
+    return;
+  }
 
-  document.querySelectorAll('[data-open-dept]').forEach((card) => {
-    if (!writable) return;
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-delete-dept], [data-edit-dept], button, a')) {
-        return;
-      }
-      openDeptModal(card.dataset.openDept).catch(showErr);
-    });
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openDeptModal(card.dataset.openDept).catch(showErr);
-      }
+  emptyEl.style.display = 'none';
+  tbody.innerHTML = departments
+    .map((dept, i) => buildDeptRow(dept, i + 1, writable))
+    .join('');
+
+  tbody.querySelectorAll('[data-open-dept]').forEach((el) => {
+    el.addEventListener('click', () => {
+      openDeptModal(el.dataset.openDept).catch(showErr);
     });
   });
-
-  document.querySelectorAll('[data-edit-dept]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  tbody.querySelectorAll('[data-edit-dept]').forEach((btn) => {
+    btn.addEventListener('click', () => {
       openDeptModal(btn.dataset.editDept).catch(showErr);
     });
   });
-  document.querySelectorAll('[data-delete-dept]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  tbody.querySelectorAll('[data-delete-dept]').forEach((btn) => {
+    btn.addEventListener('click', () => {
       handleDeleteDept(btn.dataset.deleteDept);
     });
   });
 }
 
-function buildDeptCard(dept, writable) {
+function buildDeptRow(dept, rowNumber, writable) {
   const positions = dept.positions || [];
   const count = dept.employeeCount ?? dept.employee_count ?? 0;
-  const initial = (dept.name || '?').trim().charAt(0).toUpperCase() || '?';
   const desc = (dept.description || '').trim();
   const shown = positions.slice(0, CHIP_LIMIT);
   const extra = positions.length - shown.length;
 
-  let positionsBlock;
+  let positionsCell;
   if (!positions.length) {
-    positionsBlock = writable
+    positionsCell = writable
       ? `<button type="button" class="dept-link-pos" data-edit-dept="${dept.id}">Link positions</button>`
-      : `<span class="dept-pos-empty">No positions linked</span>`;
+      : `<span class="dept-pos-empty">None</span>`;
   } else {
     const chips = shown
       .map((p) => `<span class="dept-pos-chip">${escapeHtml(p.name)}</span>`)
       .join('');
     const more =
       extra > 0
-        ? `<span class="dept-pos-more" title="${positions
-            .slice(CHIP_LIMIT)
-            .map((p) => p.name)
-            .join(', ')}">+${extra} more</span>`
+        ? `<span class="dept-pos-more" title="${escapeHtml(
+            positions
+              .slice(CHIP_LIMIT)
+              .map((p) => p.name)
+              .join(', '),
+          )}">+${extra}</span>`
         : '';
-    positionsBlock = `<div class="dept-pos-list">${chips}${more}</div>`;
+    positionsCell = `<div class="dept-pos-list">${chips}${more}</div>`;
   }
 
+  const nameCell = writable
+    ? `<button type="button" class="dept-name-btn" data-open-dept="${dept.id}">
+         <span class="dept-name">${escapeHtml(dept.name)}</span>
+         ${desc ? `<span class="dept-desc">${escapeHtml(desc)}</span>` : ''}
+       </button>`
+    : `<div>
+         <div class="dept-name">${escapeHtml(dept.name)}</div>
+         ${desc ? `<div class="dept-desc">${escapeHtml(desc)}</div>` : ''}
+       </div>`;
+
   const actions = writable
-    ? `<div class="dept-card-actions">
-        <button type="button" class="btn btn-sm btn-edit" data-edit-dept="${dept.id}">Edit</button>
-        <button type="button" class="btn btn-sm btn-del" data-delete-dept="${dept.id}">Delete</button>
-      </div>`
-    : '';
+    ? `<td class="dept-actions">
+         <button type="button" class="btn btn-sm btn-edit" data-edit-dept="${dept.id}">Edit</button>
+         <button type="button" class="btn btn-sm btn-del" data-delete-dept="${dept.id}">Delete</button>
+       </td>`
+    : '<td></td>';
 
   return `
-    <div class="dept-card${writable ? ' dept-card--interactive' : ''}"
-         ${writable ? `data-open-dept="${dept.id}" role="button" tabindex="0"` : ''}>
-      <div class="dept-card-top">
-        <div class="dept-card-initial" aria-hidden="true">${escapeHtml(initial)}</div>
-        <div class="dept-card-heading">
-          <h4>${escapeHtml(dept.name)}</h4>
-          <div class="dept-meta">
-            <span class="dept-emp-count">${count} employee${count === 1 ? '' : 's'}</span>
-            <span class="dept-meta-sep">·</span>
-            <span class="dept-pos-count">${positions.length} position${positions.length === 1 ? '' : 's'}</span>
-          </div>
-        </div>
-      </div>
-      ${desc ? `<p class="dsub">${escapeHtml(desc)}</p>` : ''}
-      ${positionsBlock}
+    <tr>
+      <td class="dept-row-num">${String(rowNumber).padStart(2, '0')}</td>
+      <td>${nameCell}</td>
+      <td class="dept-count-cell">${count}</td>
+      <td>${positionsCell}</td>
       ${actions}
-    </div>`;
+    </tr>`;
 }
 
 async function openDeptModal(deptId = null) {

@@ -258,7 +258,21 @@
                         <input type="search" id="dept-filter" class="dept-filter-input"
                             placeholder="Search departments…" autocomplete="off" />
                     </div>
-                    <div class="dept-grid" id="dept-grid"></div>
+                    <div class="card">
+                        <table id="dept-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Department</th>
+                                    <th>Employees</th>
+                                    <th>Positions</th>
+                                    <th class="needs-write">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dept-tbody"></tbody>
+                        </table>
+                        <div id="dept-empty" class="empty" style="display:none;">No departments yet.</div>
+                    </div>
                 </div>
 
                 <!-- Positions Page -->
@@ -278,7 +292,21 @@
                     <p style="font-size:0.8571rem;color:var(--text-3);margin:-4px 0 14px;">
                         Shared catalog of job titles. Link them to departments from the Departments page.
                     </p>
-                    <div class="dept-grid" id="pos-grid"></div>
+                    <div class="card">
+                        <table id="pos-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Position</th>
+                                    <th>Employees</th>
+                                    <th>Departments</th>
+                                    <th class="needs-write">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pos-tbody"></tbody>
+                        </table>
+                        <div id="pos-empty" class="empty" style="display:none;">No positions in the catalog yet.</div>
+                    </div>
                 </div>
 
                 <!-- Scan Inbox Page -->

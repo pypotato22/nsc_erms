@@ -5,7 +5,7 @@ import {
   deletePosition,
 } from '../api/positions.js';
 import { ApiError } from '../api/client.js';
-import { getEl, setHTML, escapeHtml } from '../utils/helpers.js';
+import { getEl, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { canWrite } from '../utils/authz.js';
 
@@ -23,7 +23,7 @@ export function initPositions() {
   let t = null;
   getEl('pos-filter')?.addEventListener('input', () => {
     clearTimeout(t);
-    t = setTimeout(() => paintGrid(), 150);
+    t = setTimeout(() => paintPositionTable(), 150);
   });
 }
 
@@ -31,88 +31,80 @@ export async function renderPositionsPage() {
   try {
     const { positions } = await listPositions();
     _cache = positions || [];
-    paintGrid();
+    paintPositionTable();
   } catch (err) {
     showErr(err);
   }
 }
 
-function paintGrid() {
+function paintPositionTable() {
   const q = (getEl('pos-filter')?.value || '').trim().toLowerCase();
   const rows = q
     ? _cache.filter((p) => String(p.name || '').toLowerCase().includes(q))
     : _cache;
 
+  const emptyEl = getEl('pos-empty');
+  const tbody = getEl('pos-tbody');
+  if (!tbody || !emptyEl) return;
+
+  const writable = canWrite();
+
   if (!_cache.length) {
-    setHTML(
-      'pos-grid',
-      '<div class="empty">No positions in the catalog yet. Add one to use when linking departments.</div>',
-    );
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'No positions in the catalog yet. Add one to use when linking departments.';
     return;
   }
   if (!rows.length) {
-    setHTML('pos-grid', '<div class="empty">No positions match your search.</div>');
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = 'No positions match your search.';
     return;
   }
 
-  const writable = canWrite();
-  setHTML(
-    'pos-grid',
-    rows
-      .map((p) => {
-        const depts = p.departmentCount ?? 0;
-        const emps = p.employeeCount ?? 0;
-        const initial = (p.name || '?').trim().charAt(0).toUpperCase() || '?';
-        const actions = writable
-          ? `<div class="dept-card-actions">
-              <button type="button" class="btn btn-sm btn-edit" data-edit-pos="${p.id}">Rename</button>
-              <button type="button" class="btn btn-sm btn-del" data-del-pos="${p.id}">Remove</button>
-            </div>`
-          : '';
-        return `
-      <div class="dept-card${writable ? ' dept-card--interactive' : ''}"
-           ${writable ? `data-open-pos="${p.id}" role="button" tabindex="0"` : ''}>
-        <div class="dept-card-top">
-          <div class="dept-card-initial" aria-hidden="true">${escapeHtml(initial)}</div>
-          <div class="dept-card-heading">
-            <h4>${escapeHtml(p.name)}</h4>
-            <div class="dept-meta">
-              <span class="dept-emp-count">${emps} employee${emps === 1 ? '' : 's'}</span>
-              <span class="dept-meta-sep">·</span>
-              <span class="dept-pos-count">in ${depts} department${depts === 1 ? '' : 's'}</span>
-            </div>
-          </div>
-        </div>
-        ${actions}
-      </div>`;
-      })
-      .join(''),
-  );
+  emptyEl.style.display = 'none';
+  tbody.innerHTML = rows
+    .map((p, i) => buildPositionRow(p, i + 1, writable))
+    .join('');
 
-  document.querySelectorAll('[data-open-pos]').forEach((card) => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      openPositionModal(card.dataset.openPos);
-    });
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openPositionModal(card.dataset.openPos);
-      }
-    });
+  tbody.querySelectorAll('[data-open-pos]').forEach((el) => {
+    el.addEventListener('click', () => openPositionModal(el.dataset.openPos));
   });
-  document.querySelectorAll('[data-edit-pos]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openPositionModal(btn.dataset.editPos);
-    });
+  tbody.querySelectorAll('[data-edit-pos]').forEach((btn) => {
+    btn.addEventListener('click', () => openPositionModal(btn.dataset.editPos));
   });
-  document.querySelectorAll('[data-del-pos]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  tbody.querySelectorAll('[data-del-pos]').forEach((btn) => {
+    btn.addEventListener('click', () => {
       removePosition(btn.dataset.delPos).catch(showErr);
     });
   });
+}
+
+function buildPositionRow(p, rowNumber, writable) {
+  const depts = p.departmentCount ?? 0;
+  const emps = p.employeeCount ?? 0;
+
+  const nameCell = writable
+    ? `<button type="button" class="dept-name-btn" data-open-pos="${p.id}">
+         <span class="dept-name">${escapeHtml(p.name)}</span>
+       </button>`
+    : `<div class="dept-name">${escapeHtml(p.name)}</div>`;
+
+  const actions = writable
+    ? `<td class="dept-actions">
+         <button type="button" class="btn btn-sm btn-edit" data-edit-pos="${p.id}">Rename</button>
+         <button type="button" class="btn btn-sm btn-del" data-del-pos="${p.id}">Remove</button>
+       </td>`
+    : '<td></td>';
+
+  return `
+    <tr>
+      <td class="dept-row-num">${String(rowNumber).padStart(2, '0')}</td>
+      <td>${nameCell}</td>
+      <td class="dept-count-cell">${emps}</td>
+      <td class="dept-count-cell">${depts}</td>
+      ${actions}
+    </tr>`;
 }
 
 function openPositionModal(id) {
