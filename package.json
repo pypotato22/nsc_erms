@@ -13,6 +13,7 @@
     "dev": "npm run dev:server",
     "build": "npm run build -w renderer",
     "start": "npm run start -w server",
+    "start:fresh": "npm run build && npm run start",
     "migrate": "npm run migrate -w server",
     "seed": "npm run seed -w server",
     "seed:employees": "npm run seed:employees -w server",

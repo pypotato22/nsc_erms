@@ -6,6 +6,7 @@ import {
 } from '../api/documents.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js';
+import { printDocument } from '../utils/printDocument.js';
 import { showToast } from '../utils/toast.js';
 import { canWrite } from '../utils/authz.js';
 
@@ -90,6 +91,7 @@ export async function renderTrashPage() {
           </div>
           <div class="bk-acts">
             <button class="btn btn-sm btn-edit" data-trash-download="${doc.id}">Download</button>
+            <button class="btn btn-sm btn-edit" data-trash-print="${doc.id}" data-print-mime="${escapeHtml(doc.mimeType || '')}" data-print-name="${escapeHtml(doc.fileName || '')}">Print</button>
             ${canWrite()
               ? `<button class="btn btn-sm btn-edit" data-trash-restore="${doc.id}">Restore</button>
             <button class="btn btn-sm btn-del" data-trash-purge="${doc.id}">Delete forever</button>`
@@ -103,6 +105,18 @@ export async function renderTrashPage() {
     document.querySelectorAll('[data-trash-download]').forEach((btn) => {
       btn.addEventListener('click', () => {
         window.open(downloadDocumentUrl(btn.dataset.trashDownload), '_blank');
+      });
+    });
+
+    document.querySelectorAll('[data-trash-print]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        printDocument(
+          btn.dataset.trashPrint,
+          btn.dataset.printMime || '',
+          btn.dataset.printName || '',
+        ).catch((err) => {
+          showToast(err.message || 'Print failed.', 'error');
+        });
       });
     });
 
