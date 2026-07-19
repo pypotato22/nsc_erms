@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSC-ERMS — Connect</title>
+  <link rel="stylesheet" href="./connection.css" />
+</head>
+<body>
+  <header id="desktop-titlebar">
+    <div class="tb-drag" aria-hidden="true"></div>
+    <div class="tb-controls">
+      <button type="button" class="tb-btn" id="tb-min" title="Minimize" aria-label="Minimize">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M1 5h8" stroke="currentColor" stroke-width="1.2" fill="none" />
+        </svg>
+      </button>
+      <button type="button" class="tb-btn" id="tb-max" title="Maximize" aria-label="Maximize">
+        <svg class="tb-icon-max" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="7" height="7" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none" />
+        </svg>
+        <svg class="tb-icon-restore" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M3 3.5h5.5V9H3z" stroke="currentColor" stroke-width="1.1" fill="none" />
+          <path d="M2 6.5V1.5h5.5" stroke="currentColor" stroke-width="1.1" fill="none" />
+        </svg>
+      </button>
+      <button type="button" class="tb-btn tb-close" id="tb-close" title="Close" aria-label="Close">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.2" fill="none" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="connect-screen">
+    <div class="connect-card">
+      <img class="connect-logo" src="./assets/icon.png" alt="Northern Samar Colleges" width="64" height="64" />
+      <h1>NSC-ERMS</h1>
+      <p class="connect-sub">Employee Records Management System</p>
+
+      <div id="connect-status" class="connect-status" hidden></div>
+
+      <div id="checking-panel" class="checking-panel" hidden>
+        <div class="checking-spinner" aria-hidden="true"></div>
+        <p id="checking-text">Checking saved server…</p>
+      </div>
+
+      <form id="connect-form" autocomplete="on" hidden>
+        <label class="field-label" for="host-input">Server address</label>
+        <div class="url-row">
+          <div class="scheme-toggle" role="group" aria-label="Protocol">
+            <button type="button" class="scheme-btn" data-scheme="http" id="scheme-http">HTTP</button>
+            <button type="button" class="scheme-btn active" data-scheme="https" id="scheme-https">HTTPS</button>
+          </div>
+          <input
+            id="host-input"
+            name="host"
+            type="text"
+            spellcheck="false"
+            placeholder="erms.local:3443"
+            required
+          />
+        </div>
+        <p class="hint">Enter host and port, or paste a full URL. Use HTTPS for LAN production.</p>
+
+        <button type="submit" class="connect-btn" id="connect-btn">
+          <span class="btn-label">Connect</span>
+          <span class="btn-spinner" hidden aria-hidden="true"></span>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script src="./connection.js"></script>
+</body>
+</html>

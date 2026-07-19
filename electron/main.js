@@ -1,8 +1,23 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, net } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const DEFAULT_SERVER_URL = 'https://localhost:3443';
+const PROBE_TIMEOUT_MS = 5000;
+
+/** @type {import('electron').BrowserWindow | null} */
+let mainWindow = null;
+/** @type {string | null} */
+let allowedOrigin = null;
+/** @type {{ lastUrl: string, error: string | null, checking: boolean }} */
+let bootState = { lastUrl: DEFAULT_SERVER_URL, error: null, checking: true };
+
+function getConfigPath() {
+  if (app.isPackaged) {
+    return path.join(path.dirname(process.execPath), 'config.json');
+  }
+  return path.join(__dirname, 'config.json');
+}
 
 /**
  * Resolve ERMS server URL from (in order):
@@ -12,26 +27,69 @@ const DEFAULT_SERVER_URL = 'https://localhost:3443';
  */
 function resolveServerUrl() {
   const fromEnv = process.env.ERMS_SERVER_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  if (fromEnv) return normalizeServerUrl(fromEnv);
 
-  const candidates = [];
-  if (app.isPackaged) {
-    candidates.push(path.join(path.dirname(process.execPath), 'config.json'));
-  }
-  candidates.push(path.join(__dirname, 'config.json'));
-
-  for (const file of candidates) {
-    try {
-      if (!fs.existsSync(file)) continue;
+  try {
+    const file = getConfigPath();
+    if (fs.existsSync(file)) {
       const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
       const url = typeof raw.serverUrl === 'string' ? raw.serverUrl.trim() : '';
-      if (url) return url.replace(/\/$/, '');
-    } catch (err) {
-      console.warn(`[electron] Failed to read ${file}:`, err.message);
+      if (url) return normalizeServerUrl(url);
     }
+  } catch (err) {
+    console.warn('[electron] Failed to read config:', err.message);
+  }
+
+  // Dev fallback: also check electron/config.json if packaged path differed
+  if (!app.isPackaged) {
+    try {
+      const file = path.join(__dirname, 'config.json');
+      if (fs.existsSync(file)) {
+        const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const url = typeof raw.serverUrl === 'string' ? raw.serverUrl.trim() : '';
+        if (url) return normalizeServerUrl(url);
+      }
+    } catch { /* ignore */ }
   }
 
   return DEFAULT_SERVER_URL;
+}
+
+function normalizeServerUrl(input) {
+  const trimmed = String(input || '').trim().replace(/\/+$/, '');
+  if (!trimmed) throw new Error('Server URL is empty.');
+
+  let parsed;
+  if (/^https?:\/\//i.test(trimmed)) {
+    parsed = new URL(trimmed);
+  } else {
+    parsed = new URL(`https://${trimmed}`);
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Only http:// and https:// URLs are supported.');
+  }
+
+  return `${parsed.protocol}//${parsed.host}`;
+}
+
+function saveServerUrl(url) {
+  const file = getConfigPath();
+  fs.writeFileSync(file, `${JSON.stringify({ serverUrl: url }, null, 2)}\n`, 'utf8');
+}
+
+function setAllowedOrigin(url) {
+  allowedOrigin = new URL(url).origin;
+}
+
+function isAllowedNavigation(url) {
+  if (url.startsWith('file://')) return true;
+  if (!allowedOrigin) return false;
+  try {
+    return new URL(url).origin === allowedOrigin;
+  } catch {
+    return false;
+  }
 }
 
 function getIconPath() {
@@ -44,6 +102,61 @@ function getIconPath() {
 
 function windowFromEvent(event) {
   return BrowserWindow.fromWebContents(event.sender);
+}
+
+/**
+ * Probe ERMS health endpoint. Accepts http and https.
+ */
+async function probeServer(serverUrl) {
+  const healthUrl = new URL('/api/v1/health', `${serverUrl}/`).href;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+
+  try {
+    const res = await net.fetch(healthUrl, {
+      method: 'GET',
+      signal: controller.signal,
+      redirect: 'manual',
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `Server responded at ${serverUrl} but health check failed (HTTP ${res.status}).`,
+      };
+    }
+    return { ok: true };
+  } catch (err) {
+    const reason =
+      err?.name === 'AbortError'
+        ? 'Timed out waiting for the server.'
+        : err?.message || 'Network error.';
+    return {
+      ok: false,
+      error: `Could not reach ${serverUrl}. ${reason}`,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadServerApp(serverUrl) {
+  setAllowedOrigin(serverUrl);
+  bootState = { lastUrl: serverUrl, error: null, checking: false };
+  console.log(`[electron] Loading ${serverUrl}`);
+  await mainWindow.loadURL(serverUrl);
+}
+
+async function showConnectionScreen(lastUrl, error, checking = false) {
+  allowedOrigin = null;
+  bootState = {
+    lastUrl: lastUrl || DEFAULT_SERVER_URL,
+    error: error || null,
+    checking: Boolean(checking),
+  };
+  await mainWindow.loadFile(path.join(__dirname, 'connection.html'));
+  if (!checking && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('boot:ready', bootState);
+  }
 }
 
 ipcMain.handle('window:minimize', (event) => {
@@ -66,19 +179,38 @@ ipcMain.handle('window:is-maximized', (event) => {
   return Boolean(windowFromEvent(event)?.isMaximized());
 });
 
-/** @type {import('electron').BrowserWindow | null} */
-let mainWindow = null;
+ipcMain.handle('boot:get-state', () => bootState);
 
-function createWindow() {
-  const serverUrl = resolveServerUrl();
-  let allowedOrigin;
+ipcMain.handle('boot:connect', async (_event, rawUrl) => {
+  let serverUrl;
   try {
-    allowedOrigin = new URL(serverUrl).origin;
-  } catch {
-    console.error(`[electron] Invalid server URL: ${serverUrl}`);
-    app.quit();
-    return;
+    serverUrl = normalizeServerUrl(rawUrl);
+  } catch (err) {
+    return { ok: false, error: err.message || 'Invalid server URL.' };
   }
+
+  const probe = await probeServer(serverUrl);
+  if (!probe.ok) return probe;
+
+  try {
+    saveServerUrl(serverUrl);
+  } catch (err) {
+    console.warn('[electron] Could not save config:', err.message);
+  }
+
+  try {
+    await loadServerApp(serverUrl);
+    return { ok: true };
+  } catch (err) {
+    const message = err?.message || 'Failed to open the ERMS app.';
+    await showConnectionScreen(serverUrl, message);
+    return { ok: false, error: message };
+  }
+});
+
+async function createWindow() {
+  const savedUrl = resolveServerUrl();
+  bootState = { lastUrl: savedUrl, error: null, checking: true };
 
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -89,7 +221,7 @@ function createWindow() {
     icon: getIconPath(),
     show: false,
     frame: false,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#062b6e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -107,46 +239,50 @@ function createWindow() {
   mainWindow.on('maximize', notifyMaximize);
   mainWindow.on('unmaximize', notifyMaximize);
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
-
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try {
-      if (new URL(url).origin === allowedOrigin) {
-        return { action: 'allow' };
-      }
-    } catch { /* ignore */ }
+    if (isAllowedNavigation(url)) return { action: 'allow' };
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    try {
-      if (new URL(url).origin === allowedOrigin) return;
-    } catch { /* deny below */ }
+    if (isAllowedNavigation(url)) return;
     event.preventDefault();
     shell.openExternal(url);
   });
 
-  console.log(`[electron] Loading ${serverUrl}`);
-  mainWindow.loadURL(serverUrl).catch((err) => {
-    console.error('[electron] Failed to load server URL:', err.message);
-    const msg =
-      `Could not reach ERMS at ${serverUrl}. ` +
-      'Check that the server is running and set ERMS_SERVER_URL or electron/config.json.';
-    mainWindow?.loadURL(
-      'data:text/html;charset=utf-8,' +
-        encodeURIComponent(
-          '<!doctype html><html><body style="font-family:system-ui;padding:2rem;max-width:36rem">' +
-            `<h1>NSC-ERMS</h1><p>${msg}</p></body></html>`,
-        ),
-    );
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
   });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  await showConnectionScreen(savedUrl, null, true);
+
+  console.log(`[electron] Probing ${savedUrl}`);
+  const probe = await probeServer(savedUrl);
+  if (probe.ok) {
+    try {
+      await loadServerApp(savedUrl);
+      return;
+    } catch (err) {
+      console.error('[electron] loadURL failed:', err.message);
+      await showConnectionScreen(
+        savedUrl,
+        `Reached health check but could not open the app: ${err.message}`,
+        false,
+      );
+      return;
+    }
+  }
+
+  console.warn('[electron]', probe.error);
+  bootState = { lastUrl: savedUrl, error: probe.error, checking: false };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('boot:ready', bootState);
+  }
 }
 
 const gotLock = app.requestSingleInstanceLock();

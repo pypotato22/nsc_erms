@@ -11,4 +11,11 @@ contextBridge.exposeInMainWorld('nscDesktop', {
     ipcRenderer.on('window:maximize-changed', handler);
     return () => ipcRenderer.removeListener('window:maximize-changed', handler);
   },
+  getBootState: () => ipcRenderer.invoke('boot:get-state'),
+  connect: (serverUrl) => ipcRenderer.invoke('boot:connect', serverUrl),
+  onBootReady: (callback) => {
+    const handler = (_event, state) => callback(state);
+    ipcRenderer.on('boot:ready', handler);
+    return () => ipcRenderer.removeListener('boot:ready', handler);
+  },
 });

@@ -56,6 +56,13 @@ Health: `http://localhost:3443/api/v1/health`
 
 Thin client for staff PCs: a branded window that loads the ERMS UI from your LAN server (same login and home as the browser). Session cookies work because the app opens the server origin directly.
 
+### Connection flow
+
+1. On launch, the client probes the saved server (`/api/v1/health`).
+2. If reachable, it opens the ERMS login screen.
+3. If not, it shows a **Connect** screen where you pick **HTTP** or **HTTPS** and enter `host:port` (or paste a full URL).
+4. A successful connect is saved to `config.json` for next time.
+
 ### Configure server URL
 
 Resolve order:
@@ -66,7 +73,7 @@ Resolve order:
 
 ```bash
 copy electron\config.example.json electron\config.json
-# edit serverUrl
+# edit serverUrl  (or leave blank / wrong and use the Connect screen)
 ```
 
 Example `config.json`:
@@ -83,7 +90,7 @@ For local HTTP (`ALLOW_HTTP_DEV=true`), use `"serverUrl": "http://localhost:3443
 
 ```bash
 npm run dev:server    # or npm start after build
-npm run dev:desktop   # Electron window → login → home
+npm run dev:desktop   # probes saved URL → Connect screen or login
 ```
 
 ### Windows installer
@@ -94,7 +101,7 @@ npm run build:desktop
 
 Output: `dist/desktop/` (NSIS installer + unpacked app). The exe and shortcuts use the Northern Samar Colleges seal (`electron/assets/icon.ico`).
 
-After install, copy `config.example.json` beside the exe to `config.json` and set your LAN `serverUrl`. Trust the mkcert CA on staff PCs when using HTTPS.
+After install, you can copy `config.example.json` to `config.json` beside the exe, or just enter the LAN URL on the Connect screen. Trust the mkcert CA on staff PCs when using HTTPS.
 
 ## Production build
 
