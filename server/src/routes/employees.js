@@ -579,35 +579,17 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
 
 employeesRouter.delete('/:id', writeRoles, async (req, res, next) => {
   try {
-    await withClient(async (client) => {
-      await client.query('BEGIN');
-      try {
-        const { rows } = await client.query(
-          `UPDATE employees
-           SET deleted_at = NOW(), is_archived = TRUE, updated_at = NOW(), updated_by = $2
-           WHERE id = $1 AND deleted_at IS NULL
-           RETURNING id`,
-          [req.params.id, req.session.userId],
-        );
-        if (!rows[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+    const { rows } = await query(
+      `UPDATE employees
+       SET deleted_at = NOW(), is_archived = TRUE, updated_at = NOW(), updated_by = $2
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING id`,
+      [req.params.id, req.session.userId],
+    );
+    if (!rows[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
 
-        // End open assignments without violating end_date >= start_date
-        // (future-dated starts must not get an earlier CURRENT_DATE end_date).
-        await client.query(
-          `UPDATE employee_assignments
-           SET is_active = FALSE,
-               end_date = COALESCE(end_date, GREATEST(start_date, CURRENT_DATE)),
-               updated_at = NOW()
-           WHERE employee_id = $1 AND is_active = TRUE`,
-          [req.params.id],
-        );
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      }
-    });
+    // Keep assignment rows intact (position, department, start date, etc.)
+    // so restore can bring them back. Lists already hide soft-deleted employees.
 
     await writeAudit({
       actorUserId: req.session.userId,
@@ -630,36 +612,71 @@ employeesRouter.delete('/:id', writeRoles, async (req, res, next) => {
 
 employeesRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `UPDATE employees
-       SET deleted_at = NULL, is_archived = FALSE, updated_at = NOW(), updated_by = $2
-       WHERE id = $1 AND deleted_at IS NOT NULL
-       RETURNING id, employee_no, first_name, last_name`,
-      [req.params.id, req.session.userId],
-    );
-    if (!rows[0]) {
-      throw new HttpError(404, 'Archived employee not found', 'NOT_FOUND');
-    }
+    await withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const { rows } = await client.query(
+          `UPDATE employees
+           SET deleted_at = NULL, is_archived = FALSE, updated_at = NOW(), updated_by = $2
+           WHERE id = $1 AND deleted_at IS NOT NULL
+           RETURNING id, employee_no, first_name, last_name`,
+          [req.params.id, req.session.userId],
+        );
+        if (!rows[0]) {
+          throw new HttpError(404, 'Archived employee not found', 'NOT_FOUND');
+        }
 
-    await writeAudit({
-      actorUserId: req.session.userId,
-      action: 'employee.restore',
-      entityType: 'employee',
-      entityId: rows[0].id,
-      meta: {
-        employeeNo: rows[0].employee_no,
-        name: `${rows[0].first_name} ${rows[0].last_name}`,
-      },
-      ip: clientIp(req),
+        const { rows: inactiveStatus } = await client.query(
+          `SELECT id FROM employment_statuses
+           WHERE is_active = TRUE AND lower(name) = 'inactive'
+           LIMIT 1`,
+        );
+        const inactiveId = inactiveStatus[0]?.id || null;
+
+        // Reopen the latest primary assignment so dept/position/start date return.
+        // Prefer Inactive status on restore; keep type, position, and start_date.
+        await client.query(
+          `UPDATE employee_assignments ea
+           SET is_active = TRUE,
+               end_date = NULL,
+               employment_status_id = COALESCE($2::char(26), ea.employment_status_id),
+               updated_at = NOW()
+           WHERE ea.id = (
+             SELECT id FROM employee_assignments
+             WHERE employee_id = $1 AND is_primary = TRUE
+             ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST
+             LIMIT 1
+           )`,
+          [req.params.id, inactiveId],
+        );
+
+        await client.query('COMMIT');
+
+        await writeAudit({
+          actorUserId: req.session.userId,
+          action: 'employee.restore',
+          entityType: 'employee',
+          entityId: rows[0].id,
+          meta: {
+            employeeNo: rows[0].employee_no,
+            name: `${rows[0].first_name} ${rows[0].last_name}`,
+            statusSetInactive: Boolean(inactiveId),
+          },
+          ip: clientIp(req),
+        });
+
+        publish('employees.changed', {
+          action: 'restored',
+          employeeId: rows[0].id,
+          actorUserId: req.session.userId,
+        });
+
+        res.json({ ok: true, id: rows[0].id });
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
     });
-
-    publish('employees.changed', {
-      action: 'restored',
-      employeeId: rows[0].id,
-      actorUserId: req.session.userId,
-    });
-
-    res.json({ ok: true, id: rows[0].id });
   } catch (err) {
     next(err);
   }
