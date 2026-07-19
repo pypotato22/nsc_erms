@@ -9,6 +9,7 @@ import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js'
 import { printDocument } from '../utils/printDocument.js';
 import { showToast } from '../utils/toast.js';
 import { canWrite } from '../utils/authz.js';
+import { refreshOpenDocsTabForLiveSync } from './documents.js';
 
 const PAGE_SIZE = 25;
 let _page = 1;
@@ -83,7 +84,7 @@ export async function renderTrashPage() {
               <span style="font-size:0.7143rem;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">v${doc.versionNumber}</span>
             </div>
             <div class="bk-meta">
-              ${escapeHtml(emp?.lastName || '')}, ${escapeHtml(emp?.firstName || '')} (${escapeHtml(emp?.employeeNo || '')})
+              ${escapeHtml(emp?.lastName || '')}, ${escapeHtml(emp?.firstName || '')}${emp?.employeeNo ? ` (${escapeHtml(emp.employeeNo)})` : ''}
               · ${escapeHtml(doc.documentTypeName)}
               · ${escapeHtml(size)}
               · deleted ${escapeHtml(when)}
@@ -123,9 +124,12 @@ export async function renderTrashPage() {
     document.querySelectorAll('[data-trash-restore]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         try {
-          await restoreDocument(btn.dataset.trashRestore);
+          const result = await restoreDocument(btn.dataset.trashRestore);
           showToast('Document restored to 201 File.', 'success');
           await renderTrashPage();
+          refreshOpenDocsTabForLiveSync({
+            employeeId: result?.employeeId,
+          }).catch(() => {});
         } catch (err) {
           showErr(err);
         }

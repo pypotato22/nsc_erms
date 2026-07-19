@@ -9,7 +9,9 @@ let source = null;
 const debounceTimers = {};
 /** @type {Record<string, object>} */
 const pendingPayloads = {};
-/** @type {Record<string, (payload: object) => void> | null} */
+/** @type {(Record<string, (payload?: object) => void> & {
+ *   getCurrentUserId?: () => string | null | undefined,
+ * }) | null} */
 let handlers = null;
 
 /**
@@ -56,6 +58,11 @@ function wireEvent(es, eventName) {
     } catch {
       payload = {};
     }
+
+    const actorId = payload.actorUserId;
+    const me = handlers?.getCurrentUserId?.();
+    if (actorId && me && String(actorId) === String(me)) return;
+
     // Merge latest payload; debounce coalesces bursts
     pendingPayloads[eventName] = { ...pendingPayloads[eventName], ...payload };
 

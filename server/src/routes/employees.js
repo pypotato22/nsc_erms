@@ -99,17 +99,6 @@ function mapEmployee(row) {
   };
 }
 
-async function nextEmployeeNo(client) {
-  const { rows } = await client.query(
-    `SELECT employee_no FROM employees
-     WHERE employee_no ~ '^[0-9]+$'
-     ORDER BY employee_no::bigint DESC
-     LIMIT 1`,
-  );
-  const last = rows[0]?.employee_no ? Number(rows[0].employee_no) : 100000;
-  return String(last + 1);
-}
-
 async function getEmployeeRow(id) {
   const { rows } = await query(`${EMPLOYEE_LIST_SQL} AND e.id = $1`, [id]);
   return rows[0] ?? null;

@@ -193,7 +193,7 @@ function renderPanelHeader(emp) {
     </div>
     <div class="ph-actions">
       ${canWrite() ? `<button class="phbtn phbtn-edit" id="panel-edit-btn">Edit</button>
-      <button class="phbtn phbtn-del" id="panel-delete-btn">Delete</button>` : ''}
+      <button class="phbtn phbtn-del" id="panel-delete-btn">Archive</button>` : ''}
     </div>`,
   );
 
@@ -226,7 +226,7 @@ async function handleDeleteEmployee(empId) {
       onAction: async () => {
         try {
           await restoreEmployee(empId);
-          showToast('Employee restored.', 'success');
+          showToast('Employee restored as Inactive.', 'success');
           await renderEmployeeTable(_getSearchQuery());
           renderArchivedEmployeesPage().catch(() => {});
         } catch (err) {
@@ -235,6 +235,6 @@ async function handleDeleteEmployee(empId) {
       },
     });
   } catch (err) {
-    showToast(err instanceof ApiError ? err.message : 'Delete failed.', 'error');
+    showToast(err instanceof ApiError ? err.message : 'Archive failed.', 'error');
   }
 }

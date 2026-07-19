@@ -7,11 +7,16 @@ import { ApiError } from '../api/client.js';
 import { getEl, setHTML, escapeHtml, getAvatarHTML } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { canWrite } from '../utils/authz.js';
+import { renderEmployeeTable } from './employeeTable.js';
 
 const PAGE_SIZE = 25;
 let _page = 1;
+let _getSearchQuery = () => '';
 
-export function initArchivedEmployees() {
+export function initArchivedEmployees(getSearchQuery) {
+  if (typeof getSearchQuery === 'function') {
+    _getSearchQuery = getSearchQuery;
+  }
   getEl('archived-employees-refresh')?.addEventListener('click', () => {
     _page = 1;
     renderArchivedEmployeesPage().catch(showErr);
@@ -56,7 +61,7 @@ export async function renderArchivedEmployeesPage() {
         'archived-employees-list',
         `<div class="empty" style="padding:28px 0;text-align:center;">
           <p style="font-weight:600;margin-bottom:6px;">No archived employees</p>
-          <p style="font-size:0.8571rem;color:var(--text-3);">Soft-deleted employees appear here. Restore them or delete forever.</p>
+          <p style="font-size:0.8571rem;color:var(--text-3);">Soft-deleted employees appear here. Restore returns them to the Employees list as Inactive, or delete forever.</p>
         </div>`,
       );
       return;
@@ -70,13 +75,15 @@ export async function renderArchivedEmployeesPage() {
             ? new Date(emp.deletedAt).toLocaleString('en-PH')
             : '—';
           const docs = Number(emp.documentCount) || 0;
+          const empNo = emp.employeeNo
+            ? `<span style="font-size:0.7143rem;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">${escapeHtml(emp.employeeNo)}</span>`
+            : '';
           return `
         <div class="bk-item" style="align-items:flex-start;">
           <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0;">
             ${getAvatarHTML(emp, 36, 12)}
             <div style="min-width:0;flex:1;">
-              <div class="bk-name">${escapeHtml(emp.lastName || '')}, ${escapeHtml(emp.firstName || '')}
-                <span style="font-size:0.7143rem;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">${escapeHtml(emp.employeeNo || '')}</span>
+              <div class="bk-name">${escapeHtml(emp.lastName || '')}, ${escapeHtml(emp.firstName || '')}${empNo}
               </div>
               <div class="bk-meta">
                 ${escapeHtml(emp.email || '—')}
@@ -100,8 +107,9 @@ export async function renderArchivedEmployeesPage() {
       btn.addEventListener('click', async () => {
         try {
           await restoreEmployee(btn.dataset.archiveRestore);
-          showToast('Employee restored.', 'success');
+          showToast('Employee restored as Inactive.', 'success');
           await renderArchivedEmployeesPage();
+          renderEmployeeTable(_getSearchQuery()).catch(() => {});
         } catch (err) {
           showErr(err);
         }

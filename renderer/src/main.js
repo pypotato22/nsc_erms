@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDocuments();
   initScanInbox();
   initTrash();
-  initArchivedEmployees();
+  initArchivedEmployees(getSearchQuery);
   initDepartmentComponent();
   initPositions();
   initBackup();
@@ -189,6 +189,7 @@ async function showAppShell(user) {
   );
   App.applyPrefs();
   startLiveSync({
+    getCurrentUserId: () => App.currentUser?.id,
     'employees.changed': (payload) => {
       // Badge + list surfaces
       renderArchivedEmployeesPage().catch(() => {});

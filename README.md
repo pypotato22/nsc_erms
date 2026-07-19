@@ -50,7 +50,10 @@ Health: `http://localhost:3443/api/v1/health`
 ```bash
 npm run build          # Vite → renderer/dist
 npm start              # Express on PORT (default 3443)
+# or: npm run start:fresh   # build then start
 ```
+
+**UI changes:** `npm start` serves `renderer/dist` when it exists. After editing `renderer/src`, run `npm run build` (or `start:fresh`), or use `npm run dev:client` with `dev:server` for live Vite. Otherwise you will keep seeing the old built assets.
 
 The API serves `renderer/dist` when `index.html` exists there; otherwise it falls back to the source `renderer/` folder (handy for API-only local runs). Open `http://localhost:3443/` (or HTTPS if TLS is configured).
 
