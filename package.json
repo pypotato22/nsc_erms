@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Northern Samar Colleges — Employee Records Management System",
+  "main": "electron/main.js",
   "workspaces": [
     "renderer",
     "server"
@@ -11,7 +12,9 @@
     "dev:client": "npm run dev -w renderer",
     "dev:server": "npm run dev -w server",
     "dev": "npm run dev:server",
+    "dev:desktop": "electron .",
     "build": "npm run build -w renderer",
+    "build:desktop": "electron-builder --win nsis",
     "start": "npm run start -w server",
     "start:fresh": "npm run build && npm run start",
     "migrate": "npm run migrate -w server",
@@ -20,7 +23,49 @@
     "db:create": "npm run db:create -w server",
     "db:setup": "npm run db:create && npm run migrate && npm run seed"
   },
+  "build": {
+    "appId": "ph.edu.nsc.erms",
+    "productName": "NSC-ERMS",
+    "copyright": "Copyright © Northern Samar Colleges",
+    "directories": {
+      "output": "dist/desktop",
+      "buildResources": "electron/assets"
+    },
+    "files": [
+      "electron/**/*",
+      "!electron/config.json",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "electron/config.example.json",
+        "to": "config.example.json"
+      }
+    ],
+    "win": {
+      "icon": "electron/assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NSC-ERMS"
+    }
+  },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
   }
 }

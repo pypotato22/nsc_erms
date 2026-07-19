@@ -2,7 +2,7 @@
 
 Northern Samar Colleges — Employee Records Management System.
 
-**Stack:** Vanilla JS SPA (`renderer/`) · Node.js + Express (`server/`) · PostgreSQL (`db/migrations/`)
+**Stack:** Vanilla JS SPA (`renderer/`) · Node.js + Express (`server/`) · PostgreSQL (`db/migrations/`) · Electron thin client (`electron/`)
 
 ## Current status
 
@@ -15,12 +15,14 @@ Working end-to-end for registrar workflows:
 - Users + RBAC (superadmin / admin / staff / viewer)
 - Audit log **writes** on sensitive actions
 - **Backups:** `pg_dump` + `FILES_ROOT` zip (admin/superadmin)
+- **Desktop client:** Electron shell (login → home against the LAN ERMS server)
 
 ## Prerequisites
 
 - Node.js 20+
 - PostgreSQL 14+ (server + **client tools** so `pg_dump` is on PATH)
 - (Production LAN) TLS certificate for the host name
+- (Desktop installer builds) Windows x64 for `npm run build:desktop`
 
 ## Quick start (development)
 
@@ -41,9 +43,58 @@ npm run dev:server
 
 # 6. Run SPA (proxies /api → API)
 npm run dev:client
+
+# 7. Optional: Electron desktop shell (needs API running)
+#    copy electron\config.example.json electron\config.json
+#    set "serverUrl" to http://localhost:3443 for local HTTP
+npm run dev:desktop
 ```
 
 Health: `http://localhost:3443/api/v1/health`
+
+## Desktop client (Electron)
+
+Thin client for staff PCs: a branded window that loads the ERMS UI from your LAN server (same login and home as the browser). Session cookies work because the app opens the server origin directly.
+
+### Configure server URL
+
+Resolve order:
+
+1. Environment variable `ERMS_SERVER_URL` (e.g. `https://erms.local:3443`)
+2. `config.json` with a `serverUrl` field — in development: `electron/config.json`; installed app: `config.json` next to `NSC-ERMS.exe`
+3. Default: `https://localhost:3443`
+
+```bash
+copy electron\config.example.json electron\config.json
+# edit serverUrl
+```
+
+Example `config.json`:
+
+```json
+{
+  "serverUrl": "https://erms.local:3443"
+}
+```
+
+For local HTTP (`ALLOW_HTTP_DEV=true`), use `"serverUrl": "http://localhost:3443"`.
+
+### Develop
+
+```bash
+npm run dev:server    # or npm start after build
+npm run dev:desktop   # Electron window → login → home
+```
+
+### Windows installer
+
+```bash
+npm run build:desktop
+```
+
+Output: `dist/desktop/` (NSIS installer + unpacked app). The exe and shortcuts use the Northern Samar Colleges seal (`electron/assets/icon.ico`).
+
+After install, copy `config.example.json` beside the exe to `config.json` and set your LAN `serverUrl`. Trust the mkcert CA on staff PCs when using HTTPS.
 
 ## Production build
 
@@ -111,9 +162,9 @@ NODE_ENV=production
 
 ## Next phases
 
-1. Optional Electron shell
-2. Optional in-app restore wizard (ops restore remains documented)
-3. Nav RBAC + lookup admin UI
+1. Optional in-app restore wizard (ops restore remains documented)
+2. Nav RBAC + lookup admin UI
+3. Optional desktop: macOS/Linux packages, deeper OS integration
 
 ## Phase F — Security hardening (done)
 

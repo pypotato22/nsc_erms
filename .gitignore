@@ -17,3 +17,5 @@ server/dist/
 coverage/
 backups/
 .work-*/
+electron/config.json
+dist/desktop/
