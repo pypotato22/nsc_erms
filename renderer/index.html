@@ -10,6 +10,32 @@
 </head>
 
 <body>
+    <!-- ── DESKTOP TITLEBAR (Electron only) ───────────────────────── -->
+    <header id="desktop-titlebar" hidden aria-hidden="true">
+        <div class="tb-drag" aria-hidden="true"></div>
+        <div class="tb-controls">
+            <button type="button" class="tb-btn" id="tb-min" title="Minimize" aria-label="Minimize">
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M1 5h8" stroke="currentColor" stroke-width="1.2" fill="none" />
+                </svg>
+            </button>
+            <button type="button" class="tb-btn" id="tb-max" title="Maximize" aria-label="Maximize">
+                <svg class="tb-icon-max" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <rect x="1.5" y="1.5" width="7" height="7" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none" />
+                </svg>
+                <svg class="tb-icon-restore" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M3 3.5h5.5V9H3z" stroke="currentColor" stroke-width="1.1" fill="none" />
+                    <path d="M2 6.5V1.5h5.5" stroke="currentColor" stroke-width="1.1" fill="none" />
+                </svg>
+            </button>
+            <button type="button" class="tb-btn tb-close" id="tb-close" title="Close" aria-label="Close">
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.2" fill="none" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
     <!-- ── LOGIN ──────────────────────────────────────────────────── -->
     <div id="login-screen">
         <div class="login-box">

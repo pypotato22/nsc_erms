@@ -5,6 +5,7 @@ import { me, logout as apiLogout } from './js/api/auth.js';
 import { ApiError } from './js/api/client.js';
 
 import { initLogin, normalizeUser } from './js/components/login.js';
+import { initDesktopTitlebar } from './js/components/titlebar.js';
 import { initChangePassword, showChangePassword } from './js/components/changePassword.js';
 import {
   initSetupWizard,
@@ -91,6 +92,7 @@ const ROUTE_PAGES = [
 document.addEventListener('DOMContentLoaded', async () => {
   App.loadPrefs();
   App.applyPrefs();
+  initDesktopTitlebar();
 
   const getSearchQuery = () => App.searchQuery;
 

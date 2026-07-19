@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -42,6 +42,30 @@ function getIconPath() {
   return undefined;
 }
 
+function windowFromEvent(event) {
+  return BrowserWindow.fromWebContents(event.sender);
+}
+
+ipcMain.handle('window:minimize', (event) => {
+  windowFromEvent(event)?.minimize();
+});
+
+ipcMain.handle('window:maximize-toggle', (event) => {
+  const win = windowFromEvent(event);
+  if (!win) return false;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+  return win.isMaximized();
+});
+
+ipcMain.handle('window:close', (event) => {
+  windowFromEvent(event)?.close();
+});
+
+ipcMain.handle('window:is-maximized', (event) => {
+  return Boolean(windowFromEvent(event)?.isMaximized());
+});
+
 /** @type {import('electron').BrowserWindow | null} */
 let mainWindow = null;
 
@@ -64,6 +88,8 @@ function createWindow() {
     title: 'NSC-ERMS',
     icon: getIconPath(),
     show: false,
+    frame: false,
+    backgroundColor: '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -71,6 +97,15 @@ function createWindow() {
       sandbox: true,
     },
   });
+
+  const notifyMaximize = () => {
+    mainWindow?.webContents.send(
+      'window:maximize-changed',
+      mainWindow.isMaximized(),
+    );
+  };
+  mainWindow.on('maximize', notifyMaximize);
+  mainWindow.on('unmaximize', notifyMaximize);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();

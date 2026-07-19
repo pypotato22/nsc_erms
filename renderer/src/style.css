@@ -35,6 +35,7 @@
     --warn: #c47a09;
     /* Layout */
     --sidebar-w: 232px;
+    --titlebar-h: 36px;
     --fs: 14px;
     /* Effects */
     --shadow-sm: 0 1px 3px rgba(6, 43, 110, .06), 0 1px 2px rgba(6, 43, 110, .04);
@@ -107,6 +108,82 @@ body {
     display: flex;
     height: 100vh;
     overflow: hidden;
+}
+
+/* ── Desktop titlebar (Electron frameless) ───────────────────── */
+#desktop-titlebar {
+    display: none;
+    align-items: stretch;
+    justify-content: space-between;
+    height: var(--titlebar-h);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-1);
+    -webkit-app-region: drag;
+    user-select: none;
+    flex-shrink: 0;
+    z-index: 10000;
+    position: relative;
+}
+
+body.desktop-shell #desktop-titlebar {
+    display: flex;
+}
+
+body.desktop-shell #app {
+    height: calc(100vh - var(--titlebar-h));
+}
+
+body.desktop-shell #login-screen,
+body.desktop-shell #setup-screen {
+    top: var(--titlebar-h);
+}
+
+.tb-drag {
+    flex: 1;
+    min-width: 0;
+}
+
+.tb-controls {
+    display: flex;
+    align-items: stretch;
+    -webkit-app-region: no-drag;
+    flex-shrink: 0;
+}
+
+.tb-btn {
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: background .15s ease, color .15s ease;
+}
+
+.tb-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-1);
+}
+
+.tb-btn.tb-close:hover {
+    background: #e81123;
+    color: #fff;
+}
+
+.tb-icon-restore {
+    display: none;
+}
+
+#desktop-titlebar[data-maximized="1"] .tb-icon-max {
+    display: none;
+}
+
+#desktop-titlebar[data-maximized="1"] .tb-icon-restore {
+    display: block;
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────── */
