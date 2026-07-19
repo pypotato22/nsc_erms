@@ -6,6 +6,8 @@ Northern Samar Colleges — Employee Records Management System.
 
 **Production deploy:** see [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md).
 
+**Technical docs:** architecture, API, schema, data flow, Electron IPC — see [docs/README.md](docs/README.md).
+
 ## Current status
 
 Working end-to-end for registrar workflows:
