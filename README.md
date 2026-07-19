@@ -4,6 +4,8 @@ Northern Samar Colleges — Employee Records Management System.
 
 **Stack:** Vanilla JS SPA (`renderer/`) · Node.js + Express (`server/`) · PostgreSQL (`db/migrations/`) · Electron thin client (`electron/`)
 
+**Production deploy:** see [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md).
+
 ## Current status
 
 Working end-to-end for registrar workflows:

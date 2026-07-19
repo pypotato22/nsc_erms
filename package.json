@@ -1,6 +1,7 @@
 {
   "name": "nsc-erms",
   "version": "0.1.0",
+  "author": "Northern Samar Colleges",
   "private": true,
   "description": "Northern Samar Colleges — Employee Records Management System",
   "main": "electron/main.js",
