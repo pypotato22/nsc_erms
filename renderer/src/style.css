@@ -19,6 +19,9 @@
     --bg-surface: #ffffff;
     --bg-hover: #eef2ff;
     --bg-subtle: #e8eeff;
+    --bg-row: #ffffff;
+    --bg-row-alt: #f5f7fc;
+    color-scheme: light;
     /* Text */
     --text-1: #0d1526;
     --text-2: #4b5875;
@@ -46,6 +49,8 @@ body.dark {
     --bg-surface: #131929;
     --bg-hover: #1a2340;
     --bg-subtle: #1e2a47;
+    --bg-row: #131929;
+    --bg-row-alt: #0f1528;
     --text-1: #dde5f8;
     --text-2: #8899c4;
     --text-3: #4d5e88;
@@ -58,6 +63,7 @@ body.dark {
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, .3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, .4);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, .5);
+    color-scheme: dark;
 }
 
 html {
@@ -411,6 +417,8 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9286rem;
+    background: var(--bg-surface);
+    color: var(--text-1);
 }
 
 table thead tr {
@@ -430,6 +438,7 @@ table thead th {
     white-space: nowrap;
     letter-spacing: .3px;
     text-transform: uppercase;
+    background: inherit;
 }
 
 table thead th.th-sort {
@@ -462,7 +471,13 @@ body.dark table thead th {
 
 table tbody tr {
     border-bottom: 1px solid var(--border);
+    background: var(--bg-row);
+    color: var(--text-1);
     transition: background .1s;
+}
+
+table tbody tr:nth-child(even) {
+    background: var(--bg-row-alt);
 }
 
 table tbody tr:hover {
@@ -472,6 +487,8 @@ table tbody tr:hover {
 table tbody td {
     padding: 11px 18px;
     vertical-align: middle;
+    background: transparent;
+    color: inherit;
 }
 
 table tbody tr:last-child {
@@ -1774,6 +1791,8 @@ body.dark .dept-link-pos {
     border-collapse: collapse;
     font-size: 0.9286rem;
     margin-top: 4px;
+    background: var(--bg-surface);
+    color: var(--text-1);
 }
 
 .user-table th {
@@ -1785,12 +1804,36 @@ body.dark .dept-link-pos {
     padding: 6px 12px;
     border-bottom: 1px solid var(--border);
     letter-spacing: .4px;
+    background: var(--bg-surface);
 }
 
 .user-table td {
     padding: 10px 12px;
     border-bottom: 1px solid var(--border);
+    color: inherit;
+    background: transparent;
+}
+
+.user-table tr {
+    background: var(--bg-row);
     color: var(--text-1);
+    transition: background .1s;
+}
+
+.user-table tr:nth-child(even) {
+    background: var(--bg-row-alt);
+}
+
+.user-table tr:hover {
+    background: var(--bg-hover);
+}
+
+.user-table tr:has(th) {
+    background: var(--bg-surface);
+}
+
+.user-table tr:has(th):hover {
+    background: var(--bg-surface);
 }
 
 .user-table tr:last-child td {
