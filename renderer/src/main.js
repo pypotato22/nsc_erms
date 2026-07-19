@@ -313,7 +313,6 @@ function navTo(pageName, linkEl, updateHash = true) {
   const clone = linkEl.cloneNode(true);
   clone.querySelectorAll('.nav-badge,.nav-section-label').forEach((e) => e.remove());
   getEl('page-title').textContent = clone.textContent.trim();
-  getEl('search-box').style.display = pageName === 'employees' ? 'block' : 'none';
   getEl('search-input').value = '';
   App.searchQuery = '';
   resetEmployeePage();

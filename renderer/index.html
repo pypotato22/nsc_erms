@@ -202,37 +202,34 @@
         <div id="main">
             <div id="topbar">
                 <h2 id="page-title">Employees</h2>
-                <div class="search-wrap" id="search-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input type="text" id="search-input" placeholder="Search employees…" />
-                </div>
             </div>
 
             <div id="content">
 
                 <!-- Employees Page -->
                 <div id="page-employees" class="page active">
-                    <div class="toolbar">
-                        <button id="add-emp-btn" class="btn btn-primary needs-write" >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Add Employee
-                        </button>
-                        <select id="filter-dept">
-                            <option value="">All Departments</option>
-                        </select>
-                        <select id="filter-status">
-                            <option value="">All Status</option>
-                            <option>Active</option>
-                            <option>Inactive</option>
-                            <option>On Leave</option>
-                        </select>
+                    <div class="toolbar" style="justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div class="toolbar-actions">
+                            <button id="add-emp-btn" class="btn btn-primary needs-write" >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Add Employee
+                            </button>
+                            <select id="filter-dept">
+                                <option value="">All Departments</option>
+                            </select>
+                            <select id="filter-status">
+                                <option value="">All Status</option>
+                                <option>Active</option>
+                                <option>Inactive</option>
+                                <option>On Leave</option>
+                            </select>
+                        </div>
+                        <input type="search" id="search-input" class="dept-filter-input"
+                            placeholder="Search employees…" autocomplete="off" />
                     </div>
                     <div class="card">
                         <table id="emp-table">

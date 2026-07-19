@@ -419,44 +419,6 @@ body.dark .su-logout:hover {
     padding: 26px;
 }
 
-/* ── Search ───────────────────────────────────────────────────── */
-.search-wrap {
-    position: relative;
-}
-
-.search-wrap input {
-    padding: 8px 13px 8px 36px;
-    border: 1.5px solid var(--border);
-    border-radius: 9px;
-    font-size: 0.9286rem;
-    width: 240px;
-    background: var(--bg-base);
-    color: var(--text-1);
-    font-family: inherit;
-    transition: border-color .2s, box-shadow .2s;
-}
-
-.search-wrap input:focus {
-    outline: none;
-    border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px rgba(46, 111, 255, .12);
-}
-
-.search-wrap input::placeholder {
-    color: var(--text-3);
-}
-
-.search-wrap svg {
-    position: absolute;
-    left: 11px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    color: var(--text-3);
-    pointer-events: none;
-}
-
 /* ── Pages ────────────────────────────────────────────────────── */
 .page {
     display: none;
@@ -744,6 +706,13 @@ body.dark .btn-del {
 .toolbar select:focus {
     outline: none;
     border-color: var(--blue-500);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 /* ── Overlay & Modal ──────────────────────────────────────────── */
