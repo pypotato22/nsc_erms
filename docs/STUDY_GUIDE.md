@@ -434,6 +434,7 @@ Use this to track readiness:
 
 | Goal | Resource |
 |------|----------|
+| **Before official presentation** | [PRESENTATION_CHECKLIST.md](PRESENTATION_CHECKLIST.md) — feature tests, RBAC, demo script |
 | Extend the system | [development.md](development.md) — extension points |
 | LAN production deploy | [PRODUCTION_SETUP.md](../PRODUCTION_SETUP.md) |
 | Full academic narrative | [CAPSTONE_PAPER.md](CAPSTONE_PAPER.md) |
