@@ -8,6 +8,7 @@ This folder is the technical reference for **developers** and **API/desktop inte
 
 | Audience | Start here |
 |----------|------------|
+| New to the project | [STUDY_GUIDE.md](STUDY_GUIDE.md) — phased learning path |
 | New developers | [development.md](development.md) → [architecture.md](architecture.md) → [frontend.md](frontend.md) |
 | API / integrator | [api-reference.md](api-reference.md) → [auth-and-rbac.md](auth-and-rbac.md) → [data-flow.md](data-flow.md) |
 | Desktop packagers | [electron-desktop.md](electron-desktop.md) → [configuration.md](configuration.md) |
@@ -17,6 +18,7 @@ This folder is the technical reference for **developers** and **API/desktop inte
 
 | Doc | Contents |
 |-----|----------|
+| [STUDY_GUIDE.md](STUDY_GUIDE.md) | Full learning path: phases, exercises, checklist, defense prep |
 | [architecture.md](architecture.md) | System design, packages, entry points, deploy model |
 | [data-flow.md](data-flow.md) | UI → API → DB/files → SSE refresh; soft-delete paths |
 | [database-schema.md](database-schema.md) | Tables, relationships, migrations, conventions |
