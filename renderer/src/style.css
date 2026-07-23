@@ -2413,22 +2413,101 @@ body:not(.dark) #toast.t-info {
 
 /* ── Print ────────────────────────────────────────────────────── */
 @media print {
+    @page {
+        size: legal;
+        margin: 0.35in;
+    }
+
+    html,
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     body>*:not(#print-area) {
         display: none !important;
     }
 
     #print-area {
         display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    #print-area *,
+    #print-area *::before,
+    #print-area *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-shadow: none !important;
+    }
+
+    #print-area .cs212 {
+        padding: 0 !important;
+        background: #fff !important;
     }
 
     #print-area .cs212-page {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 6px 8px 10px !important;
+        border: 1px solid #000 !important;
+        background: #fff !important;
         page-break-after: always;
         break-after: page;
+        overflow: visible !important;
     }
 
     #print-area .cs212-page:last-child {
         page-break-after: auto;
         break-after: auto;
+    }
+
+    #print-area .cs212-sec {
+        background: #444 !important;
+        color: #fff !important;
+    }
+
+    #print-area .cs212-lbl {
+        background: #efefef !important;
+        color: #000 !important;
+    }
+
+    #print-area .cs212-val,
+    #print-area .cs212-table td {
+        background: #fff !important;
+        color: #000 !important;
+        border-color: #000 !important;
+    }
+
+    #print-area .cs212-table,
+    #print-area .cs212-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    #print-area .cs212-photo,
+    #print-area .cs212-photo-empty {
+        border: 1px solid #000 !important;
+        print-color-adjust: exact !important;
+    }
+
+    #print-area .cs212-footer {
+        color: #333 !important;
+    }
+
+    #print-area .cs212-na {
+        color: #666 !important;
     }
 }
 
@@ -2461,6 +2540,38 @@ body:not(.dark) #toast.t-info {
     border-radius: 10px;
 }
 
+.pds-view-loading {
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 0.95rem;
+}
+
+.pds-view-banner {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff8e6;
+    border: 1px solid #e6d7a8;
+    color: #5c4b1a;
+    font-size: 0.857rem;
+    line-height: 1.4;
+}
+
+body.dark .pds-view-banner {
+    background: rgba(230, 180, 60, 0.12);
+    border-color: rgba(230, 180, 60, 0.35);
+    color: #f0e2b0;
+}
+
+.pds-pdf-frame {
+    width: 100%;
+    height: min(72vh, 820px);
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    background: #525659;
+}
+
 .pds-view-actions {
     flex-shrink: 0;
     margin-top: 4px;
@@ -2482,14 +2593,17 @@ body:not(.dark) #toast.t-info {
     border: 1px solid #222;
     margin: 0 auto 16px;
     padding: 10px 12px 14px;
-    max-width: 210mm;
+    /* Legal form width (CSC uses legal paper) — matches print target */
+    max-width: 8.5in;
+    width: 100%;
     box-sizing: border-box;
 }
 
 .cs212-print .cs212-page {
-    border: none;
-    margin: 0;
-    max-width: none;
+    /* Keep the same card proportions as on-screen; @media print overrides width */
+    border: 1px solid #000;
+    margin: 0 auto 16px;
+    max-width: 8.5in;
     width: 100%;
 }
 

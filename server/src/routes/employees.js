@@ -25,6 +25,7 @@ import {
   pdsDownloadFilename,
   PDS_TEMPLATE_PATH,
 } from '../services/pdsExcel.js';
+import { convertXlsxBufferToPdf, pdsPdfFilename } from '../services/pdsPdf.js';
 
 export const employeesRouter = Router();
 
@@ -343,6 +344,40 @@ employeesRouter.get('/:id/pds-excel', async (req, res, next) => {
     );
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.get('/:id/pds-pdf', async (req, res, next) => {
+  try {
+    if (!fs.existsSync(PDS_TEMPLATE_PATH)) {
+      throw new HttpError(
+        500,
+        'Official PDS Excel template is missing on the server (assets/forms).',
+        'MISSING_TEMPLATE',
+      );
+    }
+    const row = await getEmployeeRow(req.params.id);
+    if (!row) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+    const employee = mapEmployee(row);
+    const xlsx = await buildFilledPdsWorkbook(employee);
+    const { pdf, engine } = await convertXlsxBufferToPdf(xlsx);
+    const filename = pdsPdfFilename(employee);
+
+    await writeAudit({
+      actorUserId: req.session.userId,
+      action: 'employee.pds_pdf_download',
+      entityType: 'employee',
+      entityId: req.params.id,
+      meta: { filename, engine },
+      ip: clientIp(req),
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('X-PDS-PDF-Engine', engine);
+    res.send(pdf);
   } catch (err) {
     next(err);
   }

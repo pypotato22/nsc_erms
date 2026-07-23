@@ -54,3 +54,7 @@ export function permanentDeleteEmployee(id) {
 export function downloadPdsExcelUrl(id) {
   return `/api/v1/employees/${encodeURIComponent(id)}/pds-excel`;
 }
+
+export function downloadPdsPdfUrl(id) {
+  return `/api/v1/employees/${encodeURIComponent(id)}/pds-pdf`;
+}
