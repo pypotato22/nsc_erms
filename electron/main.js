@@ -83,7 +83,15 @@ function setAllowedOrigin(url) {
 }
 
 function isAllowedNavigation(url) {
-  if (url.startsWith('file://')) return true;
+  // Print helpers use blank / blob windows
+  if (!url || url === 'about:blank') return true;
+  if (
+    url.startsWith('blob:') ||
+    url.startsWith('data:') ||
+    url.startsWith('file://')
+  ) {
+    return true;
+  }
   if (!allowedOrigin) return false;
   try {
     return new URL(url).origin === allowedOrigin;
