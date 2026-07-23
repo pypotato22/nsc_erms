@@ -22,6 +22,7 @@ import {
 } from './js/components/employeeTable.js';
 import { initEmployeeModal } from './js/components/employeeModal.js';
 import { initProfilePanel, closeProfilePanel, refreshOpenProfileForLiveSync } from './js/components/profilePanel.js';
+import { initPdsViewer } from './js/components/pdsViewer.js';
 import { initDocuments, refreshOpenDocsTabForLiveSync } from './js/components/documents.js';
 import { initScanInbox, renderScanInboxPage } from './js/components/scanInbox.js';
 import { initTrash, renderTrashPage } from './js/components/trash.js';
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEmployeeTable();
   initEmployeeModal(getSearchQuery);
   initProfilePanel(getSearchQuery);
+  initPdsViewer();
   initDocuments();
   initScanInbox();
   initTrash();

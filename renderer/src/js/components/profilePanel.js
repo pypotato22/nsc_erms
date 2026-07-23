@@ -4,6 +4,7 @@ import { getEl, setHTML, getInitials, getStatusBadge, getYearsOfService, escapeH
 import { showToast } from '../utils/toast.js';
 import { renderEmployeeTable } from './employeeTable.js';
 import { openEmployeeModal } from './employeeModal.js';
+import { openPdsViewer, downloadOfficialPdsExcel } from './pdsViewer.js';
 import { renderTabDocs } from './documents.js';
 import { renderArchivedEmployeesPage } from './archivedEmployees.js';
 import { canWrite } from '../utils/authz.js';
@@ -101,7 +102,7 @@ function formatDisplayName(emp) {
 function pdsSummary(emp) {
   const p = emp.pds?.personal;
   if (!p) {
-    return `<p class="pds-profile-note">Full Personal Data Sheet (CS Form 212) can be edited via <strong>Edit</strong>.</p>`;
+    return `<p class="pds-profile-note">Full Personal Data Sheet (CS Form 212) — use <strong>View PDS</strong> or <strong>Edit</strong>.</p>`;
   }
   const bits = [];
   if (p.civilStatus) bits.push(`Civil status: ${p.civilStatus}`);
@@ -118,7 +119,7 @@ function pdsSummary(emp) {
       <h4>Personal Data Sheet</h4>
       <div class="info-row"><span class="ir-label">Form</span><span class="ir-val">CS Form No. 212 (Rev. 2025)</span></div>
       ${bits.map((b) => `<div class="info-row"><span class="ir-label">Detail</span><span class="ir-val">${escapeHtml(b)}</span></div>`).join('')}
-      <p class="pds-profile-note">Open <strong>Edit</strong> to view or update all eight PDS sections.</p>
+      <p class="pds-profile-note">Use <strong>View PDS</strong> for an on-screen preview, <strong>Download Excel</strong> for the official CS Form 212 file, or <strong>Edit</strong> to update sections.</p>
     </div>`;
 }
 
@@ -232,12 +233,20 @@ function renderPanelHeader(emp) {
       ${a?.startDate ? `<span class="ph-badge">Since ${escapeHtml(String(a.startDate).slice(0, 10))}</span>` : ''}
     </div>
     <div class="ph-actions">
-      ${canWrite() ? `<button class="phbtn phbtn-edit" id="panel-edit-btn">Edit</button>
-      <button class="phbtn phbtn-del" id="panel-delete-btn">Archive</button>` : ''}
+      <button class="phbtn phbtn-view" id="panel-view-pds-btn" type="button">View PDS</button>
+      <button class="phbtn phbtn-view" id="panel-download-pds-btn" type="button">Download Excel</button>
+      ${canWrite() ? `<button class="phbtn phbtn-edit" id="panel-edit-btn" type="button">Edit</button>
+      <button class="phbtn phbtn-del" id="panel-delete-btn" type="button">Archive</button>` : ''}
     </div>`,
   );
 
   document.getElementById('panel-close-btn').addEventListener('click', closeProfilePanel);
+  document.getElementById('panel-view-pds-btn')?.addEventListener('click', () => {
+    openPdsViewer(emp);
+  });
+  document.getElementById('panel-download-pds-btn')?.addEventListener('click', () => {
+    downloadOfficialPdsExcel(emp.id);
+  });
   document.getElementById('panel-edit-btn')?.addEventListener('click', () => {
     openEmployeeModal(emp.id);
     closeProfilePanel();

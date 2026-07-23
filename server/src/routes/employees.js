@@ -20,6 +20,11 @@ import {
   syncEmployeeColumnsFromPds,
   coercePdsFromRow,
 } from '../services/pds.js';
+import {
+  buildFilledPdsWorkbook,
+  pdsDownloadFilename,
+  PDS_TEMPLATE_PATH,
+} from '../services/pdsExcel.js';
 
 export const employeesRouter = Router();
 
@@ -303,6 +308,41 @@ employeesRouter.get('/trash', async (req, res, next) => {
       total,
       totalPages: limit == null ? 1 : totalPages,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.get('/:id/pds-excel', async (req, res, next) => {
+  try {
+    if (!fs.existsSync(PDS_TEMPLATE_PATH)) {
+      throw new HttpError(
+        500,
+        'Official PDS Excel template is missing on the server (assets/forms).',
+        'MISSING_TEMPLATE',
+      );
+    }
+    const row = await getEmployeeRow(req.params.id);
+    if (!row) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+    const employee = mapEmployee(row);
+    const buffer = await buildFilledPdsWorkbook(employee);
+    const filename = pdsDownloadFilename(employee);
+
+    await writeAudit({
+      actorUserId: req.session.userId,
+      action: 'employee.pds_excel_download',
+      entityType: 'employee',
+      entityId: req.params.id,
+      meta: { filename },
+      ip: clientIp(req),
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
   } catch (err) {
     next(err);
   }

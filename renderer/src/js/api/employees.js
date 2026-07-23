@@ -50,3 +50,7 @@ export function restoreEmployee(id) {
 export function permanentDeleteEmployee(id) {
   return api(`/employees/${id}/permanent`, { method: 'DELETE' });
 }
+
+export function downloadPdsExcelUrl(id) {
+  return `/api/v1/employees/${encodeURIComponent(id)}/pds-excel`;
+}

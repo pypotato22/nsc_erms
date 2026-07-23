@@ -1132,6 +1132,16 @@ body.dark .panel-hdr {
     color: var(--blue-900);
 }
 
+.phbtn-view {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+}
+
+.phbtn-view:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
 .phbtn-del {
     background: rgba(200, 37, 60, .85);
     color: #fff;
@@ -2410,10 +2420,213 @@ body:not(.dark) #toast.t-info {
     #print-area {
         display: block !important;
     }
+
+    #print-area .cs212-page {
+        page-break-after: always;
+        break-after: page;
+    }
+
+    #print-area .cs212-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
 }
 
 #print-area {
     display: none;
+}
+
+/* ── PDS View + CS Form 212 layout ─────────────────────────────── */
+.pds-view-modal {
+    width: min(980px, 96vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 22px 16px;
+    overflow: hidden;
+}
+
+.pds-view-top {
+    flex-shrink: 0;
+    padding-right: 36px;
+}
+
+.pds-view-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin: 10px 0 8px;
+    padding: 8px;
+    background: #e8e8e8;
+    border-radius: 10px;
+}
+
+.pds-view-actions {
+    flex-shrink: 0;
+    margin-top: 4px;
+    justify-content: space-between;
+}
+
+.cs212 {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000;
+    background: #fff;
+}
+
+.cs212-screen {
+    padding: 8px;
+}
+
+.cs212-page {
+    background: #fff;
+    border: 1px solid #222;
+    margin: 0 auto 16px;
+    padding: 10px 12px 14px;
+    max-width: 210mm;
+    box-sizing: border-box;
+}
+
+.cs212-print .cs212-page {
+    border: none;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+}
+
+.cs212-topline {
+    display: grid;
+    grid-template-columns: 90px 1fr 78px;
+    gap: 8px;
+    align-items: start;
+    margin-bottom: 6px;
+}
+
+.cs212-form-meta {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.cs212-title {
+    margin: 0;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.cs212-warn {
+    margin: 4px 0 0;
+    font-size: 8px;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.cs212-photo-slot {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cs212-photo {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border: 1px solid #000;
+}
+
+.cs212-photo-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    background: #f3f3f3;
+}
+
+.cs212-sec {
+    background: #444;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    margin: 8px 0 0;
+}
+
+.cs212-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 9px;
+}
+
+.cs212-table td {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    vertical-align: top;
+}
+
+.cs212-table.nested {
+    border: none;
+}
+
+.cs212-table.nested td {
+    border: 1px solid #000;
+}
+
+.cs212-split > tbody > tr > td {
+    padding: 0;
+    vertical-align: top;
+}
+
+.cs212-left,
+.cs212-right {
+    width: 50%;
+}
+
+.cs212-lbl {
+    background: #efefef;
+    font-weight: 700;
+    text-transform: uppercase;
+    width: 38%;
+    font-size: 8px;
+}
+
+.cs212-val {
+    background: #fff;
+    word-break: break-word;
+}
+
+.cs212-top {
+    vertical-align: top;
+    min-height: 48px;
+}
+
+.cs212-na {
+    color: #888;
+    font-style: italic;
+}
+
+.cs212-muted {
+    color: #555;
+    font-size: 8px;
+}
+
+.cs212-sub {
+    margin-top: 2px;
+    font-size: 8px;
+}
+
+.cs212-q {
+    margin-top: 0;
+}
+
+.cs212-footer {
+    margin: 10px 0 0;
+    font-size: 8px;
+    color: #444;
+    text-align: right;
 }
 
 /* ── Pagination ──────────────────────────────────────────────── */

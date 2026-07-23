@@ -729,6 +729,27 @@
     <div id="print-area"></div>
     <div id="toast"></div>
 
+    <!-- ── VIEW PDS (CS Form 212) ───────────────────────────────────── -->
+    <div id="pds-view-overlay" class="overlay">
+        <div class="modal pds-view-modal">
+            <button id="pds-view-close" class="modal-close" type="button" aria-label="Close">×</button>
+            <div class="pds-view-top">
+                <div>
+                    <p class="pds-form-eyebrow">CS Form No. 212 · Revised 2025</p>
+                    <h3 id="pds-view-title">Personal Data Sheet</h3>
+                </div>
+            </div>
+            <div id="pds-view-body" class="pds-view-body"></div>
+            <div class="modal-actions pds-view-actions">
+                <button id="pds-view-cancel" class="btn btn-cancel" type="button">Close</button>
+                <div class="pds-nav-btns">
+                    <button id="pds-view-download-excel" class="btn btn-cancel" type="button">Download official Excel</button>
+                    <button id="pds-view-print" class="btn btn-primary" type="button">Print HTML preview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ── SCAN INBOX ASSIGN ───────────────────────────────────────── -->
     <div id="scan-assign-overlay" class="overlay">
         <div class="modal" style="width:520px;">
