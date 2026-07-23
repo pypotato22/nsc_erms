@@ -867,6 +867,7 @@
     <!-- -- CHANGE PASSWORD ------------------------------------------- -->
     <div id="pw-overlay" class="overlay">
         <div class="modal" style="width:420px;">
+            <button id="close-pw-modal" class="modal-close" type="button">×</button>
             <h3>Change password</h3>
             <p id="pw-forced-note" style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 You must set a new password before continuing.
@@ -885,6 +886,7 @@
             </div>
             <div class="login-err" id="pw-err" style="margin-top:12px;"></div>
             <div class="modal-actions">
+                <button id="pw-cancel-btn" class="btn btn-cancel" type="button">Cancel</button>
                 <button id="pw-save-btn" class="btn btn-primary" type="button">Update password</button>
             </div>
         </div>

@@ -7,6 +7,7 @@ import { ApiError } from './js/api/client.js';
 import { initLogin, normalizeUser } from './js/components/login.js';
 import { initDesktopTitlebar } from './js/components/titlebar.js';
 import { initChangePassword, showChangePassword } from './js/components/changePassword.js';
+import { initPasswordToggles } from './js/utils/passwordToggle.js';
 import {
   initSetupWizard,
   checkSetupNeeded,
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initLogin(handleLogin);
   initChangePassword(afterPasswordChanged);
+  initPasswordToggles();
   initSetupWizard(afterSetupComplete);
   initEmployeeTable();
   initEmployeeModal(getSearchQuery);

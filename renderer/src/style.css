@@ -798,6 +798,50 @@ body.dark .btn-del {
     color: var(--error);
 }
 
+.password-field {
+    position: relative;
+    width: 100%;
+}
+
+.fg .password-field input,
+.login-field .password-field input,
+.password-field input {
+    width: 100%;
+    padding-right: 42px;
+    box-sizing: border-box;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s, color .15s;
+}
+
+.password-toggle:hover,
+.password-toggle.is-visible {
+    background: var(--bg-base);
+    color: var(--text-1);
+}
+
+.password-toggle svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

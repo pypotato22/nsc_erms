@@ -4,10 +4,20 @@ import { getEl } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 
 let _onDone = null;
+let _forced = false;
 
 export function initChangePassword(onDone) {
   _onDone = onDone;
   getEl('pw-save-btn').addEventListener('click', handleSave);
+  getEl('pw-cancel-btn').addEventListener('click', () => {
+    if (!_forced) hideChangePassword();
+  });
+  getEl('close-pw-modal').addEventListener('click', () => {
+    if (!_forced) hideChangePassword();
+  });
+  getEl('pw-overlay').addEventListener('click', (e) => {
+    if (e.target === getEl('pw-overlay') && !_forced) hideChangePassword();
+  });
   getEl('pw-new').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleSave();
   });
@@ -17,8 +27,11 @@ export function initChangePassword(onDone) {
 }
 
 export function showChangePassword(forced = false) {
+  _forced = Boolean(forced);
   getEl('pw-overlay').classList.add('open');
-  getEl('pw-forced-note').style.display = forced ? 'block' : 'none';
+  getEl('pw-forced-note').style.display = _forced ? 'block' : 'none';
+  getEl('close-pw-modal').style.display = _forced ? 'none' : '';
+  getEl('pw-cancel-btn').style.display = _forced ? 'none' : '';
   getEl('pw-err').textContent = '';
   getEl('pw-current').value = '';
   getEl('pw-new').value = '';
@@ -28,6 +41,7 @@ export function showChangePassword(forced = false) {
 
 export function hideChangePassword() {
   getEl('pw-overlay').classList.remove('open');
+  _forced = false;
 }
 
 async function handleSave() {
