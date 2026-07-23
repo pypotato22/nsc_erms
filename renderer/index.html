@@ -612,30 +612,24 @@
 
     <!-- ── EMPLOYEE MODAL ──────────────────────────────────────────── -->
     <div id="emp-overlay" class="overlay">
-        <div class="modal" style="width:580px;">
-            <button id="close-emp-modal" class="modal-close">×</button>
-            <h3 id="emp-modal-title">Add Employee</h3>
-            <div class="pic-wrap">
-                <div id="pic-preview" class="pic-ini">?</div>
-                <label class="pic-lbl needs-write" for="pic-input">Upload Photo</label>
-                <input type="file" id="pic-input" accept="image/*" style="display:none"  />
+        <div class="modal pds-wizard-modal">
+            <button id="close-emp-modal" class="modal-close" type="button">×</button>
+            <div class="pds-wizard-header">
+                <div>
+                    <p class="pds-form-eyebrow">CS Form No. 212 · Revised 2025</p>
+                    <h3 id="emp-modal-title">Add Employee</h3>
+                    <p class="pds-wizard-sub">Personal Data Sheet — complete each section, then set NSC assignment.</p>
+                </div>
             </div>
-            <div class="form-grid">
-                <div class="fg"><label>First Name *</label><input id="f-fname" type="text" /></div>
-                <div class="fg"><label>Last Name *</label><input id="f-lname" type="text" /></div>
-                <div class="fg"><label>Email</label><input id="f-email" type="email" /></div>
-                <div class="fg"><label>Contact</label><input id="f-contact" type="text" /></div>
-                <div class="fg full"><label>Address</label><textarea id="f-address"></textarea></div>
-                <div class="fg"><label>Employee No</label><input id="f-emp-no" type="text" /></div>
-                <div class="fg"><label>Department *</label><select id="f-dept"><option value="">Select department</option></select></div>
-                <div class="fg"><label>Position *</label><select id="f-position" disabled><option value="">Select department first</option></select></div>
-                <div class="fg"><label>Employment type *</label><select id="f-emp-type"></select></div>
-                <div class="fg"><label>Status *</label><select id="f-status"></select></div>
-                <div class="fg"><label>Start Date *</label><input id="f-start" type="date" /></div>
-            </div>
-            <div class="modal-actions">
-                <button id="emp-modal-cancel" class="btn btn-cancel">Cancel</button>
-                <button id="emp-modal-save" class="btn btn-primary">Save Employee</button>
+            <nav id="pds-stepper" class="pds-stepper" aria-label="PDS steps"></nav>
+            <div id="pds-wizard-body" class="pds-wizard-body"></div>
+            <div class="modal-actions pds-wizard-actions">
+                <button id="emp-modal-cancel" class="btn btn-cancel" type="button">Cancel</button>
+                <div class="pds-nav-btns">
+                    <button id="pds-back" class="btn btn-cancel" type="button">Back</button>
+                    <button id="pds-next" class="btn btn-primary" type="button">Next</button>
+                    <button id="emp-modal-save" class="btn btn-primary" type="button" hidden>Save Employee</button>
+                </div>
             </div>
         </div>
     </div>

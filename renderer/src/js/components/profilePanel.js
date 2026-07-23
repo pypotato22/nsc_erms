@@ -92,17 +92,53 @@ async function switchTab(tabName, buttonEl) {
   }
 }
 
+function formatDisplayName(emp) {
+  const mid = emp.middleName ? ` ${emp.middleName}` : '';
+  const ext = emp.nameExtension ? ` ${emp.nameExtension}` : '';
+  return `${emp.firstName || ''}${mid} ${emp.lastName || ''}${ext}`.replace(/\s+/g, ' ').trim();
+}
+
+function pdsSummary(emp) {
+  const p = emp.pds?.personal;
+  if (!p) {
+    return `<p class="pds-profile-note">Full Personal Data Sheet (CS Form 212) can be edited via <strong>Edit</strong>.</p>`;
+  }
+  const bits = [];
+  if (p.civilStatus) bits.push(`Civil status: ${p.civilStatus}`);
+  if (p.birthDate) bits.push(`Born: ${p.birthDate}`);
+  if (p.citizenship) bits.push(`Citizenship: ${p.citizenship}`);
+  const edu = emp.pds?.education?.filter((r) => r.schoolName || r.level)?.length || 0;
+  const work = emp.pds?.workExperience?.length || 0;
+  const elig = emp.pds?.eligibility?.length || 0;
+  bits.push(`Education rows: ${edu}`);
+  bits.push(`Work entries: ${work}`);
+  bits.push(`Eligibilities: ${elig}`);
+  return `
+    <div class="info-section" style="margin-top:16px;">
+      <h4>Personal Data Sheet</h4>
+      <div class="info-row"><span class="ir-label">Form</span><span class="ir-val">CS Form No. 212 (Rev. 2025)</span></div>
+      ${bits.map((b) => `<div class="info-row"><span class="ir-label">Detail</span><span class="ir-val">${escapeHtml(b)}</span></div>`).join('')}
+      <p class="pds-profile-note">Open <strong>Edit</strong> to view or update all eight PDS sections.</p>
+    </div>`;
+}
+
 function renderTabInfo(emp) {
+  const sexLabel = emp.sex
+    ? emp.sex.charAt(0).toUpperCase() + emp.sex.slice(1)
+    : '—';
   setHTML(
     'tab-info',
     `
     <div class="info-section">
       <h4>Personal Information</h4>
-      <div class="info-row"><span class="ir-label">Full Name</span><span class="ir-val">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</span></div>
+      <div class="info-row"><span class="ir-label">Full Name</span><span class="ir-val">${escapeHtml(formatDisplayName(emp))}</span></div>
+      <div class="info-row"><span class="ir-label">Sex</span><span class="ir-val">${escapeHtml(sexLabel)}</span></div>
+      <div class="info-row"><span class="ir-label">Date of Birth</span><span class="ir-val">${escapeHtml(emp.birthDate || emp.pds?.personal?.birthDate || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Email</span><span class="ir-val">${escapeHtml(emp.email || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Contact</span><span class="ir-val">${escapeHtml(emp.contactNumber || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Address</span><span class="ir-val">${escapeHtml(emp.address || '—')}</span></div>
-    </div>`,
+    </div>
+    ${pdsSummary(emp)}`,
   );
 }
 
@@ -179,12 +215,16 @@ function renderPanelHeader(emp) {
       ? `<img src="${emp.photoUrl || `/api/v1/employees/${emp.id}/photo`}" class="ph-avatar-lg" alt="" onerror="this.onerror=null;this.outerHTML='<div class=&quot;ph-ini-lg&quot;>${escapeHtml(getInitials(emp.firstName, emp.lastName))}</div>';"/>`
       : `<div class="ph-ini-lg">${getInitials(emp.firstName, emp.lastName)}</div>`;
 
+  const displayName = [emp.firstName, emp.middleName, emp.lastName, emp.nameExtension]
+    .filter(Boolean)
+    .join(' ');
+
   setHTML(
     'panel-header',
     `
     <button class="ph-close" id="panel-close-btn">×</button>
     ${pic}
-    <h2>${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</h2>
+    <h2>${escapeHtml(displayName || `${emp.firstName} ${emp.lastName}`)}</h2>
     <div class="ph-pos">${escapeHtml(a?.positionName || 'No position')} &middot; ${escapeHtml(a?.departmentName || 'No Department')}</div>
     <div class="ph-badges">
       <span class="ph-badge">${escapeHtml(a?.employmentStatusName || '—')}</span>

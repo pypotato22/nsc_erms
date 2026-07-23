@@ -2494,6 +2494,266 @@ body:not(.dark) #toast.t-info {
     margin-top: 4px;
 }
 
+/* ── PDS wizard (Add / Edit Employee) ──────────────────────────── */
+.pds-wizard-modal {
+    width: min(1000px, 96vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    padding: 22px 24px 18px;
+    overflow: hidden;
+}
+
+.pds-wizard-header {
+    flex-shrink: 0;
+    padding-right: 36px;
+}
+
+.pds-form-eyebrow {
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.pds-wizard-sub {
+    margin: 4px 0 0;
+    font-size: 0.857rem;
+    color: var(--text-2);
+}
+
+.pds-wizard-modal h3 {
+    margin-bottom: 0;
+}
+
+.pds-stepper {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: 16px 0 12px;
+    flex-shrink: 0;
+}
+
+.pds-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-base);
+    color: var(--text-2);
+    border-radius: 999px;
+    padding: 5px 10px 5px 6px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+}
+
+.pds-step:hover {
+    border-color: var(--blue-400, #6b9bff);
+}
+
+.pds-step.active {
+    border-color: var(--blue-500);
+    background: rgba(46, 111, 255, 0.08);
+    color: var(--blue-500);
+    font-weight: 700;
+}
+
+.pds-step.done {
+    border-color: var(--green-500, #1a9b5a);
+    color: var(--green-600, #157a48);
+}
+
+.pds-step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated, var(--border));
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+.pds-step.active .pds-step-num {
+    background: var(--blue-500);
+    color: #fff;
+}
+
+.pds-wizard-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 4px 2px 12px;
+}
+
+.pds-section-head h4 {
+    margin: 0 0 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--text-1);
+}
+
+.pds-block {
+    margin: 14px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-elevated, transparent);
+}
+
+.pds-block h5 {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+}
+
+.pds-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.pds-hint {
+    margin: 0 0 12px;
+    font-size: 0.857rem;
+    color: var(--text-3);
+}
+
+.pds-empty {
+    margin: 0;
+    font-size: 0.857rem;
+    color: var(--text-3);
+    padding: 8px 0;
+}
+
+.pds-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 800px) {
+    .pds-grid-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+    .pds-two-col {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.pds-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.pds-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pds-row {
+    display: grid;
+    grid-template-columns: 1fr 160px auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.pds-card-row {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    background: var(--bg-base);
+}
+
+.pds-card-row > .btn {
+    margin-top: 8px;
+}
+
+.pds-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.857rem;
+    text-transform: none;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--text-1);
+    cursor: pointer;
+}
+
+.pds-q {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+}
+
+.pds-q:last-child {
+    border-bottom: none;
+}
+
+.pds-q-label {
+    margin: 0 0 8px;
+    font-size: 0.857rem;
+    color: var(--text-1);
+    line-height: 1.4;
+}
+
+.pds-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid var(--blue-500);
+}
+
+.pds-wizard-actions {
+    flex-shrink: 0;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    justify-content: space-between;
+}
+
+.pds-nav-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.7857rem;
+    border-radius: 8px;
+}
+
+.btn-danger-ghost {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--red-500, #d64545);
+}
+
+.btn-danger-ghost:hover {
+    border-color: var(--red-500, #d64545);
+    background: rgba(214, 69, 69, 0.06);
+}
+
+.pds-profile-note {
+    margin: 12px 0 0;
+    font-size: 0.857rem;
+    color: var(--text-3);
+    line-height: 1.4;
+}
+
 /* ── Role-based UI ─────────────────────────────────────────────── */
 body[data-role="viewer"] .needs-write {
     display: none !important;

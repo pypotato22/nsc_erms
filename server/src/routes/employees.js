@@ -14,6 +14,12 @@ import {
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
+import {
+  normalizePds,
+  assertPdsIdentity,
+  syncEmployeeColumnsFromPds,
+  coercePdsFromRow,
+} from '../services/pds.js';
 
 export const employeesRouter = Router();
 
@@ -29,11 +35,14 @@ const EMPLOYEE_LIST_SQL = `
     e.middle_name,
     e.last_name,
     e.name_extension,
+    e.sex,
+    e.birth_date,
     e.email,
     e.contact_number,
     e.address,
     e.profile_picture_path,
     e.remarks,
+    e.pds,
     ea.id AS assignment_id,
     ea.start_date,
     ea.end_date,
@@ -62,15 +71,17 @@ const EMPLOYEE_LIST_SQL = `
     AND e.is_archived = FALSE
 `;
 
-function mapEmployee(row) {
+function mapEmployee(row, { includePds = true } = {}) {
   if (!row) return null;
-  return {
+  const mapped = {
     id: row.id,
     employeeNo: row.employee_no,
     firstName: row.first_name,
     middleName: row.middle_name,
     lastName: row.last_name,
     nameExtension: row.name_extension,
+    sex: row.sex || null,
+    birthDate: row.birth_date ? String(row.birth_date).slice(0, 10) : null,
     email: row.email,
     contactNumber: row.contact_number,
     address: row.address,
@@ -97,6 +108,10 @@ function mapEmployee(row) {
         }
       : null,
   };
+  if (includePds) {
+    mapped.pds = coercePdsFromRow(row.pds, row);
+  }
+  return mapped;
 }
 
 async function getEmployeeRow(id) {
@@ -221,7 +236,7 @@ employeesRouter.get('/', async (req, res, next) => {
 
     const { rows } = await query(sql, listParams);
     res.json({
-      employees: rows.map(mapEmployee),
+      employees: rows.map((row) => mapEmployee(row, { includePds: false })),
       page: pageOut,
       limit: limit ?? total,
       total,
@@ -347,21 +362,28 @@ employeesRouter.get('/:id', async (req, res, next) => {
 employeesRouter.post('/', writeRoles, async (req, res, next) => {
   try {
     const body = req.body || {};
-    const firstName = String(body.firstName || '').trim();
-    const lastName = String(body.lastName || '').trim();
-    const email = String(body.email || '').trim();
-    const employeeNoRaw = body.employeeNo == null ? '' : String(body.employeeNo).trim();
-    const employeeNo = employeeNoRaw || null;
-    const contactNumber = String(body.contactNumber || '').trim();
-    const address = String(body.address || '').trim();
+    const pds = normalizePds(body.pds || {
+      personal: {
+        firstName: body.firstName,
+        surname: body.lastName,
+        middleName: body.middleName,
+        nameExtension: body.nameExtension,
+        email: body.email,
+        mobileNo: body.contactNumber,
+        agencyEmployeeNo: body.employeeNo,
+        residentialAddress: body.address ? { street: body.address } : undefined,
+      },
+    });
+    assertPdsIdentity(pds);
+
+    const cols = syncEmployeeColumnsFromPds(pds, {
+      employeeNo: body.employeeNo !== undefined ? body.employeeNo : undefined,
+    });
     const departmentPositionId = String(body.departmentPositionId || '').trim();
     const employmentTypeId = String(body.employmentTypeId || '').trim();
     const employmentStatusId = String(body.employmentStatusId || '').trim();
     const startDate = String(body.startDate || '').trim();
 
-    if (!firstName || !lastName) {
-      throw new HttpError(400, 'First name and last name are required', 'VALIDATION');
-    }
     if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
       throw new HttpError(
         400,
@@ -377,17 +399,23 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
 
         await client.query(
           `INSERT INTO employees (
-             id, employee_no, first_name, last_name, email, contact_number, address,
+             id, employee_no, first_name, middle_name, last_name, name_extension,
+             sex, birth_date, email, contact_number, address, pds,
              created_by, updated_by
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)`,
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$13)`,
           [
             empId,
-            employeeNo,
-            firstName,
-            lastName,
-            email,
-            contactNumber,
-            address,
+            cols.employeeNo,
+            cols.firstName,
+            cols.middleName,
+            cols.lastName,
+            cols.nameExtension,
+            cols.sex,
+            cols.birthDate,
+            cols.email,
+            cols.contactNumber,
+            cols.address,
+            JSON.stringify(pds),
             req.session.userId,
           ],
         );
@@ -421,7 +449,7 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
       action: 'employee.create',
       entityType: 'employee',
       entityId: employee,
-      meta: { firstName, lastName, email },
+      meta: { firstName: cols.firstName, lastName: cols.lastName, email: cols.email },
       ip: clientIp(req),
     });
 
@@ -446,21 +474,28 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
 employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
   try {
     const body = req.body || {};
-    const firstName = String(body.firstName || '').trim();
-    const lastName = String(body.lastName || '').trim();
-    const email = String(body.email || '').trim();
-    const employeeNoRaw = body.employeeNo == null ? '' : String(body.employeeNo).trim();
-    const employeeNo = employeeNoRaw || null;
-    const contactNumber = String(body.contactNumber || '').trim();
-    const address = String(body.address || '').trim();
+    const pds = normalizePds(body.pds || {
+      personal: {
+        firstName: body.firstName,
+        surname: body.lastName,
+        middleName: body.middleName,
+        nameExtension: body.nameExtension,
+        email: body.email,
+        mobileNo: body.contactNumber,
+        agencyEmployeeNo: body.employeeNo,
+        residentialAddress: body.address ? { street: body.address } : undefined,
+      },
+    });
+    assertPdsIdentity(pds);
+
+    const cols = syncEmployeeColumnsFromPds(pds, {
+      employeeNo: body.employeeNo !== undefined ? body.employeeNo : undefined,
+    });
     const departmentPositionId = String(body.departmentPositionId || '').trim();
     const employmentTypeId = String(body.employmentTypeId || '').trim();
     const employmentStatusId = String(body.employmentStatusId || '').trim();
     const startDate = String(body.startDate || '').trim();
 
-    if (!firstName || !lastName) {
-      throw new HttpError(400, 'First name and last name are required', 'VALIDATION');
-    }
     if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
       throw new HttpError(
         400,
@@ -480,18 +515,24 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
 
         await client.query(
           `UPDATE employees
-           SET employee_no = $2, first_name = $3, last_name = $4, email = $5,
-               contact_number = $6, address = $7,
-               updated_by = $8, updated_at = NOW()
+           SET employee_no = $2, first_name = $3, middle_name = $4, last_name = $5,
+               name_extension = $6, sex = $7, birth_date = $8, email = $9,
+               contact_number = $10, address = $11, pds = $12::jsonb,
+               updated_by = $13, updated_at = NOW()
            WHERE id = $1`,
           [
             req.params.id,
-            employeeNo,
-            firstName,
-            lastName,
-            email,
-            contactNumber,
-            address,
+            cols.employeeNo,
+            cols.firstName,
+            cols.middleName,
+            cols.lastName,
+            cols.nameExtension,
+            cols.sex,
+            cols.birthDate,
+            cols.email,
+            cols.contactNumber,
+            cols.address,
+            JSON.stringify(pds),
             req.session.userId,
           ],
         );
@@ -549,7 +590,7 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
       action: 'employee.update',
       entityType: 'employee',
       entityId: req.params.id,
-      meta: { firstName, lastName, email },
+      meta: { firstName: cols.firstName, lastName: cols.lastName, email: cols.email },
       ip: clientIp(req),
     });
 
