@@ -31,7 +31,7 @@ function dmy(value) {
   }
   const s = String(value).trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (m) return `${m[2]}/${m[3]}/${m[1]}`;
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`; // dd/mm/yyyy
   return s;
 }
 

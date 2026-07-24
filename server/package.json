@@ -9,7 +9,9 @@
     "db:create": "node src/db/create-database.js",
     "migrate": "node src/db/migrate.js",
     "seed": "node src/db/seed.js",
-    "seed:employees": "node src/db/seed-employees.js"
+    "seed:employees": "node src/db/seed-employees.js",
+    "seed:pds-demo": "node src/db/seed-pds-demo.js",
+    "verify:pds-excel": "node src/db/verify-pds-excel.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

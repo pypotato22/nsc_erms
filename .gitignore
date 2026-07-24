@@ -16,6 +16,7 @@ client/dist/
 server/dist/
 coverage/
 backups/
+tmp/
 .work-*/
 electron/config.json
 dist/desktop/
