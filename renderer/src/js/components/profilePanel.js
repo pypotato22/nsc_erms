@@ -211,10 +211,12 @@ async function renderTabEmployment(emp) {
 
 function renderPanelHeader(emp) {
   const a = emp.assignment;
-  const pic =
-    emp.photoUrl || emp.profilePicturePath
-      ? `<img src="${emp.photoUrl || `/api/v1/employees/${emp.id}/photo`}" class="ph-avatar-lg" alt="" onerror="this.onerror=null;this.outerHTML='<div class=&quot;ph-ini-lg&quot;>${escapeHtml(getInitials(emp.firstName, emp.lastName))}</div>';"/>`
-      : `<div class="ph-ini-lg">${getInitials(emp.firstName, emp.lastName)}</div>`;
+  const initials = escapeHtml(getInitials(emp.firstName, emp.lastName));
+  const hasPhoto = Boolean(emp.photoUrl || emp.profilePicturePath);
+  const photoSrc = emp.photoUrl || (hasPhoto ? `/api/v1/employees/${emp.id}/photo` : '');
+  const pic = hasPhoto
+    ? `<img src="${escapeHtml(photoSrc)}" class="ph-avatar-lg" alt="" data-ph-photo />`
+    : `<div class="ph-ini-lg">${initials}</div>`;
 
   const displayName = [emp.firstName, emp.middleName, emp.lastName, emp.nameExtension]
     .filter(Boolean)
@@ -239,6 +241,18 @@ function renderPanelHeader(emp) {
       <button class="phbtn phbtn-del" id="panel-delete-btn" type="button">Archive</button>` : ''}
     </div>`,
   );
+
+  const photoEl = document.querySelector('#panel-header [data-ph-photo]');
+  if (photoEl) {
+    photoEl.addEventListener('error', () => {
+      photoEl.replaceWith(
+        Object.assign(document.createElement('div'), {
+          className: 'ph-ini-lg',
+          textContent: getInitials(emp.firstName, emp.lastName),
+        }),
+      );
+    });
+  }
 
   document.getElementById('panel-close-btn').addEventListener('click', closeProfilePanel);
   document.getElementById('panel-view-pds-btn')?.addEventListener('click', () => {

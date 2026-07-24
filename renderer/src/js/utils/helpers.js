@@ -52,8 +52,11 @@ export function getAvatarHTML(employee, size = 32, fontSize = 11) {
       ? `/api/v1/employees/${employee.id}/photo`
       : employee.picture);
   if (src) {
+    // Encode fallback so it is safe inside a double-quoted onerror attribute
+    // (JSON.stringify would terminate the attribute early and leak initials / '";"/>').
     const fallback = `<div class="avatar" style="${boxStyle}">${initials}</div>`;
-    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="" onerror="this.onerror=null;this.outerHTML=${JSON.stringify(fallback)};"/>`;
+    const encoded = encodeURIComponent(fallback);
+    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="" onerror="this.onerror=null;this.outerHTML=decodeURIComponent('${encoded}');"/>`;
   }
   return `<div class="avatar" style="${boxStyle}">${initials}</div>`;
 }

@@ -188,6 +188,22 @@ function renderStep() {
       () => resetPositionSelect(),
     );
   }
+  const photoImg = body.querySelector('[data-emp-photo]');
+  if (photoImg) {
+    photoImg.addEventListener('error', () => {
+      const initials =
+        _photoEmp
+          ? getInitials(_photoEmp.firstName, _photoEmp.lastName)
+          : getInitials(_pds.personal.firstName, _pds.personal.surname) || '?';
+      photoImg.replaceWith(
+        Object.assign(document.createElement('div'), {
+          id: 'pic-preview',
+          className: 'pic-ini',
+          textContent: initials,
+        }),
+      );
+    });
+  }
 }
 
 /* ── Step renderers ───────────────────────────────────────────── */
@@ -964,8 +980,8 @@ function photoPreviewHtml() {
     return `<img id="pic-preview" src="${_previewObjectUrl}" class="pds-photo" alt=""/>`;
   }
   if (_photoEmp && (_photoEmp.photoUrl || _photoEmp.profilePicturePath)) {
-    const initials = escapeHtml(getInitials(_photoEmp.firstName, _photoEmp.lastName));
-    return `<img id="pic-preview" class="pds-photo" src="${_photoEmp.photoUrl || employeePhotoUrl(_photoEmp.id)}" alt="" onerror="this.onerror=null;this.outerHTML='<div id=&quot;pic-preview&quot; class=&quot;pic-ini&quot;>${initials}</div>';"/>`;
+    const src = escapeAttr(_photoEmp.photoUrl || employeePhotoUrl(_photoEmp.id));
+    return `<img id="pic-preview" class="pds-photo" src="${src}" alt="" data-emp-photo />`;
   }
   const initials =
     _pds.personal.firstName || _pds.personal.surname

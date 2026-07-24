@@ -168,21 +168,37 @@ export function printPds(employee) {
 }
 
 function printPdfPreview(objectUrl) {
-  const w = window.open(objectUrl, '_blank');
-  if (!w) {
-    showToast('Allow pop-ups to print the PDF.', 'error');
-    return;
-  }
-  const trigger = () => {
-    try {
-      w.focus();
-      w.print();
-    } catch {
-      /* ignore */
-    }
+  // Hidden iframe — avoids Electron opening a new BrowserWindow via window.open
+  const existing = document.getElementById('pds-print-frame');
+  if (existing) existing.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'pds-print-frame';
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.title = 'PDS print';
+  iframe.style.cssText =
+    'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+  iframe.src = objectUrl;
+  document.body.appendChild(iframe);
+
+  let printed = false;
+  const cleanup = () => {
+    setTimeout(() => iframe.remove(), 60_000);
   };
-  // PDF plugin may need a moment
-  setTimeout(trigger, 400);
+  const doPrint = () => {
+    if (printed) return;
+    printed = true;
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch {
+      showToast('Could not open print dialog for PDF.', 'error');
+    }
+    cleanup();
+  };
+
+  iframe.onload = () => setTimeout(doPrint, 250);
+  setTimeout(doPrint, 1200);
 }
 
 /** Download filled official CS Form 212 Excel (Annex H-1). */
