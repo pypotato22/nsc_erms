@@ -152,13 +152,27 @@ async function main() {
       skills: ['Network administration'],
       recognitions: ['Outstanding Employee 2022'],
       memberships: ['PSITE'],
-      q34: { answer: 'No' },
-      q35: { answer: 'No' },
-      q36: { answer: 'No' },
-      q37: { answer: 'No' },
-      q38: { answer: 'No' },
-      q39: { answer: 'No' },
-      q40: { answer: 'No' },
+      q34: {
+        a: { answer: 'No' },
+        b: { answer: 'No' },
+        details: '',
+      },
+      q35: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '', dateFiled: '', status: '' },
+      },
+      q36: { answer: 'No', details: '' },
+      q37: { answer: 'No', details: '' },
+      q38: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '' },
+      },
+      q39: { answer: 'No', details: '' },
+      q40: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '' },
+        c: { answer: 'No', details: '' },
+      },
       references: [
         { name: 'Dr. Elena Ramos', address: 'NSC', telephoneNo: '09190001111' },
       ],
@@ -240,8 +254,18 @@ async function main() {
   expect('C3', c3, 'D42', 'Outstanding Employee 2022');
   expect('C3', c3, 'J42', 'PSITE');
 
-  expect('C4', c4, 'G6', 'No');
-  expect('C4', c4, 'G13', 'No');
+  expect('C4', c4, 'I6', 'NO');
+  expect('C4', c4, 'I8', 'NO');
+  expect('C4', c4, 'I15', 'NO');
+  expect('C4', c4, 'I18', 'NO');
+  expect('C4', c4, 'I25', 'NO');
+  expect('C4', c4, 'I29', 'NO');
+  expect('C4', c4, 'K32', 'NO');
+  expect('C4', c4, 'K35', 'NO');
+  expect('C4', c4, 'I39', 'NO');
+  expect('C4', c4, 'I43', 'NO');
+  expect('C4', c4, 'I45', 'NO');
+  expect('C4', c4, 'I47', 'NO');
   expect('C4', c4, 'A52', 'Dr. Elena Ramos');
 
   const failed = checks.filter((c) => !c.ok);

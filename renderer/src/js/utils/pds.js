@@ -75,13 +75,27 @@ export function emptyPds() {
       skills: [],
       recognitions: [],
       memberships: [],
-      q34: { answer: '', details: '' },
-      q35: { answer: '', details: '' },
+      q34: {
+        a: { answer: '' },
+        b: { answer: '' },
+        details: '',
+      },
+      q35: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '', dateFiled: '', status: '' },
+      },
       q36: { answer: '', details: '' },
       q37: { answer: '', details: '' },
-      q38: { answer: '', details: '' },
-      q39: { answer: '', details: '', dateFiled: '', status: '' },
-      q40: { answer: '', details: '' },
+      q38: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '' },
+      },
+      q39: { answer: '', details: '' },
+      q40: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '' },
+        c: { answer: '', details: '' },
+      },
       references: [
         { name: '', address: '', telephoneNo: '' },
         { name: '', address: '', telephoneNo: '' },
@@ -92,7 +106,78 @@ export function emptyPds() {
 }
 
 export function clonePds(pds) {
-  return JSON.parse(JSON.stringify(pds || emptyPds()));
+  return upgradeLegacyQuestions(JSON.parse(JSON.stringify(pds || emptyPds())));
+}
+
+/** Convert flat q34–q40 (pre-alignment) into Rev. 2025 lettered shape. */
+export function upgradeLegacyQuestions(pds) {
+  const out = pds && typeof pds === 'object' ? pds : emptyPds();
+  if (!out.otherInfo || typeof out.otherInfo !== 'object') {
+    out.otherInfo = emptyPds().otherInfo;
+    return out;
+  }
+  const o = out.otherInfo;
+  const isLegacy = (q) => q && typeof q === 'object' && 'answer' in q && !('a' in q);
+  if (!isLegacy(o.q34) && !isLegacy(o.q35)) {
+    // Ensure nested defaults exist
+    const blank = emptyPds().otherInfo;
+    out.otherInfo = {
+      ...blank,
+      ...o,
+      q34: { ...blank.q34, ...(o.q34 || {}), a: { ...blank.q34.a, ...(o.q34?.a || {}) }, b: { ...blank.q34.b, ...(o.q34?.b || {}) } },
+      q35: {
+        ...blank.q35,
+        ...(o.q35 || {}),
+        a: { ...blank.q35.a, ...(o.q35?.a || {}) },
+        b: { ...blank.q35.b, ...(o.q35?.b || {}) },
+      },
+      q36: { ...blank.q36, ...(o.q36 || {}) },
+      q37: { ...blank.q37, ...(o.q37 || {}) },
+      q38: {
+        ...blank.q38,
+        ...(o.q38 || {}),
+        a: { ...blank.q38.a, ...(o.q38?.a || {}) },
+        b: { ...blank.q38.b, ...(o.q38?.b || {}) },
+      },
+      q39: { ...blank.q39, ...(o.q39 || {}) },
+      q40: {
+        ...blank.q40,
+        ...(o.q40 || {}),
+        a: { ...blank.q40.a, ...(o.q40?.a || {}) },
+        b: { ...blank.q40.b, ...(o.q40?.b || {}) },
+        c: { ...blank.q40.c, ...(o.q40?.c || {}) },
+      },
+      references: Array.isArray(o.references) ? o.references : blank.references,
+    };
+    return out;
+  }
+
+  out.otherInfo = {
+    ...o,
+    q34: {
+      a: { answer: o.q34?.answer || '' },
+      b: { answer: '' },
+      details: o.q34?.details || '',
+    },
+    q35: {
+      a: { answer: o.q35?.answer || '', details: o.q35?.details || '' },
+      b: {
+        answer: o.q36?.answer || '',
+        details: o.q36?.details || '',
+        dateFiled: o.q39?.dateFiled || o.q36?.dateFiled || '',
+        status: o.q39?.status || o.q36?.status || '',
+      },
+    },
+    q36: { answer: o.q37?.answer || '', details: o.q37?.details || '' },
+    q37: { answer: o.q38?.answer || '', details: o.q38?.details || '' },
+    q38: {
+      a: { answer: o.q39?.answer || '', details: o.q39?.details || '' },
+      b: { answer: '', details: '' },
+    },
+    q39: { answer: o.q40?.answer || '', details: o.q40?.details || '' },
+    q40: emptyPds().otherInfo.q40,
+  };
+  return out;
 }
 
 export const EDUCATION_LEVELS = [

@@ -532,17 +532,41 @@ function renderOtherStep() {
       </div>
     </div>
     <div class="pds-block">
-      <h5>34–40. Additional Questions</h5>
-      ${qBlock('q34', '34. Are you related by consanguinity or affinity to any appointing/recommending authority, or chief of bureau/office, or person who has authority to influence in the office?', o.q34)}
-      ${qBlock('q35', '35. Have you ever been found guilty of any administrative offense?', o.q35)}
-      ${qBlock('q36', '36. Have you been criminally charged before any court?', o.q36)}
-      ${qBlock('q37', '37. Have you ever been convicted of any crime or violation of any law?', o.q37)}
-      ${qBlock('q38', '38. Have you ever been separated from the service for cause?', o.q38)}
-      ${qBlock('q39', '39. Have you ever been a candidate in a national or local election (except Barangay)?', o.q39, true)}
-      ${qBlock('q40', '40. Have you acquired the status of an immigrant or permanent resident of another country?', o.q40)}
+      <h5>34–40. Additional Questions (CS Form 212 Rev. 2025)</h5>
+
+      <div class="pds-q">
+        <p class="pds-q-label">34. Related by consanguinity or affinity to the appointing/recommending authority, chief of bureau/office, or person with authority to influence?</p>
+        ${qSub('q34', 'a', 'a. Within the third degree?', o.q34?.a)}
+        ${qSub('q34', 'b', 'b. Within the fourth degree (for LGU career employees)?', o.q34?.b)}
+        <div class="fg full" style="margin-top:8px;"><label>If YES, give details</label><textarea data-q="q34" data-qf="details" rows="2">${escapeHtml(o.q34?.details || '')}</textarea></div>
+      </div>
+
+      <div class="pds-q">
+        <p class="pds-q-label">35. Administrative / criminal cases</p>
+        ${qSub('q35', 'a', 'a. Have you ever been found guilty of any administrative offense?', o.q35?.a, true)}
+        ${qSub('q35', 'b', 'b. Have you been criminally charged before any court?', o.q35?.b, true, true)}
+      </div>
+
+      ${qBlock('q36', '36. Have you ever been convicted of any crime or violation of any law, decree, ordinance or regulation?', o.q36)}
+      ${qBlock('q37', '37. Have you ever been separated from the service (resignation, retirement, dropped from rolls, etc.)?', o.q37)}
+
+      <div class="pds-q">
+        <p class="pds-q-label">38. Election / candidacy</p>
+        ${qSub('q38', 'a', 'a. Have you ever been a candidate in a national or local election (except Barangay)?', o.q38?.a, true)}
+        ${qSub('q38', 'b', 'b. Have you resigned from government service during the 3-month period before the last election to promote/campaign for a candidate?', o.q38?.b, true)}
+      </div>
+
+      ${qBlock('q39', '39. Have you acquired the status of an immigrant or permanent resident of another country?', o.q39)}
+
+      <div class="pds-q">
+        <p class="pds-q-label">40. Pursuant to IPRA / Magna Carta for Disabled Persons / Solo Parents Act</p>
+        ${qSub('q40', 'a', 'a. Are you a member of any indigenous group?', o.q40?.a, true, false, 'If YES, please specify')}
+        ${qSub('q40', 'b', 'b. Are you a person with disability?', o.q40?.b, true, false, 'If YES, please specify ID No.')}
+        ${qSub('q40', 'c', 'c. Are you a solo parent?', o.q40?.c, true, false, 'If YES, please specify ID No.')}
+      </div>
     </div>
     <div class="pds-block">
-      <h5>References</h5>
+      <h5>41. References</h5>
       ${(o.references || []).map((r, i) => `
         <div class="form-grid pds-grid-3" style="margin-bottom:10px;">
           <div class="fg"><label>Name</label><input data-ref="name" data-ri="${i}" type="text" value="${escapeAttr(r.name)}" /></div>
@@ -554,7 +578,7 @@ function renderOtherStep() {
   `;
 }
 
-function qBlock(key, label, q, withExtra = false) {
+function qBlock(key, label, q) {
   const item = q || { answer: '', details: '' };
   return `
     <div class="pds-q">
@@ -566,13 +590,35 @@ function qBlock(key, label, q, withExtra = false) {
             ${opt('Yes', item.answer, 'Yes')}${opt('No', item.answer, 'No')}
           </select>
         </div>
+        <div class="fg full"><label>If Yes, give details</label><textarea data-q="${key}" data-qf="details" rows="2">${escapeHtml(item.details || '')}</textarea></div>
+      </div>
+    </div>
+  `;
+}
+
+function qSub(key, part, label, q, withDetails = false, withCaseMeta = false, detailsLabel = 'If Yes, give details') {
+  const item = q || { answer: '', details: '', dateFiled: '', status: '' };
+  return `
+    <div class="pds-q-sub">
+      <p class="pds-q-sub-label">${escapeHtml(label)}</p>
+      <div class="form-grid pds-grid-3">
+        <div class="fg"><label>Answer</label>
+          <select data-q="${key}" data-qpart="${part}" data-qf="answer">
+            <option value="">—</option>
+            ${opt('Yes', item.answer, 'Yes')}${opt('No', item.answer, 'No')}
+          </select>
+        </div>
         ${
-          withExtra
-            ? `<div class="fg"><label>Date filed</label><input data-q="${key}" data-qf="dateFiled" type="date" value="${escapeAttr(item.dateFiled || '')}" /></div>
-               <div class="fg"><label>Status</label><input data-q="${key}" data-qf="status" type="text" value="${escapeAttr(item.status || '')}" /></div>`
+          withCaseMeta
+            ? `<div class="fg"><label>Date filed</label><input data-q="${key}" data-qpart="${part}" data-qf="dateFiled" type="date" value="${escapeAttr(item.dateFiled || '')}" /></div>
+               <div class="fg"><label>Status of case/s</label><input data-q="${key}" data-qpart="${part}" data-qf="status" type="text" value="${escapeAttr(item.status || '')}" /></div>`
             : ''
         }
-        <div class="fg full"><label>If Yes, give details</label><textarea data-q="${key}" data-qf="details" rows="2">${escapeHtml(item.details || '')}</textarea></div>
+        ${
+          withDetails
+            ? `<div class="fg full"><label>${escapeHtml(detailsLabel)}</label><textarea data-q="${key}" data-qpart="${part}" data-qf="details" rows="2">${escapeHtml(item.details || '')}</textarea></div>`
+            : ''
+        }
       </div>
     </div>
   `;
@@ -685,9 +731,17 @@ function collectCurrentStep() {
     });
     body.querySelectorAll('[data-q]').forEach((el) => {
       const key = el.dataset.q;
+      const part = el.dataset.qpart;
       const field = el.dataset.qf;
-      if (!_pds.otherInfo[key]) _pds.otherInfo[key] = { answer: '', details: '' };
-      _pds.otherInfo[key][field] = el.value.trim();
+      if (!_pds.otherInfo[key]) _pds.otherInfo[key] = {};
+      if (part) {
+        if (!_pds.otherInfo[key][part] || typeof _pds.otherInfo[key][part] !== 'object') {
+          _pds.otherInfo[key][part] = {};
+        }
+        _pds.otherInfo[key][part][field] = el.value.trim();
+      } else {
+        _pds.otherInfo[key][field] = el.value.trim();
+      }
     });
     body.querySelectorAll('[data-ref]').forEach((el) => {
       const i = Number(el.dataset.ri);

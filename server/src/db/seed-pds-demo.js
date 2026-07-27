@@ -208,13 +208,27 @@ function buildDemoPds() {
       skills: ['Network administration', 'Web development', 'Database management'],
       recognitions: ['Outstanding Employee 2022 — Northern Samar Colleges'],
       memberships: ['Philippine Society of IT Educators'],
-      q34: { answer: 'No', details: '' },
-      q35: { answer: 'No', details: '' },
+      q34: {
+        a: { answer: 'No' },
+        b: { answer: 'No' },
+        details: '',
+      },
+      q35: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '', dateFiled: '', status: '' },
+      },
       q36: { answer: 'No', details: '' },
       q37: { answer: 'No', details: '' },
-      q38: { answer: 'No', details: '' },
+      q38: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '' },
+      },
       q39: { answer: 'No', details: '' },
-      q40: { answer: 'No', details: '' },
+      q40: {
+        a: { answer: 'No', details: '' },
+        b: { answer: 'No', details: '' },
+        c: { answer: 'No', details: '' },
+      },
       references: [
         {
           name: 'Dr. Elena Ramos',

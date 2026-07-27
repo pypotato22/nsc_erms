@@ -302,25 +302,57 @@ function fillC4(ws, pds) {
   if (!ws) return;
   const o = pds.otherInfo || {};
 
-  // Best-effort Yes/No + details against 2025 layout (sub-questions simplified).
-  const mapQ = [
-    { key: 'q34', yesCell: 'G6', detailsCell: 'G11' },
-    { key: 'q35', yesCell: 'G13', detailsCell: 'G14' },
-    { key: 'q36', yesCell: 'G18', detailsCell: 'G19', dateCell: 'J20', statusCell: 'J21' },
-    { key: 'q37', yesCell: 'G23', detailsCell: 'G24' },
-    { key: 'q38', yesCell: 'G27', detailsCell: 'G28' },
-    { key: 'q39', yesCell: 'G31', detailsCell: 'G32' },
-    { key: 'q40', yesCell: 'G37', detailsCell: 'G38' },
-  ];
-
-  for (const m of mapQ) {
-    const q = o[m.key] || {};
-    const yn = yesNo(q.answer);
-    if (yn) set(ws, m.yesCell, yn);
-    if (q.details) set(ws, m.detailsCell, raw(q.details));
-    if (m.dateCell && q.dateFiled) set(ws, m.dateCell, dmy(q.dateFiled));
-    if (m.statusCell && q.status) set(ws, m.statusCell, raw(q.status));
+  /** Write Yes/No into the answer region beside a sub-question. */
+  function setYn(addr, answer) {
+    const yn = yesNo(answer);
+    if (yn) set(ws, addr, yn.toUpperCase());
   }
+
+  /** Keep printed label, append user details. */
+  function setDetails(addr, labelPrefix, details) {
+    const d = raw(details);
+    if (!d) return;
+    set(ws, addr, `${labelPrefix} ${d}`);
+  }
+
+  const q34 = o.q34 || {};
+  setYn('I6', q34.a?.answer);
+  setYn('I8', q34.b?.answer);
+  setDetails('G10', 'If YES, give details:', q34.details);
+
+  const q35 = o.q35 || {};
+  setYn('I15', q35.a?.answer);
+  setDetails('G14', 'If YES, give details:', q35.a?.details);
+  setYn('I18', q35.b?.answer);
+  setDetails('G19', 'If YES, give details:', q35.b?.details);
+  if (q35.b?.dateFiled) set(ws, 'J20', dmy(q35.b.dateFiled));
+  if (q35.b?.status) set(ws, 'J21', raw(q35.b.status));
+
+  const q36 = o.q36 || {};
+  setYn('I25', q36.answer);
+  setDetails('G24', 'If YES, give details:', q36.details);
+
+  const q37 = o.q37 || {};
+  setYn('I29', q37.answer);
+  setDetails('G28', 'If YES, give details:', q37.details);
+
+  const q38 = o.q38 || {};
+  setYn('K32', q38.a?.answer);
+  setDetails('G32', 'If YES, give details:', q38.a?.details);
+  setYn('K35', q38.b?.answer);
+  setDetails('G35', 'If YES, give details:', q38.b?.details);
+
+  const q39 = o.q39 || {};
+  setYn('I39', q39.answer);
+  setDetails('G38', 'If YES, give details (country):', q39.details);
+
+  const q40 = o.q40 || {};
+  setYn('I43', q40.a?.answer);
+  setDetails('G44', 'If YES, please specify:', q40.a?.details);
+  setYn('I45', q40.b?.answer);
+  setDetails('G46', 'If YES, please specify ID No:', q40.b?.details);
+  setYn('I47', q40.c?.answer);
+  setDetails('G48', 'If YES, please specify ID No:', q40.c?.details);
 
   const refs = Array.isArray(o.references) ? o.references : [];
   for (let i = 0; i < Math.min(refs.length, 3); i++) {

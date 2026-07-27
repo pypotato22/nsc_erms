@@ -134,13 +134,28 @@ export function emptyPds() {
       skills: [],
       recognitions: [],
       memberships: [],
-      q34: { answer: '', details: '' },
-      q35: { answer: '', details: '' },
+      // CS Form 212 Rev. 2025 C4 structure
+      q34: {
+        a: { answer: '' },
+        b: { answer: '' },
+        details: '',
+      },
+      q35: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '', dateFiled: '', status: '' },
+      },
       q36: { answer: '', details: '' },
       q37: { answer: '', details: '' },
-      q38: { answer: '', details: '' },
-      q39: { answer: '', details: '', dateFiled: '', status: '' },
-      q40: { answer: '', details: '' },
+      q38: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '' },
+      },
+      q39: { answer: '', details: '' },
+      q40: {
+        a: { answer: '', details: '' },
+        b: { answer: '', details: '' },
+        c: { answer: '', details: '' },
+      },
       references: [
         { name: '', address: '', telephoneNo: '' },
         { name: '', address: '', telephoneNo: '' },
@@ -274,16 +289,85 @@ export function normalizePds(raw) {
     }))
     .filter(rowHasContent);
 
-  const q = (key) => {
-    const item = otherIn[key] && typeof otherIn[key] === 'object' ? otherIn[key] : {};
-    return {
-      answer: str(item.answer),
-      details: str(item.details),
-      ...(key === 'q39'
-        ? { dateFiled: str(item.dateFiled), status: str(item.status) }
-        : {}),
-    };
+  const qPart = (item, fields = ['answer', 'details']) => {
+    const src = item && typeof item === 'object' ? item : {};
+    const out = {};
+    for (const f of fields) out[f] = str(src[f]);
+    return out;
   };
+
+  /** Migrate flat pre-2025-aligned q34–q40 into lettered sub-questions. */
+  function normalizeOtherQuestions(rawOther) {
+    const o = rawOther && typeof rawOther === 'object' ? rawOther : {};
+    const empty = emptyPds().otherInfo;
+
+    const isLegacyFlat = (q) =>
+      q && typeof q === 'object' && 'answer' in q && !('a' in q);
+
+    let q34 = empty.q34;
+    let q35 = empty.q35;
+    let q36 = empty.q36;
+    let q37 = empty.q37;
+    let q38 = empty.q38;
+    let q39 = empty.q39;
+    let q40 = empty.q40;
+
+    if (isLegacyFlat(o.q34) || isLegacyFlat(o.q35)) {
+      // Old model: q34…q40 flat; q36=criminal; q39 wrongly held date/status
+      q34 = {
+        a: { answer: str(o.q34?.answer) },
+        b: { answer: '' },
+        details: str(o.q34?.details),
+      };
+      q35 = {
+        a: { answer: str(o.q35?.answer), details: str(o.q35?.details) },
+        b: {
+          answer: str(o.q36?.answer),
+          details: str(o.q36?.details),
+          dateFiled: str(o.q39?.dateFiled || o.q36?.dateFiled),
+          status: str(o.q39?.status || o.q36?.status),
+        },
+      };
+      q36 = { answer: str(o.q37?.answer), details: str(o.q37?.details) };
+      q37 = { answer: str(o.q38?.answer), details: str(o.q38?.details) };
+      q38 = {
+        a: { answer: str(o.q39?.answer), details: str(o.q39?.details) },
+        b: { answer: '', details: '' },
+      };
+      q39 = { answer: str(o.q40?.answer), details: str(o.q40?.details) };
+      q40 = empty.q40;
+    } else {
+      const i34 = o.q34 && typeof o.q34 === 'object' ? o.q34 : {};
+      q34 = {
+        a: qPart(i34.a, ['answer']),
+        b: qPart(i34.b, ['answer']),
+        details: str(i34.details),
+      };
+      const i35 = o.q35 && typeof o.q35 === 'object' ? o.q35 : {};
+      q35 = {
+        a: qPart(i35.a, ['answer', 'details']),
+        b: qPart(i35.b, ['answer', 'details', 'dateFiled', 'status']),
+      };
+      q36 = qPart(o.q36, ['answer', 'details']);
+      q37 = qPart(o.q37, ['answer', 'details']);
+      const i38 = o.q38 && typeof o.q38 === 'object' ? o.q38 : {};
+      q38 = {
+        a: qPart(i38.a, ['answer', 'details']),
+        b: qPart(i38.b, ['answer', 'details']),
+      };
+      q39 = qPart(o.q39, ['answer', 'details']);
+      const i40 = o.q40 && typeof o.q40 === 'object' ? o.q40 : {};
+      q40 = {
+        a: qPart(i40.a, ['answer', 'details']),
+        b: qPart(i40.b, ['answer', 'details']),
+        c: qPart(i40.c, ['answer', 'details']),
+      };
+    }
+
+    return { q34, q35, q36, q37, q38, q39, q40 };
+  }
+
+  const questions = normalizeOtherQuestions(otherIn);
 
   const listStrings = (value) =>
     asArray(value)
@@ -315,13 +399,7 @@ export function normalizePds(raw) {
       skills: listStrings(otherIn.skills),
       recognitions: listStrings(otherIn.recognitions),
       memberships: listStrings(otherIn.memberships),
-      q34: q('q34'),
-      q35: q('q35'),
-      q36: q('q36'),
-      q37: q('q37'),
-      q38: q('q38'),
-      q39: q('q39'),
-      q40: q('q40'),
+      ...questions,
       references: references.slice(0, 3),
     },
   };

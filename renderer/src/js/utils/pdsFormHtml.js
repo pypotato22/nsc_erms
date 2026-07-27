@@ -256,15 +256,28 @@ export function buildCs212Html(employee, opts = {}) {
     </table>
 
     <div class="cs212-sec">34–40. QUESTIONS</div>
-    ${qPrint('34', 'Are you related by consanguinity or affinity to the appointing/recommending authority, or to the chief of bureau/office, or to a person who has authority to influence in the office?', o.q34)}
-    ${qPrint('35', 'Have you ever been found guilty of any administrative offense?', o.q35)}
-    ${qPrint('36', 'Have you been criminally charged before any court?', o.q36)}
-    ${qPrint('37', 'Have you ever been convicted of any crime or violation of any law?', o.q37)}
-    ${qPrint('38', 'Have you ever been separated from the service for cause?', o.q38)}
-    ${qPrint('39', 'Have you ever been a candidate in a national or local election (except Barangay election)?', o.q39)}
-    ${qPrint('40', 'Have you acquired the status of an immigrant or permanent resident of another country?', o.q40)}
+    ${qPrintGroup('34', 'Related by consanguinity or affinity to the appointing/recommending authority, chief of bureau/office, or person who has authority to influence?', [
+      ['a', 'Within the third degree?', o.q34?.a],
+      ['b', 'Within the fourth degree (for LGU career employees)?', o.q34?.b],
+    ], o.q34?.details)}
+    ${qPrintGroup('35', 'Administrative / criminal cases', [
+      ['a', 'Have you ever been found guilty of any administrative offense?', o.q35?.a],
+      ['b', 'Have you been criminally charged before any court?', o.q35?.b, true],
+    ])}
+    ${qPrint('36', 'Have you ever been convicted of any crime or violation of any law, decree, ordinance or regulation?', o.q36)}
+    ${qPrint('37', 'Have you ever been separated from the service (resignation, retirement, dropped from rolls, etc.)?', o.q37)}
+    ${qPrintGroup('38', 'Election / candidacy', [
+      ['a', 'Have you ever been a candidate in a national or local election (except Barangay)?', o.q38?.a],
+      ['b', 'Have you resigned from government service during the 3-month period before the last election to promote/campaign for a candidate?', o.q38?.b],
+    ])}
+    ${qPrint('39', 'Have you acquired the status of an immigrant or permanent resident of another country?', o.q39)}
+    ${qPrintGroup('40', 'Pursuant to IPRA / Magna Carta for Disabled Persons / Solo Parents Act', [
+      ['a', 'Are you a member of any indigenous group?', o.q40?.a],
+      ['b', 'Are you a person with disability?', o.q40?.b],
+      ['c', 'Are you a solo parent?', o.q40?.c],
+    ])}
 
-    <div class="cs212-sec">REFERENCES</div>
+    <div class="cs212-sec">41. REFERENCES</div>
     <table class="cs212-table">
       <tr>
         <td class="cs212-lbl">NAME</td>
@@ -417,19 +430,49 @@ function listCell(arr) {
 
 function qPrint(num, label, q) {
   const item = q || {};
-  const extra =
-    num === '39' && (item.dateFiled || item.status)
-      ? ` · Filed: ${plain(fmtDate(item.dateFiled))} · Status: ${plain(item.status)}`
-      : '';
   return `
     <table class="cs212-table cs212-q">
       <tr>
         <td class="cs212-lbl" style="width:72%">${escapeHtml(num)}. ${escapeHtml(label)}</td>
-        <td class="cs212-val"><strong>${v(yn(item.answer))}</strong>${extra ? escapeHtml(extra) : ''}</td>
+        <td class="cs212-val"><strong>${v(yn(item.answer))}</strong></td>
       </tr>
       <tr>
         <td class="cs212-lbl">If YES, give details</td>
         <td class="cs212-val">${v(item.details)}</td>
       </tr>
+    </table>`;
+}
+
+function qPrintGroup(num, label, parts, sharedDetails) {
+  const rows = (parts || [])
+    .map(([letter, subLabel, q, withCaseMeta]) => {
+      const item = q || {};
+      const meta =
+        withCaseMeta && (item.dateFiled || item.status)
+          ? ` · Filed: ${plain(fmtDate(item.dateFiled))} · Status: ${plain(item.status)}`
+          : '';
+      return `
+      <tr>
+        <td class="cs212-lbl">${escapeHtml(letter)}. ${escapeHtml(subLabel)}</td>
+        <td class="cs212-val"><strong>${v(yn(item.answer))}</strong>${meta ? escapeHtml(meta) : ''}</td>
+      </tr>
+      ${
+        item.details
+          ? `<tr><td class="cs212-lbl">Details</td><td class="cs212-val">${v(item.details)}</td></tr>`
+          : ''
+      }`;
+    })
+    .join('');
+  return `
+    <table class="cs212-table cs212-q">
+      <tr>
+        <td class="cs212-lbl" colspan="2">${escapeHtml(num)}. ${escapeHtml(label)}</td>
+      </tr>
+      ${rows}
+      ${
+        sharedDetails
+          ? `<tr><td class="cs212-lbl">If YES, give details</td><td class="cs212-val">${v(sharedDetails)}</td></tr>`
+          : ''
+      }
     </table>`;
 }
