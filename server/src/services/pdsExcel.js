@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import { coercePdsFromRow, normalizePds } from './pds.js';
+import { applyPdsFormCheckboxes } from './pdsExcelCheckboxes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../..');
@@ -40,20 +41,6 @@ function set(ws, addr, value) {
   ws.getCell(addr).value = value;
 }
 
-function sexLabel(sex) {
-  const s = String(sex || '').toLowerCase();
-  if (s === 'male') return 'Male';
-  if (s === 'female') return 'Female';
-  return raw(sex);
-}
-
-function yesNo(answer) {
-  const a = String(answer || '').trim().toLowerCase();
-  if (a === 'yes' || a === 'true' || a === 'y') return 'Yes';
-  if (a === 'no' || a === 'false' || a === 'n') return 'No';
-  return '';
-}
-
 function findEducation(list, levelNeedle) {
   const needle = levelNeedle.toLowerCase();
   return (list || []).find((r) => String(r.level || '').toLowerCase().includes(needle)) || null;
@@ -62,9 +49,10 @@ function findEducation(list, levelNeedle) {
 /**
  * Fill official CS Form 212 (Revised 2025) Excel from employee + pds.
  * @param {{ pds?: object, employeeNo?: string, firstName?: string, lastName?: string, email?: string, contactNumber?: string }} employee
+ * @param {{ skipFormCheckboxes?: boolean }} [options] skipFormCheckboxes skips OOXML restore (for ExcelJS cell reads in tests)
  * @returns {Promise<Buffer>}
  */
-export async function buildFilledPdsWorkbook(employee) {
+export async function buildFilledPdsWorkbook(employee, options = {}) {
   const pds = normalizePds(
     coercePdsFromRow(employee?.pds, {
       first_name: employee?.firstName,
@@ -88,8 +76,10 @@ export async function buildFilledPdsWorkbook(employee) {
   fillC3(wb.getWorksheet('C3'), pds);
   fillC4(wb.getWorksheet('C4'), pds);
 
-  const buf = await wb.xlsx.writeBuffer();
-  return Buffer.from(buf);
+  const buf = Buffer.from(await wb.xlsx.writeBuffer());
+  if (options.skipFormCheckboxes) return buf;
+  // ExcelJS strips form controls; graft values into template and tick checkboxes.
+  return applyPdsFormCheckboxes(buf, pds);
 }
 
 function fillC1(ws, pds, employee) {
@@ -104,17 +94,16 @@ function fillC1(ws, pds, employee) {
   set(ws, 'L12', raw(p.nameExtension) || 'N/A');
   set(ws, 'D12', na(p.middleName));
   set(ws, 'D13', na(dmy(p.birthDate)));
-  set(ws, 'J13', na(p.citizenship));
+  // Sex / civil status / citizenship use form checkboxes (post-process), not cell text.
   set(ws, 'D15', na(p.placeOfBirth));
   if (p.dualCitizenship) {
-    set(ws, 'J15', na(p.dualCitizenshipType || 'Yes'));
     set(ws, 'L16', na(p.dualCitizenshipCountry));
   } else {
-    set(ws, 'J15', 'N/A');
     set(ws, 'L16', 'N/A');
   }
-  set(ws, 'D16', na(sexLabel(p.sex)));
-  set(ws, 'D17', na(p.civilStatus === 'Other' ? p.civilStatusOther || 'Other' : p.civilStatus));
+  if (String(p.civilStatus || '').toLowerCase() === 'other' && raw(p.civilStatusOther)) {
+    set(ws, 'F19', raw(p.civilStatusOther));
+  }
 
   set(ws, 'D22', na(p.heightM));
   set(ws, 'D24', na(p.weightKg));
@@ -302,13 +291,7 @@ function fillC4(ws, pds) {
   if (!ws) return;
   const o = pds.otherInfo || {};
 
-  /** Write Yes/No into the answer region beside a sub-question. */
-  function setYn(addr, answer) {
-    const yn = yesNo(answer);
-    if (yn) set(ws, addr, yn.toUpperCase());
-  }
-
-  /** Keep printed label, append user details. */
+  /** Keep printed label, append user details. Yes/No use form checkboxes (post-process). */
   function setDetails(addr, labelPrefix, details) {
     const d = raw(details);
     if (!d) return;
@@ -316,42 +299,30 @@ function fillC4(ws, pds) {
   }
 
   const q34 = o.q34 || {};
-  setYn('I6', q34.a?.answer);
-  setYn('I8', q34.b?.answer);
   setDetails('G10', 'If YES, give details:', q34.details);
 
   const q35 = o.q35 || {};
-  setYn('I15', q35.a?.answer);
   setDetails('G14', 'If YES, give details:', q35.a?.details);
-  setYn('I18', q35.b?.answer);
   setDetails('G19', 'If YES, give details:', q35.b?.details);
   if (q35.b?.dateFiled) set(ws, 'J20', dmy(q35.b.dateFiled));
   if (q35.b?.status) set(ws, 'J21', raw(q35.b.status));
 
   const q36 = o.q36 || {};
-  setYn('I25', q36.answer);
   setDetails('G24', 'If YES, give details:', q36.details);
 
   const q37 = o.q37 || {};
-  setYn('I29', q37.answer);
   setDetails('G28', 'If YES, give details:', q37.details);
 
   const q38 = o.q38 || {};
-  setYn('K32', q38.a?.answer);
   setDetails('G32', 'If YES, give details:', q38.a?.details);
-  setYn('K35', q38.b?.answer);
   setDetails('G35', 'If YES, give details:', q38.b?.details);
 
   const q39 = o.q39 || {};
-  setYn('I39', q39.answer);
   setDetails('G38', 'If YES, give details (country):', q39.details);
 
   const q40 = o.q40 || {};
-  setYn('I43', q40.a?.answer);
   setDetails('G44', 'If YES, please specify:', q40.a?.details);
-  setYn('I45', q40.b?.answer);
   setDetails('G46', 'If YES, please specify ID No:', q40.b?.details);
-  setYn('I47', q40.c?.answer);
   setDetails('G48', 'If YES, please specify ID No:', q40.c?.details);
 
   const refs = Array.isArray(o.references) ? o.references : [];

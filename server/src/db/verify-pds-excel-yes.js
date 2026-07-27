@@ -8,7 +8,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
+import { C4_YN, isCtrlChecked } from '../services/pdsExcelCheckboxes.js';
 import { normalizePds } from '../services/pds.js';
 import { convertXlsxBufferToPdf } from '../services/pdsPdf.js';
 
@@ -94,6 +96,7 @@ async function main() {
   };
 
   const buf = await buildFilledPdsWorkbook(employee);
+  const bufCells = await buildFilledPdsWorkbook(employee, { skipFormCheckboxes: true });
   const outDir = path.join(projectRoot, 'tmp');
   await fs.mkdir(outDir, { recursive: true });
   const xlsxPath = path.join(outDir, 'DEMO-PDS-YES-verify.xlsx');
@@ -101,7 +104,7 @@ async function main() {
   console.log('Wrote', xlsxPath);
 
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(buf);
+  await wb.xlsx.load(bufCells);
   const c4 = wb.getWorksheet('C4');
 
   const checks = [];
@@ -111,18 +114,56 @@ async function main() {
     checks.push({ addr, expect: expected, actual, ok });
   }
 
-  expect('I6', 'YES');
-  expect('I8', 'NO');
   expect('G10', 'Cousin of recommending officer');
-  expect('I15', 'NO');
-  expect('I18', 'YES');
   expect('G19', 'People v. Sample');
   expect('J20', '15/06/2020');
   expect('J21', 'Dismissed');
-  expect('I25', 'NO');
-  expect('I43', 'YES');
   expect('G44', 'Waray');
   expect('A52', 'Dr. Elena Ramos');
+
+  // Form checkboxes (not cell YES/NO text)
+  const zip = await JSZip.loadAsync(buf);
+  const sheet4 = await zip.file('xl/worksheets/sheet4.xml').async('string');
+  checks.push({
+    addr: 'controls',
+    expect: 'present',
+    actual: sheet4.includes('<controls') ? 'present' : 'missing',
+    ok: sheet4.includes('<controls'),
+  });
+
+  const expectedYn = {
+    'q34.a': 'yes',
+    'q34.b': 'no',
+    'q35.a': 'no',
+    'q35.b': 'yes',
+    q36: 'no',
+    q37: 'no',
+    'q38.a': 'no',
+    'q38.b': 'no',
+    q39: 'no',
+    'q40.a': 'yes',
+    'q40.b': 'no',
+    'q40.c': 'no',
+  };
+  for (const [key, yn] of Object.entries(expectedYn)) {
+    const map = C4_YN[key];
+    const yesXml = await zip.file(`xl/ctrlProps/ctrlProp${map.yes}.xml`).async('string');
+    const noXml = await zip.file(`xl/ctrlProps/ctrlProp${map.no}.xml`).async('string');
+    const yesChecked = isCtrlChecked(yesXml);
+    const noChecked = isCtrlChecked(noXml);
+    checks.push({
+      addr: `${key}.yes`,
+      expect: yn === 'yes' ? 'Checked' : 'off',
+      actual: yesChecked ? 'Checked' : 'off',
+      ok: yesChecked === (yn === 'yes'),
+    });
+    checks.push({
+      addr: `${key}.no`,
+      expect: yn === 'no' ? 'Checked' : 'off',
+      actual: noChecked ? 'Checked' : 'off',
+      ok: noChecked === (yn === 'no'),
+    });
+  }
 
   const failed = checks.filter((c) => !c.ok);
   for (const c of checks) {

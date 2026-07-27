@@ -76,7 +76,8 @@ export async function convertXlsxBufferToPdf(xlsxBuffer) {
         return { pdf, engine: 'excel-com' };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        if (/ActiveX|COM|Excel\.Application|0x800/i.test(msg)) {
+        // Only treat as missing Excel when COM object itself cannot be created.
+        if (/New-Object.*Excel\.Application|ActiveX component can't create object|0x800401F3/i.test(msg)) {
           throw missingToolError();
         }
         throw err;

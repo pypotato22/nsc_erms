@@ -8,7 +8,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
+import { C1_CTRL, C4_YN, isCtrlChecked } from '../services/pdsExcelCheckboxes.js';
 import { normalizePds } from '../services/pds.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -193,6 +195,7 @@ async function main() {
   };
 
   const buf = await buildFilledPdsWorkbook(employee);
+  const bufCells = await buildFilledPdsWorkbook(employee, { skipFormCheckboxes: true });
   const outDir = path.join(projectRoot, 'tmp');
   await fs.mkdir(outDir, { recursive: true });
   const outFile = path.join(outDir, 'DEMO-PDS-001-verify.xlsx');
@@ -200,7 +203,7 @@ async function main() {
   console.log('Wrote', outFile);
 
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(buf);
+  await wb.xlsx.load(bufCells);
   const c1 = wb.getWorksheet('C1');
   const c2 = wb.getWorksheet('C2');
   const c3 = wb.getWorksheet('C3');
@@ -220,9 +223,6 @@ async function main() {
   expect('C1', c1, 'L12', 'Jr.');
   expect('C1', c1, 'D13', '15/05/1990');
   expect('C1', c1, 'D15', 'Catarman, Northern Samar');
-  expect('C1', c1, 'D16', 'Male');
-  expect('C1', c1, 'D17', 'Married');
-  expect('C1', c1, 'J13', 'Filipino');
   expect('C1', c1, 'D22', '1.70');
   expect('C1', c1, 'D24', '68');
   expect('C1', c1, 'D25', 'O+');
@@ -254,19 +254,63 @@ async function main() {
   expect('C3', c3, 'D42', 'Outstanding Employee 2022');
   expect('C3', c3, 'J42', 'PSITE');
 
-  expect('C4', c4, 'I6', 'NO');
-  expect('C4', c4, 'I8', 'NO');
-  expect('C4', c4, 'I15', 'NO');
-  expect('C4', c4, 'I18', 'NO');
-  expect('C4', c4, 'I25', 'NO');
-  expect('C4', c4, 'I29', 'NO');
-  expect('C4', c4, 'K32', 'NO');
-  expect('C4', c4, 'K35', 'NO');
-  expect('C4', c4, 'I39', 'NO');
-  expect('C4', c4, 'I43', 'NO');
-  expect('C4', c4, 'I45', 'NO');
-  expect('C4', c4, 'I47', 'NO');
   expect('C4', c4, 'A52', 'Dr. Elena Ramos');
+
+  const zip = await JSZip.loadAsync(buf);
+  // C1 form checkboxes (demo: Male, Married, Filipino)
+  const c1Expected = {
+    male: true,
+    female: false,
+    married: true,
+    single: false,
+    widowed: false,
+    separated: false,
+    other: false,
+    filipino: true,
+    dual: false,
+    byBirth: false,
+    byNaturalization: false,
+  };
+  for (const [key, on] of Object.entries(c1Expected)) {
+    const xml = await zip.file(`xl/ctrlProps/ctrlProp${C1_CTRL[key].prop}.xml`).async('string');
+    const checked = isCtrlChecked(xml);
+    checks.push({
+      sheet: 'C1',
+      addr: `cb.${key}`,
+      expect: on ? 'Checked' : 'off',
+      actual: checked ? 'Checked' : 'off',
+      ok: checked === on,
+    });
+  }
+
+  const sheet4Xml = await zip.file('xl/worksheets/sheet4.xml').async('string');
+  checks.push({
+    sheet: 'C4',
+    addr: 'controls',
+    expect: 'present',
+    actual: sheet4Xml.includes('<controls') ? 'present' : 'missing',
+    ok: sheet4Xml.includes('<controls'),
+  });
+  for (const [key, map] of Object.entries(C4_YN)) {
+    const yesXml = await zip.file(`xl/ctrlProps/ctrlProp${map.yes}.xml`).async('string');
+    const noXml = await zip.file(`xl/ctrlProps/ctrlProp${map.no}.xml`).async('string');
+    const yesChecked = isCtrlChecked(yesXml);
+    const noChecked = isCtrlChecked(noXml);
+    checks.push({
+      sheet: 'C4',
+      addr: `${key}.yes`,
+      expect: 'off',
+      actual: yesChecked ? 'Checked' : 'off',
+      ok: !yesChecked,
+    });
+    checks.push({
+      sheet: 'C4',
+      addr: `${key}.no`,
+      expect: 'Checked',
+      actual: noChecked ? 'Checked' : 'off',
+      ok: noChecked,
+    });
+  }
 
   const failed = checks.filter((c) => !c.ok);
   for (const c of checks) {
