@@ -161,6 +161,12 @@ export function emptyPds() {
         { name: '', address: '', telephoneNo: '' },
         { name: '', address: '', telephoneNo: '' },
       ],
+      declaration: {
+        governmentIssuedId: '',
+        idNumber: '',
+        datePlaceOfIssuance: '',
+        dateAccomplished: '',
+      },
     },
   };
 }
@@ -386,6 +392,17 @@ export function normalizePds(raw) {
     references.push({ name: '', address: '', telephoneNo: '' });
   }
 
+  const declIn =
+    otherIn.declaration && typeof otherIn.declaration === 'object'
+      ? otherIn.declaration
+      : {};
+  const declaration = {
+    governmentIssuedId: str(declIn.governmentIssuedId),
+    idNumber: str(declIn.idNumber),
+    datePlaceOfIssuance: str(declIn.datePlaceOfIssuance),
+    dateAccomplished: str(declIn.dateAccomplished),
+  };
+
   return {
     version: 2025,
     personal,
@@ -401,6 +418,7 @@ export function normalizePds(raw) {
       memberships: listStrings(otherIn.memberships),
       ...questions,
       references: references.slice(0, 3),
+      declaration,
     },
   };
 }

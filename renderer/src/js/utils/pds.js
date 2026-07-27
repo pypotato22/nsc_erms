@@ -101,6 +101,12 @@ export function emptyPds() {
         { name: '', address: '', telephoneNo: '' },
         { name: '', address: '', telephoneNo: '' },
       ],
+      declaration: {
+        governmentIssuedId: '',
+        idNumber: '',
+        datePlaceOfIssuance: '',
+        dateAccomplished: '',
+      },
     },
   };
 }
@@ -148,6 +154,7 @@ export function upgradeLegacyQuestions(pds) {
         c: { ...blank.q40.c, ...(o.q40?.c || {}) },
       },
       references: Array.isArray(o.references) ? o.references : blank.references,
+      declaration: { ...blank.declaration, ...(o.declaration || {}) },
     };
     return out;
   }

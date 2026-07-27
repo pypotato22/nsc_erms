@@ -292,6 +292,26 @@ export function buildCs212Html(employee, opts = {}) {
         </tr>`).join('') || `<tr><td class="cs212-val" colspan="3">${v('')}</td></tr>`}
     </table>
 
+    <div class="cs212-sec">DECLARATION</div>
+    <table class="cs212-table">
+      <tr>
+        <td class="cs212-lbl">GOVERNMENT ISSUED ID</td>
+        <td class="cs212-val">${v(o.declaration?.governmentIssuedId)}</td>
+      </tr>
+      <tr>
+        <td class="cs212-lbl">ID / LICENSE / PASSPORT NO.</td>
+        <td class="cs212-val">${v(o.declaration?.idNumber)}</td>
+      </tr>
+      <tr>
+        <td class="cs212-lbl">DATE / PLACE OF ISSUANCE</td>
+        <td class="cs212-val">${v(o.declaration?.datePlaceOfIssuance)}</td>
+      </tr>
+      <tr>
+        <td class="cs212-lbl">DATE ACCOMPLISHED</td>
+        <td class="cs212-val">${v(fmtDate(o.declaration?.dateAccomplished))}</td>
+      </tr>
+    </table>
+
     <div class="cs212-sec">NSC EMPLOYMENT ASSIGNMENT</div>
     <table class="cs212-table">
       <tr>

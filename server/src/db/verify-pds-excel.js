@@ -11,6 +11,7 @@ import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
 import { C1_CTRL, C4_YN, isCtrlChecked, isVmlChecked } from '../services/pdsExcelCheckboxes.js';
+import { embedC4Photo } from '../services/pdsExcelPhoto.js';
 import { normalizePds } from '../services/pds.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -178,6 +179,12 @@ async function main() {
       references: [
         { name: 'Dr. Elena Ramos', address: 'NSC', telephoneNo: '09190001111' },
       ],
+      declaration: {
+        governmentIssuedId: 'Passport',
+        idNumber: 'P1234567',
+        datePlaceOfIssuance: '01/01/2020, Manila',
+        dateAccomplished: '2026-07-27',
+      },
     },
   });
 
@@ -255,6 +262,10 @@ async function main() {
   expect('C3', c3, 'J42', 'PSITE');
 
   expect('C4', c4, 'A52', 'Dr. Elena Ramos');
+  expect('C4', c4, 'D61', 'Passport');
+  expect('C4', c4, 'D62', 'P1234567');
+  expect('C4', c4, 'D64', '01/01/2020, Manila');
+  expect('C4', c4, 'J65', '27/07/2026');
 
   const zip = await JSZip.loadAsync(buf);
   const vml1 = await zip.file('xl/drawings/vmlDrawing1.vml').async('string');
@@ -340,6 +351,36 @@ async function main() {
     expect: 'Checked',
     actual: isVmlChecked(vml2, { box: C4_YN['q40.c'].boxNo }) ? 'Checked' : 'off',
     ok: isVmlChecked(vml2, { box: C4_YN['q40.c'].boxNo }),
+  });
+
+  const iconPath = path.join(projectRoot, 'electron/assets/icon.png');
+  const iconBuf = await fs.readFile(iconPath);
+  const withPhoto = await embedC4Photo(buf, iconBuf, 'icon.png');
+  const zipPhoto = await JSZip.loadAsync(withPhoto);
+  const hasMedia = Boolean(zipPhoto.file('xl/media/image1.png'));
+  const drawing2 = await zipPhoto.file('xl/drawings/drawing2.xml').async('string');
+  checks.push({
+    sheet: 'C4',
+    addr: 'photo.media',
+    expect: 'image1.png',
+    actual: hasMedia ? 'image1.png' : 'missing',
+    ok: hasMedia,
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'photo.anchor',
+    expect: 'Employee Photo',
+    actual: drawing2.includes('Employee Photo') ? 'Employee Photo' : 'missing',
+    ok: drawing2.includes('Employee Photo'),
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'photo.controls',
+    expect: 'present',
+    actual: (await zipPhoto.file('xl/drawings/vmlDrawing2.vml').async('string')).includes('Checkbox')
+      ? 'present'
+      : 'missing',
+    ok: Boolean(await zipPhoto.file('xl/drawings/vmlDrawing2.vml')),
   });
 
   const failed = checks.filter((c) => !c.ok);

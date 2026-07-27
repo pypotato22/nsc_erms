@@ -246,6 +246,12 @@ function buildDemoPds() {
           telephoneNo: '09190003333',
         },
       ],
+      declaration: {
+        governmentIssuedId: "Driver's License",
+        idNumber: 'N01-12-345678',
+        datePlaceOfIssuance: '10/06/2018, Catarman, Northern Samar',
+        dateAccomplished: '2026-07-27',
+      },
     },
   });
 }

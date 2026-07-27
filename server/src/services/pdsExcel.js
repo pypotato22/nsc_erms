@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import { coercePdsFromRow, normalizePds } from './pds.js';
 import { applyPdsFormCheckboxes } from './pdsExcelCheckboxes.js';
+import { embedC4PhotoFromEmployee } from './pdsExcelPhoto.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../..');
@@ -79,7 +80,11 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   if (options.skipFormCheckboxes) return buf;
   // ExcelJS strips form controls; graft values into template and tick checkboxes.
-  return applyPdsFormCheckboxes(buf, pds);
+  let out = await applyPdsFormCheckboxes(buf, pds);
+  if (!options.skipPhoto && employee?.profilePicturePath) {
+    out = await embedC4PhotoFromEmployee(out, employee);
+  }
+  return out;
 }
 
 function fillC1(ws, pds, employee) {
@@ -336,6 +341,12 @@ function fillC4(ws, pds) {
     set(ws, `F${r}`, raw(ref.address));
     set(ws, `G${r}`, raw(ref.telephoneNo));
   }
+
+  const decl = o.declaration || {};
+  set(ws, 'D61', raw(decl.governmentIssuedId));
+  set(ws, 'D62', raw(decl.idNumber));
+  set(ws, 'D64', raw(decl.datePlaceOfIssuance));
+  if (decl.dateAccomplished) set(ws, 'J65', dmy(decl.dateAccomplished));
 }
 
 export function pdsDownloadFilename(employee) {

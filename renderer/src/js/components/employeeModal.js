@@ -575,6 +575,16 @@ function renderOtherStep() {
         </div>
       `).join('')}
     </div>
+    <div class="pds-block">
+      <h5>Declaration — Government ID &amp; Date Accomplished</h5>
+      <div class="form-grid">
+        <div class="fg full"><label>Government Issued ID (e.g. Passport, Driver's License)</label><input data-decl="governmentIssuedId" type="text" value="${escapeAttr(o.declaration?.governmentIssuedId || '')}" /></div>
+        <div class="fg full"><label>ID / License / Passport No.</label><input data-decl="idNumber" type="text" value="${escapeAttr(o.declaration?.idNumber || '')}" /></div>
+        <div class="fg full"><label>Date / Place of Issuance</label><input data-decl="datePlaceOfIssuance" type="text" value="${escapeAttr(o.declaration?.datePlaceOfIssuance || '')}" placeholder="e.g. 15/03/2020, Manila" /></div>
+        <div class="fg"><label>Date Accomplished</label><input data-decl="dateAccomplished" type="date" value="${escapeAttr(o.declaration?.dateAccomplished || '')}" /></div>
+      </div>
+      <p class="pds-hint">Signature and right thumbmark are left blank for wet-ink signing on the printed form.</p>
+    </div>
   `;
 }
 
@@ -749,6 +759,17 @@ function collectCurrentStep() {
         _pds.otherInfo.references[i] = { name: '', address: '', telephoneNo: '' };
       }
       _pds.otherInfo.references[i][el.dataset.ref] = el.value.trim();
+    });
+    if (!_pds.otherInfo.declaration || typeof _pds.otherInfo.declaration !== 'object') {
+      _pds.otherInfo.declaration = {
+        governmentIssuedId: '',
+        idNumber: '',
+        datePlaceOfIssuance: '',
+        dateAccomplished: '',
+      };
+    }
+    body.querySelectorAll('[data-decl]').forEach((el) => {
+      _pds.otherInfo.declaration[el.dataset.decl] = el.value.trim();
     });
   } else if (_step === 9) {
     _assignment.employeeNo = getEl('f-emp-no')?.value.trim() || '';
