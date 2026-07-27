@@ -217,6 +217,9 @@ function fillC2(ws, pds) {
   }
 
   const work = Array.isArray(pds.workExperience) ? pds.workExperience : [];
+  // CS Form 212 (Revised 2025) C2 work block has no Monthly Salary / Salary Grade columns
+  // (only dates, position, agency, appointment status, gov't Y/N). PDS monthlySalary /
+  // salaryGrade are kept for the app UI / HTML preview only.
   for (let i = 0; i < Math.min(work.length, 28); i++) {
     const r = 18 + i;
     const w = work[i];

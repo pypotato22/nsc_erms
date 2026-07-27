@@ -365,7 +365,7 @@ Staff only need a new installer when the **client** changes; UI fixes served by 
 | Blank/old UI | Run `npm run build` so `renderer/dist` is current |
 | Backup create fails | `pg_dump` / `PG_DUMP_PATH`; write access to `BACKUPS_ROOT`; `tar` available |
 | Browse… on paths does nothing / wrong folder | Electron must run on the API host; remote clients should paste the server path |
-| PDS PDF fails, Excel works | Install LibreOffice (`SOFFICE_PATH`) or Excel on the API server |
+| PDS PDF fails, Excel works | Install Microsoft Excel (Windows, preferred for checkboxes) or LibreOffice (`SOFFICE_PATH`) on the API server |
 | Cross-origin API errors | Same-origin deploy needs empty `CORS_ORIGINS`; otherwise list exact origins |
 
 ---

@@ -65,7 +65,7 @@ export async function openPdsViewer(employeeOrId) {
       _previewMode = 'html';
       body.innerHTML = `
         <div class="pds-view-banner">
-          Official PDF preview needs <strong>LibreOffice</strong> or <strong>Microsoft Excel</strong> on the API server.
+          Official PDF preview needs <strong>Microsoft Excel</strong> (Windows, preferred) or <strong>LibreOffice</strong> on the API server.
           Showing HTML layout preview instead. Use <strong>Download official Excel</strong> for the CSC file.
         </div>
         ${buildCs212Html(employee, { forPrint: false })}`;

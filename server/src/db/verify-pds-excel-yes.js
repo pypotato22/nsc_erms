@@ -10,7 +10,11 @@ import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
-import { C4_YN, isCtrlChecked } from '../services/pdsExcelCheckboxes.js';
+import {
+  C4_YN,
+  isCtrlChecked,
+  isVmlChecked,
+} from '../services/pdsExcelCheckboxes.js';
 import { normalizePds } from '../services/pds.js';
 import { convertXlsxBufferToPdf } from '../services/pdsPdf.js';
 
@@ -162,6 +166,26 @@ async function main() {
       expect: yn === 'no' ? 'Checked' : 'off',
       actual: noChecked ? 'Checked' : 'off',
       ok: noChecked === (yn === 'no'),
+    });
+  }
+
+  const vml2 = await zip.file('xl/drawings/vmlDrawing2.vml').async('string');
+  for (const key of ['q34.a', 'q35.b', 'q40.a']) {
+    const map = C4_YN[key];
+    const yn = expectedYn[key];
+    const yesVml = isVmlChecked(vml2, { box: map.boxYes });
+    const noVml = isVmlChecked(vml2, { box: map.boxNo });
+    checks.push({
+      addr: `vml.${key}.yes`,
+      expect: yn === 'yes' ? 'Checked' : 'off',
+      actual: yesVml ? 'Checked' : 'off',
+      ok: yesVml === (yn === 'yes'),
+    });
+    checks.push({
+      addr: `vml.${key}.no`,
+      expect: yn === 'no' ? 'Checked' : 'off',
+      actual: noVml ? 'Checked' : 'off',
+      ok: noVml === (yn === 'no'),
     });
   }
 

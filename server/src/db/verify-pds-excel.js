@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
-import { C1_CTRL, C4_YN, isCtrlChecked } from '../services/pdsExcelCheckboxes.js';
+import { C1_CTRL, C4_YN, isCtrlChecked, isVmlChecked } from '../services/pdsExcelCheckboxes.js';
 import { normalizePds } from '../services/pds.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -257,6 +257,8 @@ async function main() {
   expect('C4', c4, 'A52', 'Dr. Elena Ramos');
 
   const zip = await JSZip.loadAsync(buf);
+  const vml1 = await zip.file('xl/drawings/vmlDrawing1.vml').async('string');
+  const vml2 = await zip.file('xl/drawings/vmlDrawing2.vml').async('string');
   // C1 form checkboxes (demo: Male, Married, Filipino)
   const c1Expected = {
     male: true,
@@ -272,7 +274,8 @@ async function main() {
     byNaturalization: false,
   };
   for (const [key, on] of Object.entries(c1Expected)) {
-    const xml = await zip.file(`xl/ctrlProps/ctrlProp${C1_CTRL[key].prop}.xml`).async('string');
+    const meta = C1_CTRL[key];
+    const xml = await zip.file(`xl/ctrlProps/ctrlProp${meta.prop}.xml`).async('string');
     const checked = isCtrlChecked(xml);
     checks.push({
       sheet: 'C1',
@@ -280,6 +283,18 @@ async function main() {
       expect: on ? 'Checked' : 'off',
       actual: checked ? 'Checked' : 'off',
       ok: checked === on,
+    });
+  }
+  // Spot-check VML Checked nodes for a few C1 boxes
+  for (const key of ['male', 'married', 'filipino', 'female']) {
+    const on = c1Expected[key];
+    const vmlOn = isVmlChecked(vml1, C1_CTRL[key]);
+    checks.push({
+      sheet: 'C1',
+      addr: `vml.${key}`,
+      expect: on ? 'Checked' : 'off',
+      actual: vmlOn ? 'Checked' : 'off',
+      ok: vmlOn === on,
     });
   }
 
@@ -311,6 +326,21 @@ async function main() {
       ok: noChecked,
     });
   }
+  // VML spot-check: first and last No boxes should be checked
+  checks.push({
+    sheet: 'C4',
+    addr: 'vml.q34a.no',
+    expect: 'Checked',
+    actual: isVmlChecked(vml2, { box: C4_YN['q34.a'].boxNo }) ? 'Checked' : 'off',
+    ok: isVmlChecked(vml2, { box: C4_YN['q34.a'].boxNo }),
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'vml.q40c.no',
+    expect: 'Checked',
+    actual: isVmlChecked(vml2, { box: C4_YN['q40.c'].boxNo }) ? 'Checked' : 'off',
+    ok: isVmlChecked(vml2, { box: C4_YN['q40.c'].boxNo }),
+  });
 
   const failed = checks.filter((c) => !c.ok);
   for (const c of checks) {

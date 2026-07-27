@@ -5,6 +5,9 @@
  * ExcelJS strips form controls on write. Grafting sheetData/sharedStrings/styles
  * into the intact template keeps native checkboxes. Only write
  * checked="Checked" (omit attribute when off — "Unchecked" breaks Excel open).
+ *
+ * C1 Drop Down 31 (ctrlProp1) is the dual-citizenship *country* list (Q11:Q216),
+ * not birth/naturalization (those are checkboxes).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -13,6 +16,9 @@ import JSZip from 'jszip';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const TEMPLATE_PATH = path.join(projectRoot, 'assets/forms/CS-Form-212-Revised-2025.xlsx');
+
+/** Drop Down 31 — dual citizenship country combo. */
+const C1_COUNTRY_DROP = { prop: 1, listStartRow: 11, listEndRow: 216 };
 
 /**
  * C1 personal checkboxes (ctrlProp N + VML shape id / Check Box N).
@@ -47,6 +53,9 @@ const C4_YN = {
   'q40.b': { yes: 28, no: 31, boxYes: 16, boxNo: 19 },
   'q40.c': { yes: 29, no: 32, boxYes: 17, boxNo: 20 },
 };
+
+/** @type {string[]|null} */
+let countryListCache = null;
 
 function ynAnswer(answer) {
   const a = String(answer || '')
@@ -85,6 +94,23 @@ function setCtrlPropChecked(xml, checked) {
   );
 }
 
+/** Set Drop/combo selection (1-based sel; val is typically sel-1). */
+function setFormDropSelection(xml, sel1Based) {
+  const sel = Math.max(1, Number(sel1Based) || 1);
+  const val = Math.max(0, sel - 1);
+  return xml.replace(/<formControlPr\b([^>]*)\/>/, (_m, attrs) => {
+    const cleaned = String(attrs)
+      .replace(/\ssel="[^"]*"/gi, '')
+      .replace(/\sval="[^"]*"/gi, '');
+    return `<formControlPr${cleaned} sel="${sel}" val="${val}"/>`;
+  });
+}
+
+function getFormDropSel(xml) {
+  const m = /\ssel="(\d+)"/i.exec(xml);
+  return m ? Number(m[1]) : null;
+}
+
 /**
  * Tick a VML checkbox by Check Box number and/or shape id (_x0000_sNNNN).
  */
@@ -115,6 +141,20 @@ function isCtrlChecked(xml) {
   return /checked="Checked"/i.test(xml);
 }
 
+/** Whether a VML checkbox ClientData block contains Checked=1. */
+function isVmlChecked(vml, { box, shapeId }) {
+  let idx = -1;
+  if (box != null) idx = vml.indexOf(`Check_x0020_Box_x0020_${box}"`);
+  if (idx < 0 && shapeId != null) idx = vml.indexOf(`id="_x0000_s${shapeId}"`);
+  if (idx < 0) return false;
+  const clientStart = vml.indexOf('<x:ClientData', idx);
+  if (clientStart < 0) return false;
+  const clientEnd = vml.indexOf('</x:ClientData>', clientStart);
+  if (clientEnd < 0) return false;
+  const block = vml.slice(clientStart, clientEnd);
+  return /<x:Checked>\s*1\s*<\/x:Checked>/i.test(block);
+}
+
 async function tickCtrl(zip, propNum, checked) {
   const part = `xl/ctrlProps/ctrlProp${propNum}.xml`;
   const xml = await zip.file(part).async('string');
@@ -134,7 +174,7 @@ function applyC1Checks(personal) {
     .trim()
     .toLowerCase();
 
-  const ticks = {
+  return {
     filipino: !dual,
     dual,
     male: sex === 'male',
@@ -147,7 +187,105 @@ function applyC1Checks(personal) {
     byBirth: dual && dualType.includes('birth'),
     byNaturalization: dual && dualType.includes('natural'),
   };
-  return ticks;
+}
+
+function parseSharedStrings(ssXml) {
+  const out = [];
+  for (const si of ssXml.matchAll(/<si>([\s\S]*?)<\/si>/g)) {
+    const texts = [...si[1].matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((m) => m[1]);
+    out.push(texts.join(''));
+  }
+  return out;
+}
+
+function decodeXmlText(s) {
+  return String(s || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
+/**
+ * Load Drop Down 31 country list (1-based indices match Excel COM List).
+ * @param {import('jszip')} templateZip
+ */
+async function loadCountryList(templateZip) {
+  if (countryListCache) return countryListCache;
+  const ssXml = await templateZip.file('xl/sharedStrings.xml').async('string');
+  const strings = parseSharedStrings(ssXml);
+  const sheet1 = await templateZip.file('xl/worksheets/sheet1.xml').async('string');
+  const list = [];
+  for (let r = C1_COUNTRY_DROP.listStartRow; r <= C1_COUNTRY_DROP.listEndRow; r++) {
+    const rowMatch = sheet1.match(new RegExp(`<row[^>]* r="${r}"[^>]*>([\\s\\S]*?)</row>`));
+    if (!rowMatch) {
+      list.push('');
+      continue;
+    }
+    const rowBody = rowMatch[1];
+    if (new RegExp(`<c r="Q${r}"[^>]*/>`).test(rowBody)) {
+      list.push('');
+      continue;
+    }
+    const cellMatch = rowBody.match(new RegExp(`<c r="Q${r}"([^>]*)>([\\s\\S]*?)</c>`));
+    if (!cellMatch) {
+      list.push('');
+      continue;
+    }
+    const attrs = cellMatch[1] || '';
+    const body = cellMatch[2] || '';
+    if (/\bt="s"/.test(attrs)) {
+      const idx = Number(/<v>(\d+)<\/v>/.exec(body)?.[1] ?? -1);
+      list.push(idx >= 0 ? decodeXmlText(strings[idx] || '') : '');
+    } else {
+      const inline = /<t[^>]*>([^<]*)<\/t>/.exec(body)?.[1];
+      const v = /<v>([^<]*)<\/v>/.exec(body)?.[1];
+      list.push(decodeXmlText(inline || v || ''));
+    }
+  }
+  countryListCache = list;
+  return list;
+}
+
+/** @returns {number} 1-based selection index for Drop Down 31 */
+function findCountrySel(countries, countryName) {
+  const rawNeedle = String(countryName || '').trim();
+  if (!rawNeedle) return 1; // "Please indicate country:"
+
+  const aliases = {
+    usa: 'united states',
+    'u.s.a.': 'united states',
+    'u.s.': 'united states',
+    'united states of america': 'united states',
+    uk: 'united kingdom',
+    'great britain': 'united kingdom',
+    'korea, south': 'korea',
+    'south korea': 'korea',
+  };
+
+  let needle = rawNeedle.toLowerCase();
+  if (aliases[needle]) needle = aliases[needle];
+
+  const exact = countries.findIndex((t) => t.toLowerCase() === needle);
+  if (exact >= 0) return exact + 1;
+
+  // Prefer longest partial match so "United" does not steal "United Kingdom"
+  let best = -1;
+  let bestLen = 0;
+  countries.forEach((t, i) => {
+    if (!t) return;
+    const low = t.toLowerCase();
+    if (low.includes(needle) || needle.includes(low)) {
+      if (low.length > bestLen) {
+        best = i;
+        bestLen = low.length;
+      }
+    }
+  });
+  if (best >= 0) return best + 1;
+  return 1;
 }
 
 /**
@@ -158,6 +296,8 @@ function applyC1Checks(personal) {
 export async function applyPdsFormCheckboxes(filledBuffer, pds) {
   const templateZip = await JSZip.loadAsync(await fs.readFile(TEMPLATE_PATH));
   const filledZip = await JSZip.loadAsync(filledBuffer);
+
+  const countries = await loadCountryList(templateZip);
 
   templateZip.file(
     'xl/sharedStrings.xml',
@@ -181,6 +321,15 @@ export async function applyPdsFormCheckboxes(filledBuffer, pds) {
     vml1 = setVmlChecked(vml1, meta, on);
   }
   templateZip.file('xl/drawings/vmlDrawing1.vml', vml1);
+
+  // Dual-citizenship country dropdown (Drop Down 31 / ctrlProp1)
+  const dual = Boolean(pds?.personal?.dualCitizenship);
+  const countrySel = dual
+    ? findCountrySel(countries, pds?.personal?.dualCitizenshipCountry)
+    : 1;
+  const dropPath = `xl/ctrlProps/ctrlProp${C1_COUNTRY_DROP.prop}.xml`;
+  const dropXml = await templateZip.file(dropPath).async('string');
+  templateZip.file(dropPath, setFormDropSelection(dropXml, countrySel));
 
   // C4 Yes/No
   let vml2 = await templateZip.file('xl/drawings/vmlDrawing2.vml').async('string');
@@ -207,4 +356,14 @@ export async function applyC4FormCheckboxes(filledBuffer, otherInfo) {
   return applyPdsFormCheckboxes(filledBuffer, { otherInfo });
 }
 
-export { C1_CTRL, C4_YN, ynAnswer, isCtrlChecked, applyC1Checks };
+export {
+  C1_CTRL,
+  C1_COUNTRY_DROP,
+  C4_YN,
+  ynAnswer,
+  isCtrlChecked,
+  isVmlChecked,
+  getFormDropSel,
+  findCountrySel,
+  applyC1Checks,
+};

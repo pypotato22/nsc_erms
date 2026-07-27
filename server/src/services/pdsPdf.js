@@ -59,30 +59,34 @@ export function findSofficePath() {
 }
 
 /**
- * Convert an XLSX buffer to PDF using LibreOffice, or Excel COM on Windows.
+ * Convert an XLSX buffer to PDF using Excel COM on Windows (preferred for
+ * CSC form checkboxes), or LibreOffice (soffice) otherwise.
  * @param {Buffer} xlsxBuffer
  * @returns {Promise<{ pdf: Buffer, engine: 'libreoffice'|'excel-com' }>}
  */
 export async function convertXlsxBufferToPdf(xlsxBuffer) {
   return enqueue(async () => {
-    const soffice = findSofficePath();
-    if (soffice) {
-      const pdf = await convertWithLibreOffice(soffice, xlsxBuffer);
-      return { pdf, engine: 'libreoffice' };
-    }
+    // Prefer Excel COM on Windows — LibreOffice often drops ActiveX/form ticks.
     if (process.platform === 'win32') {
       try {
         const pdf = await convertWithExcelCom(xlsxBuffer);
         return { pdf, engine: 'excel-com' };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        // Only treat as missing Excel when COM object itself cannot be created.
         if (/New-Object.*Excel\.Application|ActiveX component can't create object|0x800401F3/i.test(msg)) {
-          throw missingToolError();
+          // Fall through to LibreOffice if Excel is not installed.
+        } else {
+          throw err;
         }
-        throw err;
       }
     }
+
+    const soffice = findSofficePath();
+    if (soffice) {
+      const pdf = await convertWithLibreOffice(soffice, xlsxBuffer);
+      return { pdf, engine: 'libreoffice' };
+    }
+
     throw missingToolError();
   });
 }
@@ -90,7 +94,7 @@ export async function convertXlsxBufferToPdf(xlsxBuffer) {
 function missingToolError() {
   return new HttpError(
     503,
-    'PDF conversion needs LibreOffice (soffice) or Microsoft Excel on the server. Install LibreOffice and restart the API, or set SOFFICE_PATH. You can still download the official Excel file.',
+    'PDF conversion needs Microsoft Excel (Windows, preferred for form checkboxes) or LibreOffice (soffice) on the server. Install one and restart the API, or set SOFFICE_PATH. You can still download the official Excel file.',
     'MISSING_TOOL',
   );
 }
