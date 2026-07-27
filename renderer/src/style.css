@@ -523,6 +523,10 @@ table tbody tr:hover {
     background: var(--bg-hover);
 }
 
+#emp-table tbody tr.emp-row {
+    cursor: pointer;
+}
+
 table tbody td {
     padding: 11px 18px;
     vertical-align: middle;
@@ -2822,13 +2826,22 @@ body.dark .pds-view-banner {
 }
 
 /* ── PDS wizard (Add / Edit Employee) ──────────────────────────── */
+#emp-overlay {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3vh 16px 24px;
+    overflow-y: auto;
+}
+
 .pds-wizard-modal {
     width: min(1000px, 96vw);
+    height: min(880px, 92vh);
     max-height: 92vh;
     display: flex;
     flex-direction: column;
     padding: 22px 24px 18px;
     overflow: hidden;
+    margin: 0 auto;
 }
 
 .pds-wizard-header {

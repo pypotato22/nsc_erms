@@ -136,8 +136,14 @@ export async function renderEmployeeTable(searchQuery = '') {
 
   tbody.querySelectorAll('tr').forEach((row, i) => {
     const emp = employees[i];
-    row.querySelector('[data-profile-trigger]')?.addEventListener('click', () => {
+    row.addEventListener('click', () => {
       openProfilePanel(emp.id);
+    });
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openProfilePanel(emp.id);
+      }
     });
   });
 
@@ -163,9 +169,9 @@ function buildEmployeeRow(emp, rowNumber) {
     ? String(emp.assignment.startDate).slice(0, 10)
     : '—';
   return `
-    <tr>
+    <tr class="emp-row" tabindex="0" role="button" aria-label="Open profile for ${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}">
       <td style="color:var(--text-3);font-size:0.8571rem;font-family:'DM Mono',monospace;">${String(rowNumber).padStart(2, '0')}</td>
-      <td style="cursor:pointer;" data-profile-trigger>
+      <td>
         <div style="display:flex;align-items:center;gap:10px;">
           ${getAvatarHTML(emp, 34, 12)}
           <div>
