@@ -2152,13 +2152,29 @@ body.dark .dept-link-pos {
 }
 
 .setup-box {
-    width: min(460px, 100%);
+    width: min(520px, 100%);
     text-align: left;
 }
 
 .setup-box h1,
 .setup-box > p {
     text-align: center;
+}
+
+.setup-box .path-field-row {
+    width: 100%;
+}
+
+.setup-box .path-field-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.setup-path-hint {
+    margin: 6px 0 0;
+    font-size: 0.7857rem;
+    color: var(--text-3);
+    line-height: 1.35;
 }
 
 .login-btn:disabled {

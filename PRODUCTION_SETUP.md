@@ -218,9 +218,19 @@ Ensure the service user can access `.env`, TLS files, PostgreSQL, and `FILES_ROO
 
 ## 7. First-run setup wizard
 
-On first open, a superadmin may need to complete the **first-run setup** (organization name, files root, scan inbox, max upload) if not already configured via ops.
+On first open, a superadmin may need to complete the **first-run setup** if not already configured via ops / seed:
 
-Confirm paths match production disks before going live.
+- Organization name
+- **Files root** (`FILES_ROOT`) — employee photos & 201 File binaries
+- **Scan inbox** — folder the copier/scanner drops files into (`processed` / `failed` subfolders are created automatically)
+- **Backup folder** — where in-app zip backups are stored (`BACKUPS_ROOT` / `backups_root` setting)
+- Max upload bytes (cap 30 MB)
+
+Confirm paths match production disks before going live. Paths can be changed later under **Settings → Server storage** (superadmin).
+
+### Desktop Browse buttons
+
+In the Electron desktop app, **Browse…** opens a native folder picker. That path is on **this PC** — only use Browse when the desktop client runs on the **same machine as the API**. Remote LAN staff should paste the server’s absolute path (or ask ops to set it).
 
 ---
 
@@ -298,6 +308,27 @@ Schedule regular in-app backups and copy zips off-box (external disk / NAS).
 - [ ] Users/roles created for staff
 - [ ] Desktop installer deployed; Connect URL verified (HTTPS)
 - [ ] Smoke test: login → employee → document upload → backup create/download
+- [ ] **Second-PC LAN smoke** (see below)
+
+### Second-PC LAN smoke (campus demo)
+
+Run from a staff PC that is **not** the API host:
+
+1. Open `https://<server>:3443` in the browser (or Electron Connect to that URL).
+2. Login as staff — list employees, open a profile, View PDS.
+3. Download Excel for demo employee `DEMO-PDS-001` (or any record with PDS).
+4. If Excel is on PATH / COM available on the **server**, try Download PDF from View PDS.
+5. Attach a file via Scan inbox (drop a PDF into the configured inbox on the server, then assign from the UI).
+6. Admin: open Backup page — confirm backup path text matches Settings → Server storage.
+7. Superadmin (on server desktop only): Settings → Storage paths → Browse works; on remote browser Browse stays hidden.
+
+Paths reminder:
+
+| Path | Purpose | Who sets it |
+|------|---------|-------------|
+| Files root | Photos & 201 File storage | Setup / ops `.env` |
+| Scan inbox | Scanner drop folder | Setup / Settings |
+| Backup folder | Zip archives from Backup page | Setup / Settings |
 
 ---
 
@@ -333,6 +364,8 @@ Staff only need a new installer when the **client** changes; UI fixes served by 
 | Desktop Connect fails | Server running; correct `https://host:port`; firewall; health URL in a browser |
 | Blank/old UI | Run `npm run build` so `renderer/dist` is current |
 | Backup create fails | `pg_dump` / `PG_DUMP_PATH`; write access to `BACKUPS_ROOT`; `tar` available |
+| Browse… on paths does nothing / wrong folder | Electron must run on the API host; remote clients should paste the server path |
+| PDS PDF fails, Excel works | Install LibreOffice (`SOFFICE_PATH`) or Excel on the API server |
 | Cross-origin API errors | Same-origin deploy needs empty `CORS_ORIGINS`; otherwise list exact origins |
 
 ---

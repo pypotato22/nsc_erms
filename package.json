@@ -23,6 +23,7 @@
     "seed:employees": "npm run seed:employees -w server",
     "seed:pds-demo": "npm run seed:pds-demo -w server",
     "verify:pds-excel": "npm run verify:pds-excel -w server",
+    "verify:pds-excel-yes": "npm run verify:pds-excel-yes -w server",
     "db:create": "npm run db:create -w server",
     "db:setup": "npm run db:create && npm run migrate && npm run seed"
   },

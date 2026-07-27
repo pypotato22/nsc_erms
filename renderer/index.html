@@ -72,11 +72,30 @@
             </div>
             <div class="login-field">
                 <label>Files root (disk)</label>
-                <input type="text" id="setup-files" />
+                <div class="path-field-row">
+                    <input type="text" id="setup-files" autocomplete="off" />
+                    <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
+                        id="browse-setup-files" hidden>Browse…</button>
+                </div>
             </div>
             <div class="login-field">
                 <label>Scan inbox folder</label>
-                <input type="text" id="setup-inbox" />
+                <div class="path-field-row">
+                    <input type="text" id="setup-inbox" autocomplete="off" />
+                    <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
+                        id="browse-setup-inbox" hidden>Browse…</button>
+                </div>
+            </div>
+            <div class="login-field">
+                <label>Backup folder</label>
+                <div class="path-field-row">
+                    <input type="text" id="setup-backups" autocomplete="off" />
+                    <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
+                        id="browse-setup-backups" hidden>Browse…</button>
+                </div>
+                <p class="setup-path-hint desktop-only-hint" hidden>
+                    Browse picks a folder on this computer — use only when the desktop app runs on the API server.
+                </p>
             </div>
             <div class="login-field">
                 <label>Max upload bytes (max 31457280)</label>

@@ -169,6 +169,7 @@ function enterAuthenticated(user, setupStatus) {
         ...setupStatus,
         filesRootHint: setupStatus.filesRoot || 'C:\\nsc-erms-files',
         scanInboxHint: setupStatus.scanInboxPath || 'C:\\nsc-erms-files\\inbox',
+        backupsRootHint: setupStatus.backupsRoot || 'C:\\nsc-erms-backups',
       });
       return;
     }
@@ -267,6 +268,7 @@ function afterPasswordChanged() {
           ...status,
           filesRootHint: status.filesRoot || 'C:\\nsc-erms-files',
           scanInboxHint: status.scanInboxPath || 'C:\\nsc-erms-files\\inbox',
+          backupsRootHint: status.backupsRoot || 'C:\\nsc-erms-backups',
         });
       } else {
         showAppShell(App.currentUser);

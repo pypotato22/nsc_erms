@@ -6,6 +6,15 @@
 
 Keep this folder deployed with the API server. The fill endpoint reads the template from disk and writes employee PDS data into it for download.
 
+Cell mapping lives in `server/src/services/pdsExcel.js` (C1–C4). After mapping changes, run:
+
+```bash
+npm run verify:pds-excel      # all-No happy path
+npm run verify:pds-excel-yes  # Yes + details + date/status spot check
+```
+
+Sample outputs land in `tmp/`.
+
 ## PDF preview (Excel → PDF)
 
 `GET /api/v1/employees/:id/pds-pdf` fills the Excel template, then converts to PDF.
