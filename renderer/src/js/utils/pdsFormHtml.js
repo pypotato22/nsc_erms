@@ -254,7 +254,9 @@ export function buildCs212Html(employee, opts = {}) {
         <td class="cs212-val cs212-top">${listCell(o.memberships)}</td>
       </tr>
     </table>
+  </div>
 
+  <div class="cs212-page">
     <div class="cs212-sec">34–40. QUESTIONS</div>
     ${qPrintGroup('34', 'Related by consanguinity or affinity to the appointing/recommending authority, chief of bureau/office, or person who has authority to influence?', [
       ['a', 'Within the third degree?', o.q34?.a],

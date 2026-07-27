@@ -2481,8 +2481,8 @@ body:not(.dark) #toast.t-info {
 /* ── Print ────────────────────────────────────────────────────── */
 @media print {
     @page {
-        size: legal;
-        margin: 0.35in;
+        size: legal portrait;
+        margin: 0.4in 0.35in;
     }
 
     html,
@@ -2491,6 +2491,8 @@ body:not(.dark) #toast.t-info {
         color: #000 !important;
         margin: 0 !important;
         padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
     body>*:not(#print-area) {
@@ -2499,6 +2501,7 @@ body:not(.dark) #toast.t-info {
 
     #print-area {
         display: block !important;
+        position: static !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -2516,23 +2519,28 @@ body:not(.dark) #toast.t-info {
         print-color-adjust: exact !important;
         color-adjust: exact !important;
         box-shadow: none !important;
+        text-shadow: none !important;
     }
 
     #print-area .cs212 {
         padding: 0 !important;
         background: #fff !important;
+        font-size: 8.5px !important;
     }
 
     #print-area .cs212-page {
         width: 100% !important;
         max-width: none !important;
-        margin: 0 !important;
-        padding: 6px 8px 10px !important;
+        margin: 0 0 0 !important;
+        padding: 4px 6px 8px !important;
         border: 1px solid #000 !important;
         background: #fff !important;
         page-break-after: always;
         break-after: page;
+        page-break-inside: auto;
+        break-inside: auto;
         overflow: visible !important;
+        box-sizing: border-box !important;
     }
 
     #print-area .cs212-page:last-child {
@@ -2540,14 +2548,44 @@ body:not(.dark) #toast.t-info {
         break-after: auto;
     }
 
+    #print-area .cs212-topline {
+        grid-template-columns: 84px 1fr 84px !important;
+        gap: 6px !important;
+        margin-bottom: 4px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    #print-area .cs212-title {
+        font-size: 15px !important;
+    }
+
+    #print-area .cs212-warn {
+        font-size: 7.5px !important;
+    }
+
+    #print-area .cs212-photo,
+    #print-area .cs212-photo-empty {
+        width: 84px !important;
+        height: 84px !important;
+        border: 1px solid #000 !important;
+    }
+
     #print-area .cs212-sec {
         background: #444 !important;
         color: #fff !important;
+        font-size: 9px !important;
+        margin-top: 6px !important;
+        break-after: avoid;
+        page-break-after: avoid;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 
     #print-area .cs212-lbl {
         background: #efefef !important;
         color: #000 !important;
+        font-size: 7.5px !important;
     }
 
     #print-area .cs212-val,
@@ -2555,22 +2593,28 @@ body:not(.dark) #toast.t-info {
         background: #fff !important;
         color: #000 !important;
         border-color: #000 !important;
+        padding: 1.5px 3px !important;
     }
 
-    #print-area .cs212-table,
-    #print-area .cs212-table tr {
+    /* Allow long tables to split across pages; keep individual rows intact. */
+    #print-area .cs212-table {
+        break-inside: auto;
+        page-break-inside: auto;
+        font-size: 8px !important;
+    }
+
+    #print-area .cs212-table tr,
+    #print-area .cs212-q,
+    #print-area .cs212-split {
         break-inside: avoid;
         page-break-inside: avoid;
     }
 
-    #print-area .cs212-photo,
-    #print-area .cs212-photo-empty {
-        border: 1px solid #000 !important;
-        print-color-adjust: exact !important;
-    }
-
     #print-area .cs212-footer {
         color: #333 !important;
+        margin-top: 8px !important;
+        break-before: avoid;
+        page-break-before: avoid;
     }
 
     #print-area .cs212-na {
@@ -2612,6 +2656,10 @@ body:not(.dark) #toast.t-info {
     text-align: center;
     color: var(--text-2);
     font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .pds-view-banner {

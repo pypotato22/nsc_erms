@@ -56,7 +56,7 @@ const App = {
   setupCompleted: false,
   searchQuery: '',
   currentPage: 'employees',
-  prefs: { darkMode: false, fontSize: 14 },
+  prefs: { darkMode: false, fontSize: 14, pdsHtmlPrintPreview: true },
   savePrefs() {
     localStorage.setItem('nsc_erms_prefs', JSON.stringify(App.prefs));
   },
@@ -76,6 +76,9 @@ const App = {
     document.querySelectorAll('.fs-btn').forEach((btn) =>
       btn.classList.toggle('active', Number(btn.dataset.size) === App.prefs.fontSize),
     );
+    document
+      .getElementById('pds-html-print-toggle')
+      ?.classList.toggle('on', App.prefs.pdsHtmlPrintPreview !== false);
   },
 };
 
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEmployeeTable();
   initEmployeeModal(getSearchQuery);
   initProfilePanel(getSearchQuery);
-  initPdsViewer();
+  initPdsViewer(() => App.prefs);
   initDocuments();
   initScanInbox();
   initTrash();

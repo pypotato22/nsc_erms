@@ -17,17 +17,24 @@ let _previewMode = 'html';
 let _loadSeq = 0;
 /** @type {AbortController | null} */
 let _pdfAbort = null;
+/** @type {(() => object) | null} */
+let _getPrefs = null;
+/** @type {Promise<'pdf' | 'html'> | null} */
+let _pdfLoadPromise = null;
+/** @type {((outcome: 'pdf' | 'html') => void) | null} */
+let _pdfLoadResolve = null;
 
-export function initPdsViewer() {
+function isHtmlPrintPreviewEnabled() {
+  return _getPrefs?.().pdsHtmlPrintPreview !== false;
+}
+
+export function initPdsViewer(getPrefs) {
+  if (typeof getPrefs === 'function') _getPrefs = getPrefs;
+
   getEl('pds-view-close')?.addEventListener('click', closePdsViewer);
   getEl('pds-view-cancel')?.addEventListener('click', closePdsViewer);
   getEl('pds-view-print')?.addEventListener('click', () => {
-    if (!_employee) return;
-    if (_previewMode === 'pdf' && _pdfObjectUrl) {
-      printPdfPreview(_pdfObjectUrl);
-      return;
-    }
-    printPds(_employee);
+    void handlePrintClick();
   });
   getEl('pds-view-download-excel')?.addEventListener('click', () => {
     if (!_employee?.id) return;
@@ -40,6 +47,36 @@ export function initPdsViewer() {
   getEl('pds-view-overlay')?.addEventListener('click', (e) => {
     if (e.target === getEl('pds-view-overlay')) closePdsViewer();
   });
+}
+
+async function handlePrintClick() {
+  if (!_employee) return;
+
+  if (_previewMode === 'pdf' && _pdfObjectUrl) {
+    printPdfPreview(_pdfObjectUrl);
+    return;
+  }
+
+  if (!isHtmlPrintPreviewEnabled()) {
+    const printBtn = getEl('pds-view-print');
+    if (printBtn) printBtn.disabled = true;
+    try {
+      const outcome = await waitForPdfLoad();
+      if (outcome === 'pdf' && _pdfObjectUrl) {
+        printPdfPreview(_pdfObjectUrl);
+        return;
+      }
+      showToast(
+        'Official PDF is not available. Enable HTML print preview in Settings or use Download Excel.',
+        'error',
+      );
+    } finally {
+      updatePrintButton();
+    }
+    return;
+  }
+
+  printPds(_employee);
 }
 
 export async function openPdsViewer(employeeOrId) {
@@ -59,15 +96,15 @@ export async function openPdsViewer(employeeOrId) {
     getEl('pds-view-title').textContent = `PDS — ${name || 'Employee'}`;
     getEl('pds-view-overlay').classList.add('open');
 
-    // Instant HTML preview; official PDF upgrades in the background.
+    setPdfActionsVisible(false);
+
+    // Always show the HTML preview immediately for fast open.
     showHtmlPreview(employee, {
       status: 'loading',
       message:
         'Showing layout preview. Generating official PDF from CS Form 212 Excel…',
     });
-    setPdfActionsVisible(false);
-    getEl('pds-view-print').textContent = 'Print HTML preview';
-
+    updatePrintButton();
     void loadOfficialPdfInBackground(employee.id);
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Could not open PDS.', 'error');
@@ -109,8 +146,27 @@ function renderStatusBanner(status, message) {
   }<span>${message}</span></div>`;
 }
 
+function beginPdfLoad() {
+  _pdfLoadPromise = new Promise((resolve) => {
+    _pdfLoadResolve = resolve;
+  });
+}
+
+function finishPdfLoad(outcome) {
+  _pdfLoadResolve?.(outcome);
+  _pdfLoadResolve = null;
+}
+
+function waitForPdfLoad() {
+  return _pdfLoadPromise || Promise.resolve(_previewMode === 'pdf' ? 'pdf' : 'html');
+}
+
+/**
+ * @returns {Promise<'pdf' | 'html'>}
+ */
 async function loadOfficialPdfInBackground(employeeId) {
   cancelPdfLoad();
+  beginPdfLoad();
   const seq = ++_loadSeq;
   const abort = new AbortController();
   _pdfAbort = abort;
@@ -121,16 +177,15 @@ async function loadOfficialPdfInBackground(employeeId) {
       credentials: 'include',
       signal: abort.signal,
     });
-    if (seq !== _loadSeq) return;
+    if (seq !== _loadSeq) return 'html';
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       if (data?.error?.code === 'MISSING_TOOL') {
-        updateStatusBanner(
-          'info',
+        return handlePdfUnavailable(
+          seq,
           'Official PDF needs Microsoft Excel (Windows, preferred) or LibreOffice on the API server. Showing HTML layout preview. Use Download Excel for the CSC file.',
         );
-        return;
       }
       throw new ApiError(
         res.status,
@@ -140,7 +195,7 @@ async function loadOfficialPdfInBackground(employeeId) {
     }
 
     const blob = await res.blob();
-    if (seq !== _loadSeq) return;
+    if (seq !== _loadSeq) return 'html';
 
     clearPdfObjectUrl();
     _pdfObjectUrl = URL.createObjectURL(blob);
@@ -148,26 +203,43 @@ async function loadOfficialPdfInBackground(employeeId) {
     getEl('pds-view-body').innerHTML = `
       <iframe class="pds-pdf-frame" title="Official PDS PDF" src="${_pdfObjectUrl}"></iframe>`;
     setPdfActionsVisible(true);
-    getEl('pds-view-print').textContent = 'Print PDF';
+    updatePrintButton();
+    finishPdfLoad('pdf');
+    return 'pdf';
   } catch (err) {
-    if (err?.name === 'AbortError' || seq !== _loadSeq) return;
+    if (err?.name === 'AbortError' || seq !== _loadSeq) return 'html';
     if (err instanceof ApiError && (err.code === 'MISSING_TOOL' || err.status === 503)) {
-      updateStatusBanner(
-        'info',
+      return handlePdfUnavailable(
+        seq,
         'Official PDF needs Microsoft Excel (Windows, preferred) or LibreOffice on the API server. Showing HTML layout preview. Use Download Excel for the CSC file.',
       );
-      return;
     }
     console.warn('PDS PDF preview failed:', err);
-    updateStatusBanner(
-      'error',
+    return handlePdfUnavailable(
+      seq,
       'Official PDF unavailable — showing HTML layout preview. You can still Download Excel.',
-    );
-    showToast(
       err instanceof ApiError ? err.message : 'Official PDF unavailable; showing HTML preview.',
-      'info',
     );
   }
+}
+
+/**
+ * @param {number} seq
+ * @param {string} bannerMessage
+ * @param {string} [toastMessage]
+ * @returns {'html'}
+ */
+function handlePdfUnavailable(seq, bannerMessage, toastMessage) {
+  if (seq !== _loadSeq) return 'html';
+  if (isHtmlPrintPreviewEnabled() && _employee) {
+    updateStatusBanner('info', bannerMessage);
+  } else if (_employee) {
+    showHtmlPreview(_employee, { status: 'info', message: bannerMessage });
+  }
+  updatePrintButton();
+  finishPdfLoad('html');
+  if (toastMessage) showToast(toastMessage, 'info');
+  return 'html';
 }
 
 function cancelPdfLoad() {
@@ -175,6 +247,26 @@ function cancelPdfLoad() {
     _pdfAbort.abort();
     _pdfAbort = null;
   }
+}
+
+function updatePrintButton() {
+  const btn = getEl('pds-view-print');
+  if (!btn) return;
+
+  if (_previewMode === 'pdf' && _pdfObjectUrl) {
+    btn.textContent = 'Print PDF';
+    btn.disabled = false;
+    return;
+  }
+
+  if (!isHtmlPrintPreviewEnabled()) {
+    btn.textContent = 'Print';
+    btn.disabled = true;
+    return;
+  }
+
+  btn.textContent = 'Print HTML preview';
+  btn.disabled = false;
 }
 
 function setPdfActionsVisible(visible) {
@@ -185,11 +277,15 @@ function setPdfActionsVisible(visible) {
 export function closePdsViewer() {
   _loadSeq += 1;
   cancelPdfLoad();
+  finishPdfLoad('html');
+  _pdfLoadPromise = null;
   getEl('pds-view-overlay')?.classList.remove('open');
   _employee = null;
   _previewMode = 'html';
   clearPdfObjectUrl();
   setPdfActionsVisible(false);
+  const printBtn = getEl('pds-view-print');
+  if (printBtn) printBtn.disabled = false;
 }
 
 function clearPdfObjectUrl() {
@@ -203,9 +299,14 @@ export function printPds(employee) {
   const area = getEl('print-area');
   if (!area) return;
   area.innerHTML = buildCs212Html(employee, { forPrint: true });
+  document.body.classList.add('printing-pds');
 
+  let cleaned = false;
   const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
     area.innerHTML = '';
+    document.body.classList.remove('printing-pds');
     window.removeEventListener('afterprint', cleanup);
   };
   window.addEventListener('afterprint', cleanup);
@@ -229,13 +330,13 @@ export function printPds(employee) {
     requestAnimationFrame(() => {
       setTimeout(() => {
         window.print();
+        setTimeout(cleanup, 1500);
       }, 100);
     });
   });
 }
 
 function printPdfPreview(objectUrl) {
-  // Hidden iframe — avoids Electron opening a new BrowserWindow via window.open
   const existing = document.getElementById('pds-print-frame');
   if (existing) existing.remove();
 

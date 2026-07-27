@@ -37,6 +37,7 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
   }
 
   getEl('dark-toggle').addEventListener('click', handleToggleDark);
+  getEl('pds-html-print-toggle')?.addEventListener('click', handleTogglePdsHtmlPrint);
 
   document.querySelectorAll('.fs-btn').forEach((btn) => {
     btn.addEventListener('click', () => handleSetFont(Number(btn.dataset.size), btn));
@@ -144,6 +145,7 @@ async function browseStorageFolder(inputId, title) {
 
 export async function renderSettingsPage() {
   syncRoleFromSession();
+  syncPrefsUi();
   await renderUserTable();
   await renderAuditLogs();
   await refreshStats();
@@ -239,6 +241,29 @@ function handleToggleDark() {
   document.body.classList.toggle('dark', prefs.darkMode);
   getEl('dark-toggle').classList.toggle('on', prefs.darkMode);
   _savePrefs();
+}
+
+function syncPrefsUi() {
+  const prefs = _getPrefs?.() || {};
+  getEl('dark-toggle')?.classList.toggle('on', Boolean(prefs.darkMode));
+  getEl('pds-html-print-toggle')?.classList.toggle(
+    'on',
+    prefs.pdsHtmlPrintPreview !== false,
+  );
+}
+
+function handleTogglePdsHtmlPrint() {
+  const prefs = _getPrefs();
+  const enabled = prefs.pdsHtmlPrintPreview !== false;
+  prefs.pdsHtmlPrintPreview = !enabled;
+  getEl('pds-html-print-toggle')?.classList.toggle('on', prefs.pdsHtmlPrintPreview);
+  _savePrefs();
+  showToast(
+    prefs.pdsHtmlPrintPreview
+      ? 'Print HTML preview enabled — you can print the HTML layout while the PDF loads.'
+      : 'Print HTML preview disabled — printing will wait for the official PDF.',
+    'info',
+  );
 }
 
 function handleSetFont(size, btnEl) {
