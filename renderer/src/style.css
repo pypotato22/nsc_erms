@@ -2623,12 +2623,43 @@ body:not(.dark) #toast.t-info {
     color: #5c4b1a;
     font-size: 0.857rem;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pds-view-banner-loading {
+    background: #eef5fb;
+    border-color: #b8d0e8;
+    color: #1e3a5f;
+}
+
+.pds-inline-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    flex: 0 0 auto;
+    animation: pds-spin 0.8s linear infinite;
 }
 
 body.dark .pds-view-banner {
     background: rgba(230, 180, 60, 0.12);
     border-color: rgba(230, 180, 60, 0.35);
     color: #f0e2b0;
+}
+
+body.dark .pds-view-banner-loading {
+    background: rgba(90, 150, 220, 0.12);
+    border-color: rgba(90, 150, 220, 0.35);
+    color: #c5daf0;
+}
+
+@keyframes pds-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .pds-pdf-frame {

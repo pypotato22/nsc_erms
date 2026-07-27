@@ -13,6 +13,10 @@ let _employee = null;
 let _pdfObjectUrl = null;
 /** @type {'pdf' | 'html'} */
 let _previewMode = 'html';
+/** Bumps on each open/close so stale PDF responses are ignored. */
+let _loadSeq = 0;
+/** @type {AbortController | null} */
+let _pdfAbort = null;
 
 export function initPdsViewer() {
   getEl('pds-view-close')?.addEventListener('click', closePdsViewer);
@@ -55,35 +59,78 @@ export async function openPdsViewer(employeeOrId) {
     getEl('pds-view-title').textContent = `PDS — ${name || 'Employee'}`;
     getEl('pds-view-overlay').classList.add('open');
 
-    const body = getEl('pds-view-body');
-    body.innerHTML =
-      '<div class="pds-view-loading">Generating official PDF from CS Form 212 Excel…</div>';
+    // Instant HTML preview; official PDF upgrades in the background.
+    showHtmlPreview(employee, {
+      status: 'loading',
+      message:
+        'Showing layout preview. Generating official PDF from CS Form 212 Excel…',
+    });
     setPdfActionsVisible(false);
+    getEl('pds-view-print').textContent = 'Print HTML preview';
 
-    const pdfOk = await tryLoadOfficialPdf(employee.id);
-    if (!pdfOk) {
-      _previewMode = 'html';
-      body.innerHTML = `
-        <div class="pds-view-banner">
-          Official PDF preview needs <strong>Microsoft Excel</strong> (Windows, preferred) or <strong>LibreOffice</strong> on the API server.
-          Showing HTML layout preview instead. Use <strong>Download official Excel</strong> for the CSC file.
-        </div>
-        ${buildCs212Html(employee, { forPrint: false })}`;
-      getEl('pds-view-print').textContent = 'Print HTML preview';
-    }
+    void loadOfficialPdfInBackground(employee.id);
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Could not open PDS.', 'error');
   }
 }
 
-async function tryLoadOfficialPdf(employeeId) {
+/**
+ * @param {object} employee
+ * @param {{ status?: 'loading'|'error'|'info', message?: string } | null} [banner]
+ */
+function showHtmlPreview(employee, banner = null) {
+  _previewMode = 'html';
+  const body = getEl('pds-view-body');
+  if (!body) return;
+  const bannerHtml = banner?.message ? renderStatusBanner(banner.status || 'info', banner.message) : '';
+  body.innerHTML = `${bannerHtml}${buildCs212Html(employee, { forPrint: false })}`;
+}
+
+/**
+ * @param {'loading'|'error'|'info'} status
+ * @param {string} message
+ */
+function updateStatusBanner(status, message) {
+  const body = getEl('pds-view-body');
+  if (!body || _previewMode !== 'html') return;
+  let el = body.querySelector('[data-pds-status]');
+  if (!el) {
+    el = document.createElement('div');
+    el.setAttribute('data-pds-status', '');
+    body.prepend(el);
+  }
+  el.outerHTML = renderStatusBanner(status, message);
+}
+
+function renderStatusBanner(status, message) {
+  const loading = status === 'loading';
+  return `<div class="pds-view-banner${loading ? ' pds-view-banner-loading' : ''}" data-pds-status>${
+    loading ? '<span class="pds-inline-spinner" aria-hidden="true"></span>' : ''
+  }<span>${message}</span></div>`;
+}
+
+async function loadOfficialPdfInBackground(employeeId) {
+  cancelPdfLoad();
+  const seq = ++_loadSeq;
+  const abort = new AbortController();
+  _pdfAbort = abort;
   clearPdfObjectUrl();
+
   try {
-    const res = await fetch(downloadPdsPdfUrl(employeeId), { credentials: 'include' });
+    const res = await fetch(downloadPdsPdfUrl(employeeId), {
+      credentials: 'include',
+      signal: abort.signal,
+    });
+    if (seq !== _loadSeq) return;
+
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       if (data?.error?.code === 'MISSING_TOOL') {
-        return false;
+        updateStatusBanner(
+          'info',
+          'Official PDF needs Microsoft Excel (Windows, preferred) or LibreOffice on the API server. Showing HTML layout preview. Use Download Excel for the CSC file.',
+        );
+        return;
       }
       throw new ApiError(
         res.status,
@@ -91,24 +138,42 @@ async function tryLoadOfficialPdf(employeeId) {
         data?.error?.message || 'PDF generation failed',
       );
     }
+
     const blob = await res.blob();
+    if (seq !== _loadSeq) return;
+
+    clearPdfObjectUrl();
     _pdfObjectUrl = URL.createObjectURL(blob);
     _previewMode = 'pdf';
     getEl('pds-view-body').innerHTML = `
       <iframe class="pds-pdf-frame" title="Official PDS PDF" src="${_pdfObjectUrl}"></iframe>`;
     setPdfActionsVisible(true);
     getEl('pds-view-print').textContent = 'Print PDF';
-    return true;
   } catch (err) {
+    if (err?.name === 'AbortError' || seq !== _loadSeq) return;
     if (err instanceof ApiError && (err.code === 'MISSING_TOOL' || err.status === 503)) {
-      return false;
+      updateStatusBanner(
+        'info',
+        'Official PDF needs Microsoft Excel (Windows, preferred) or LibreOffice on the API server. Showing HTML layout preview. Use Download Excel for the CSC file.',
+      );
+      return;
     }
     console.warn('PDS PDF preview failed:', err);
+    updateStatusBanner(
+      'error',
+      'Official PDF unavailable — showing HTML layout preview. You can still Download Excel.',
+    );
     showToast(
       err instanceof ApiError ? err.message : 'Official PDF unavailable; showing HTML preview.',
       'info',
     );
-    return false;
+  }
+}
+
+function cancelPdfLoad() {
+  if (_pdfAbort) {
+    _pdfAbort.abort();
+    _pdfAbort = null;
   }
 }
 
@@ -118,6 +183,8 @@ function setPdfActionsVisible(visible) {
 }
 
 export function closePdsViewer() {
+  _loadSeq += 1;
+  cancelPdfLoad();
   getEl('pds-view-overlay')?.classList.remove('open');
   _employee = null;
   _previewMode = 'html';
