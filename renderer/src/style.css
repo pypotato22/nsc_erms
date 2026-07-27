@@ -2889,11 +2889,6 @@ body.dark .pds-view-banner {
     font-weight: 700;
 }
 
-.pds-step.done {
-    border-color: var(--green-500, #1a9b5a);
-    color: var(--green-600, #157a48);
-}
-
 .pds-step-num {
     width: 20px;
     height: 20px;

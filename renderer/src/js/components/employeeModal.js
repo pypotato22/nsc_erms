@@ -135,8 +135,7 @@ function renderStepper() {
   const nav = getEl('pds-stepper');
   nav.innerHTML = WIZARD_STEPS.map((s) => {
     const active = s.id === _step ? 'active' : '';
-    const done = s.id < _step ? 'done' : '';
-    return `<button type="button" class="pds-step ${active} ${done}" data-goto-step="${s.id}" title="${escapeAttr(s.title)}">
+    return `<button type="button" class="pds-step ${active}" data-goto-step="${s.id}" title="${escapeAttr(s.title)}">
       <span class="pds-step-num">${s.id}</span>
       <span class="pds-step-label">${escapeHtml(s.short)}</span>
     </button>`;
