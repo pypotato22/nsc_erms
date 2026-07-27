@@ -538,6 +538,36 @@
                                 <button id="refresh" class="btn btn-sm btn-edit">Refresh</button>
                             </div>
                         </div>
+                        <div class="settings-card settings-card--wide needs-superadmin">
+                            <h4>Storage paths</h4>
+                            <p class="settings-hint">
+                                Absolute paths on the <strong>server</strong> machine. Changing a path does not move
+                                existing files — new scans/backups use the new folder from then on.
+                            </p>
+                            <div class="storage-paths-form">
+                                <div class="fg full">
+                                    <label for="storage-files-root">Files root (read-only)</label>
+                                    <input id="storage-files-root" type="text" readonly />
+                                </div>
+                                <div class="fg full">
+                                    <label for="storage-scan-inbox">Scan inbox path</label>
+                                    <input id="storage-scan-inbox" type="text"
+                                        placeholder="C:\nsc-erms-files\inbox" autocomplete="off" />
+                                    <span class="field-hint" id="storage-scan-source"></span>
+                                </div>
+                                <div class="fg full">
+                                    <label for="storage-backups-root">Backup path</label>
+                                    <input id="storage-backups-root" type="text"
+                                        placeholder="C:\nsc-erms-backups" autocomplete="off" />
+                                    <span class="field-hint" id="storage-backups-source"></span>
+                                </div>
+                                <p class="login-err" id="storage-paths-err" hidden></p>
+                                <div class="storage-paths-actions">
+                                    <button type="button" id="storage-paths-validate" class="btn btn-cancel">Test paths</button>
+                                    <button type="button" id="storage-paths-save" class="btn btn-primary">Save paths</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="settings-card settings-card--wide needs-admin">
                             <h4>User Accounts</h4>
                             <table class="user-table" id="user-table"></table>
@@ -570,6 +600,7 @@
                                     <option value="document.restore">Document restore</option>
                                     <option value="document.permanent_delete">Document purge</option>
                                     <option value="backup.create">Backup create</option>
+                                    <option value="settings.storage_update">Storage paths update</option>
                                     <option value="user.create">User create</option>
                                     <option value="user.update">User update</option>
                                     <option value="user.password_reset">User password reset</option>

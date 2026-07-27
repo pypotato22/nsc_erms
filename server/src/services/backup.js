@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { ulid } from 'ulid';
 import { config, getPgConfig } from '../config.js';
-import { getFilesRoot } from './settings.js';
+import { getFilesRoot, getBackupsRoot } from './settings.js';
 
 let _busy = false;
 
@@ -11,13 +11,10 @@ export function isBackupBusy() {
   return _busy;
 }
 
-export function getBackupsRoot() {
-  return config.backupsRoot;
-}
-
-export function ensureBackupsRoot() {
-  fs.mkdirSync(config.backupsRoot, { recursive: true });
-  return config.backupsRoot;
+export async function ensureBackupsRoot() {
+  const root = await getBackupsRoot();
+  fs.mkdirSync(root, { recursive: true });
+  return root;
 }
 
 function stamp() {
@@ -94,8 +91,6 @@ async function dumpDatabase(sqlPath) {
 }
 
 async function archiveFolder(sourceDir, zipPath) {
-  // Prefer Compress-Archive on Windows so Explorer can open the zip.
-  // Fall back to tar without "./" entry prefixes (Explorer-friendly).
   const entries = fs.readdirSync(sourceDir);
   if (!entries.length) {
     throw Object.assign(new Error('Nothing to archive'), { code: 'VALIDATION' });
@@ -103,7 +98,6 @@ async function archiveFolder(sourceDir, zipPath) {
 
   if (process.platform === 'win32') {
     try {
-      const psPath = entries.map((e) => path.join(sourceDir, e)).join(', ');
       await runCommand('powershell.exe', [
         '-NoProfile',
         '-Command',
@@ -128,9 +122,8 @@ function readMeta(metaPath) {
   }
 }
 
-export function listBackups() {
-  ensureBackupsRoot();
-  const root = config.backupsRoot;
+export async function listBackups() {
+  const root = await ensureBackupsRoot();
   const names = fs.readdirSync(root).filter((n) => n.endsWith('.meta.json'));
   const items = [];
   for (const name of names) {
@@ -154,14 +147,14 @@ export function listBackups() {
   return items;
 }
 
-export function getBackupPaths(id) {
-  ensureBackupsRoot();
+export async function getBackupPaths(id) {
+  const root = await ensureBackupsRoot();
   const safeId = String(id || '').replace(/[^a-zA-Z0-9._-]/g, '');
   if (!safeId) return null;
-  const metaPath = path.join(config.backupsRoot, `${safeId}.meta.json`);
+  const metaPath = path.join(root, `${safeId}.meta.json`);
   const meta = readMeta(metaPath);
   if (!meta) return null;
-  const zipPath = path.join(config.backupsRoot, meta.fileName || `${safeId}.zip`);
+  const zipPath = path.join(root, meta.fileName || `${safeId}.zip`);
   if (!fs.existsSync(zipPath)) return null;
   return { meta, zipPath, metaPath };
 }
@@ -177,14 +170,14 @@ export async function createBackup({ actorUserId, actorDisplayName }) {
   }
   _busy = true;
 
+  const backupsRoot = await ensureBackupsRoot();
   const id = `nsc-erms-${stamp()}-${ulid().slice(-6).toLowerCase()}`;
-  const workDir = path.join(config.backupsRoot, `.work-${id}`);
+  const workDir = path.join(backupsRoot, `.work-${id}`);
   const zipName = `${id}.zip`;
-  const zipPath = path.join(config.backupsRoot, zipName);
-  const metaPath = path.join(config.backupsRoot, `${id}.meta.json`);
+  const zipPath = path.join(backupsRoot, zipName);
+  const metaPath = path.join(backupsRoot, `${id}.meta.json`);
 
   try {
-    ensureBackupsRoot();
     fs.rmSync(workDir, { recursive: true, force: true });
     fs.mkdirSync(workDir, { recursive: true });
 
@@ -198,11 +191,10 @@ export async function createBackup({ actorUserId, actorDisplayName }) {
       fs.cpSync(filesRoot, filesDest, {
         recursive: true,
         filter: (src) => {
-          // Never nest backups inside the archive
           const resolved = path.resolve(src);
           return (
-            resolved !== path.resolve(config.backupsRoot) &&
-            !resolved.startsWith(path.resolve(config.backupsRoot) + path.sep)
+            resolved !== path.resolve(backupsRoot) &&
+            !resolved.startsWith(path.resolve(backupsRoot) + path.sep)
           );
         },
       });
@@ -262,8 +254,8 @@ export async function createBackup({ actorUserId, actorDisplayName }) {
   }
 }
 
-export function deleteBackup(id) {
-  const paths = getBackupPaths(id);
+export async function deleteBackup(id) {
+  const paths = await getBackupPaths(id);
   if (!paths) {
     const err = new Error('Backup not found');
     err.code = 'NOT_FOUND';

@@ -9,6 +9,11 @@ import {
 import { listEmployees } from '../api/employees.js';
 import { listDepartments } from '../api/departments.js';
 import { listAuditLogs } from '../api/audit.js';
+import {
+  getStorageSettings,
+  validateStorageSettings,
+  updateStorageSettings,
+} from '../api/settings.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
@@ -90,6 +95,17 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
     _auditPage += 1;
     renderAuditLogs().catch(() => {});
   });
+
+  getEl('storage-paths-validate')?.addEventListener('click', () => {
+    testStoragePaths().catch((err) => {
+      setStorageErr(err instanceof ApiError ? err.message : 'Path check failed.');
+    });
+  });
+  getEl('storage-paths-save')?.addEventListener('click', () => {
+    saveStoragePaths().catch((err) => {
+      setStorageErr(err instanceof ApiError ? err.message : 'Failed to save paths.');
+    });
+  });
 }
 
 export async function renderSettingsPage() {
@@ -97,6 +113,82 @@ export async function renderSettingsPage() {
   await renderUserTable();
   await renderAuditLogs();
   await refreshStats();
+  await loadStoragePaths();
+}
+
+function sourceLabel(source) {
+  if (source === 'settings') return 'from saved settings';
+  if (source === 'env') return 'from environment / default';
+  if (source === 'default') return 'default under files root';
+  return '';
+}
+
+function setStorageErr(msg) {
+  const el = getEl('storage-paths-err');
+  if (!el) return;
+  if (!msg) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.hidden = false;
+  el.textContent = msg;
+}
+
+function readStorageForm() {
+  return {
+    scanInboxPath: getEl('storage-scan-inbox')?.value.trim() || '',
+    backupsRoot: getEl('storage-backups-root')?.value.trim() || '',
+  };
+}
+
+async function loadStoragePaths() {
+  if (!isSuperadmin()) return;
+  const filesEl = getEl('storage-files-root');
+  const inboxEl = getEl('storage-scan-inbox');
+  const backupsEl = getEl('storage-backups-root');
+  if (!filesEl || !inboxEl || !backupsEl) return;
+
+  setStorageErr('');
+  try {
+    const data = await getStorageSettings();
+    filesEl.value = data.filesRoot || '';
+    inboxEl.value = data.scanInboxPath || '';
+    backupsEl.value = data.backupsRoot || '';
+    const scanSrc = getEl('storage-scan-source');
+    const bakSrc = getEl('storage-backups-source');
+    if (scanSrc) scanSrc.textContent = sourceLabel(data.sources?.scanInboxPath);
+    if (bakSrc) bakSrc.textContent = sourceLabel(data.sources?.backupsRoot);
+  } catch (err) {
+    setStorageErr(err instanceof ApiError ? err.message : 'Failed to load storage paths.');
+  }
+}
+
+async function testStoragePaths() {
+  if (!isSuperadmin()) return;
+  setStorageErr('');
+  const body = readStorageForm();
+  await validateStorageSettings(body);
+  showToast('Paths are valid and writable.', 'success');
+}
+
+async function saveStoragePaths() {
+  if (!isSuperadmin()) return;
+  setStorageErr('');
+  const body = readStorageForm();
+  if (!body.scanInboxPath || !body.backupsRoot) {
+    setStorageErr('Both scan inbox and backup paths are required.');
+    return;
+  }
+  const data = await updateStorageSettings(body);
+  getEl('storage-files-root').value = data.filesRoot || '';
+  getEl('storage-scan-inbox').value = data.scanInboxPath || '';
+  getEl('storage-backups-root').value = data.backupsRoot || '';
+  const scanSrc = getEl('storage-scan-source');
+  const bakSrc = getEl('storage-backups-source');
+  if (scanSrc) scanSrc.textContent = sourceLabel(data.sources?.scanInboxPath);
+  if (bakSrc) bakSrc.textContent = sourceLabel(data.sources?.backupsRoot);
+  showToast('Storage paths saved.', 'success');
 }
 
 function syncRoleFromSession() {

@@ -3098,3 +3098,43 @@ body[data-role="viewer"] .needs-admin,
 body[data-role="staff"] .needs-admin {
     display: none !important;
 }
+
+body[data-role="viewer"] .needs-superadmin,
+body[data-role="staff"] .needs-superadmin,
+body[data-role="admin"] .needs-superadmin {
+    display: none !important;
+}
+
+.settings-hint {
+    margin: -6px 0 16px;
+    font-size: 0.8571rem;
+    color: var(--text-2);
+    line-height: 1.45;
+}
+
+.storage-paths-form .field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-3);
+    font-family: 'DM Mono', monospace;
+}
+
+.storage-paths-form input[readonly] {
+    opacity: 0.75;
+    cursor: default;
+    background: var(--bg-row-alt, var(--bg-base));
+}
+
+.storage-paths-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+#storage-paths-err {
+    margin: 4px 0 0;
+    font-size: 0.8571rem;
+    color: var(--red-500, #d64545);
+}

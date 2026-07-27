@@ -253,11 +253,15 @@ async function seed() {
 
     // App settings defaults
     const inbox = ensureDirs(filesRoot, process.env.SCAN_INBOX_PATH);
+    const backupsRoot =
+      process.env.BACKUPS_ROOT || path.join(root, 'backups');
+    fs.mkdirSync(backupsRoot, { recursive: true });
     const defaults = {
       setup_completed: false,
       org_name: 'Northern Samar Colleges',
       files_root: filesRoot,
       scan_inbox_path: inbox,
+      backups_root: backupsRoot,
       max_upload_bytes: maxUpload,
     };
     for (const [key, value] of Object.entries(defaults)) {
@@ -290,9 +294,10 @@ async function seed() {
     }
 
     await client.query('COMMIT');
-    console.log('Seed complete.');
+    console.log(`Seed complete.`);
     console.log(`FILES_ROOT: ${filesRoot}`);
     console.log(`SCAN_INBOX: ${inbox}`);
+    console.log(`BACKUPS_ROOT: ${backupsRoot}`);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

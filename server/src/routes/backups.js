@@ -8,7 +8,7 @@ import {
   listBackups,
   getBackupPaths,
   deleteBackup,
-  getBackupsRoot,
+  ensureBackupsRoot,
   isBackupBusy,
 } from '../services/backup.js';
 
@@ -20,10 +20,11 @@ backupsRouter.use(requireAuth);
 
 backupsRouter.get('/', manageRoles, async (_req, res, next) => {
   try {
+    const backupsRoot = await ensureBackupsRoot();
     res.json({
-      backupsRoot: getBackupsRoot(),
+      backupsRoot,
       busy: isBackupBusy(),
-      backups: listBackups(),
+      backups: await listBackups(),
     });
   } catch (err) {
     next(err);
@@ -75,7 +76,7 @@ backupsRouter.post('/', manageRoles, async (req, res, next) => {
 
 backupsRouter.get('/:id/download', manageRoles, async (req, res, next) => {
   try {
-    const paths = getBackupPaths(req.params.id);
+    const paths = await getBackupPaths(req.params.id);
     if (!paths) throw new HttpError(404, 'Backup not found', 'NOT_FOUND');
 
     await writeAudit({
@@ -95,7 +96,7 @@ backupsRouter.get('/:id/download', manageRoles, async (req, res, next) => {
 
 backupsRouter.delete('/:id', manageRoles, async (req, res, next) => {
   try {
-    deleteBackup(req.params.id);
+    await deleteBackup(req.params.id);
 
     await writeAudit({
       actorUserId: req.session.userId,

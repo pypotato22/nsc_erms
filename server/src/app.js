@@ -20,6 +20,7 @@ import { usersRouter } from './routes/users.js';
 import { documentsRouter, documentItemRouter } from './routes/documents.js';
 import { scanInboxRouter } from './routes/scanInbox.js';
 import { backupsRouter } from './routes/backups.js';
+import { settingsRouter } from './routes/settings.js';
 import { auditRouter } from './routes/audit.js';
 import { eventsRouter } from './routes/events.js';
 
@@ -82,6 +83,7 @@ export function createApp() {
   app.use('/api/v1/documents', documentItemRouter);
   app.use('/api/v1/scan-inbox', scanInboxRouter);
   app.use('/api/v1/backups', backupsRouter);
+  app.use('/api/v1/settings', settingsRouter);
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/users', usersRouter);
   app.use('/api/v1/events', eventsRouter);

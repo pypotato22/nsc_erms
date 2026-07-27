@@ -36,6 +36,7 @@ setupRouter.get('/status', async (_req, res, next) => {
       orgName: (await getSetting('org_name')) ?? null,
       filesRoot: (await getSetting('files_root')) ?? config.filesRoot,
       scanInboxPath: (await getSetting('scan_inbox_path')) ?? null,
+      backupsRoot: (await getSetting('backups_root')) ?? config.backupsRoot,
       maxUploadBytes: Number(await getSetting('max_upload_bytes')) || config.maxUploadBytes,
     });
   } catch (err) {
@@ -63,6 +64,9 @@ setupRouter.post(
       const scanInboxPath = String(
         req.body?.scanInboxPath || path.join(filesRoot, 'inbox'),
       ).trim();
+      const backupsRoot = String(
+        req.body?.backupsRoot || config.backupsRoot,
+      ).trim();
       const maxUploadBytes = Number(
         req.body?.maxUploadBytes || config.maxUploadBytes,
       );
@@ -81,6 +85,7 @@ setupRouter.post(
         scanInboxPath,
         path.join(scanInboxPath, 'processed'),
         path.join(scanInboxPath, 'failed'),
+        backupsRoot,
       ]) {
         fs.mkdirSync(dir, { recursive: true });
       }
@@ -88,11 +93,13 @@ setupRouter.post(
       // Writable check
       fs.accessSync(filesRoot, fs.constants.W_OK);
       fs.accessSync(scanInboxPath, fs.constants.W_OK);
+      fs.accessSync(backupsRoot, fs.constants.W_OK);
 
       const updates = {
         org_name: orgName,
         files_root: filesRoot,
         scan_inbox_path: scanInboxPath,
+        backups_root: backupsRoot,
         max_upload_bytes: maxUploadBytes,
         setup_completed: true,
       };
@@ -112,7 +119,7 @@ setupRouter.post(
         action: 'setup.complete',
         entityType: 'app_settings',
         entityId: 'setup_completed',
-        meta: { orgName, filesRoot, scanInboxPath, maxUploadBytes },
+        meta: { orgName, filesRoot, scanInboxPath, backupsRoot, maxUploadBytes },
         ip: clientIp(req),
       });
 
@@ -122,6 +129,7 @@ setupRouter.post(
         orgName,
         filesRoot,
         scanInboxPath,
+        backupsRoot,
         maxUploadBytes,
       });
     } catch (err) {

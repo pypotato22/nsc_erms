@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { config } from '../config.js';
-import { getAppSetting, getFilesRoot, getMaxUploadBytes } from './settings.js';
+import {
+  getFilesRoot,
+  getMaxUploadBytes,
+  getScanInboxPath,
+} from './settings.js';
 
 const ALLOWED_EXT = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']);
 
@@ -14,13 +17,7 @@ const MIME_BY_EXT = {
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
 
-export async function getScanInboxPath() {
-  const fromDb = await getAppSetting('scan_inbox_path', null);
-  if (typeof fromDb === 'string' && fromDb.trim()) return fromDb.trim();
-  if (config.scanInboxPath) return config.scanInboxPath;
-  const root = await getFilesRoot();
-  return path.join(root, 'inbox');
-}
+export { getScanInboxPath };
 
 export async function ensureInboxDirs() {
   const inbox = await getScanInboxPath();
