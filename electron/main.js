@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, net } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, net, dialog } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -188,6 +188,29 @@ ipcMain.handle('window:is-maximized', (event) => {
 });
 
 ipcMain.handle('boot:get-state', () => bootState);
+
+ipcMain.handle('dialog:pick-folder', async (event, options = {}) => {
+  const win = windowFromEvent(event);
+  const title =
+    typeof options?.title === 'string' && options.title.trim()
+      ? options.title.trim()
+      : 'Select folder';
+  const defaultPath =
+    typeof options?.defaultPath === 'string' && options.defaultPath.trim()
+      ? options.defaultPath.trim()
+      : undefined;
+
+  const result = await dialog.showOpenDialog(win || undefined, {
+    title,
+    defaultPath,
+    properties: ['openDirectory', 'createDirectory'],
+  });
+
+  if (result.canceled || !result.filePaths?.length) {
+    return { canceled: true, path: null };
+  }
+  return { canceled: false, path: result.filePaths[0] };
+});
 
 ipcMain.handle('boot:connect', async (_event, rawUrl) => {
   let serverUrl;

@@ -18,4 +18,9 @@ contextBridge.exposeInMainWorld('nscDesktop', {
     ipcRenderer.on('boot:ready', handler);
     return () => ipcRenderer.removeListener('boot:ready', handler);
   },
+  /**
+   * Native folder picker. Returns { canceled, path }.
+   * Path is on this desktop machine — only use when Electron runs on the API host.
+   */
+  pickFolder: (options) => ipcRenderer.invoke('dialog:pick-folder', options || {}),
 });

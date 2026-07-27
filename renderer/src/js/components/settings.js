@@ -106,6 +106,40 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
       setStorageErr(err instanceof ApiError ? err.message : 'Failed to save paths.');
     });
   });
+
+  getEl('browse-scan-inbox')?.addEventListener('click', () => {
+    browseStorageFolder('storage-scan-inbox', 'Select scan inbox folder').catch(() => {});
+  });
+  getEl('browse-backups-root')?.addEventListener('click', () => {
+    browseStorageFolder('storage-backups-root', 'Select backup folder').catch(() => {});
+  });
+
+  syncDesktopFolderBrowseUi();
+}
+
+function canPickDesktopFolder() {
+  return Boolean(window.nscDesktop?.isDesktop && typeof window.nscDesktop.pickFolder === 'function');
+}
+
+function syncDesktopFolderBrowseUi() {
+  // Visibility is CSS-gated on body.desktop-shell (.btn display overrides [hidden]).
+  // Keep hint attribute in sync for a11y when not in Electron.
+  const show = canPickDesktopFolder();
+  document.querySelectorAll('.desktop-only-hint').forEach((el) => {
+    el.hidden = !show;
+  });
+}
+
+async function browseStorageFolder(inputId, title) {
+  if (!canPickDesktopFolder()) return;
+  setStorageErr('');
+  const input = getEl(inputId);
+  const result = await window.nscDesktop.pickFolder({
+    title,
+    defaultPath: input?.value?.trim() || undefined,
+  });
+  if (result?.canceled || !result?.path) return;
+  if (input) input.value = result.path;
 }
 
 export async function renderSettingsPage() {
@@ -144,6 +178,7 @@ function readStorageForm() {
 
 async function loadStoragePaths() {
   if (!isSuperadmin()) return;
+  syncDesktopFolderBrowseUi();
   const filesEl = getEl('storage-files-root');
   const inboxEl = getEl('storage-scan-inbox');
   const backupsEl = getEl('storage-backups-root');
@@ -367,7 +402,7 @@ async function renderUserTable() {
       setHTML(
         'user-table',
         `<tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th></th></tr>
-         <tr><td colspan="5" style="color:var(--text-3);font-size:0.8571rem;">No user accounts yet.</td></tr>`,
+         <tr><td colspan="5" class="settings-muted">No user accounts yet.</td></tr>`,
       );
       return;
     }
@@ -381,8 +416,8 @@ async function renderUserTable() {
         const protectedRole = u.role.code === 'superadmin';
         const canModify = !protectedRole || isSuperadmin();
         const statusBadge = u.isActive
-          ? `<span class="badge active" style="font-size:0.7143rem;">Active</span>`
-          : `<span class="badge" style="font-size:0.7143rem;background:var(--bg-base);color:var(--text-3);">Inactive</span>`;
+          ? `<span class="badge active">Active</span>`
+          : `<span class="badge" style="background:var(--bg-base);color:var(--text-3);">Inactive</span>`;
         let action = '';
         if (canModify) {
           if (u.isActive) {
@@ -399,13 +434,13 @@ async function renderUserTable() {
             </div>`;
           }
         } else {
-          action = `<span style="font-size:0.7857rem;color:var(--text-3);">Protected</span>`;
+          action = `<span class="settings-muted">Protected</span>`;
         }
         return `
       <tr>
         <td>${escapeHtml(u.displayName || u.username)}</td>
-        <td><code style="background:var(--bg-base);padding:2px 8px;border-radius:6px;font-size:0.8571rem;font-family:'DM Mono',monospace;">${escapeHtml(u.username)}</code></td>
-        <td><span class="badge active" style="font-size:0.7143rem;">${escapeHtml(u.role.name)}</span></td>
+        <td><code class="settings-username">${escapeHtml(u.username)}</code></td>
+        <td><span class="badge active">${escapeHtml(u.role.name)}</span></td>
         <td>${statusBadge}</td>
         <td>${action}</td>
       </tr>`;
@@ -459,7 +494,7 @@ async function renderUserTable() {
           : 'Unable to load users';
     setHTML(
       'user-table',
-      `<tr><td colspan="5" style="color:var(--text-3);font-size:0.8571rem;">${escapeHtml(msg)}</td></tr>`,
+      `<tr><td colspan="5" class="settings-muted">${escapeHtml(msg)}</td></tr>`,
     );
   }
 }
@@ -507,12 +542,12 @@ async function renderAuditLogs() {
   if (!canManageUsers()) {
     setHTML(
       'audit-list',
-      `<p style="font-size:0.8571rem;color:var(--text-3);">Only administrators can view audit logs.</p>`,
+      `<p class="settings-muted">Only administrators can view audit logs.</p>`,
     );
     return;
   }
 
-  setHTML('audit-list', `<p style="font-size:0.8571rem;color:var(--text-3);">Loading…</p>`);
+  setHTML('audit-list', `<p class="settings-muted">Loading…</p>`);
 
   try {
     const q = getEl('audit-q')?.value.trim() || '';
@@ -540,7 +575,7 @@ async function renderAuditLogs() {
     if (!logs.length) {
       setHTML(
         'audit-list',
-        `<p style="font-size:0.8571rem;color:var(--text-3);padding:8px 0;">No matching audit entries.</p>`,
+        `<p class="settings-muted" style="padding:8px 0;">No matching audit entries.</p>`,
       );
       return;
     }
@@ -573,7 +608,7 @@ async function renderAuditLogs() {
   } catch (err) {
     setHTML(
       'audit-list',
-      `<p style="font-size:0.8571rem;color:var(--text-3);">${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load audit logs')}</p>`,
+      `<p class="settings-muted">${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load audit logs')}</p>`,
     );
   }
 }

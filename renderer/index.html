@@ -487,137 +487,162 @@
                 <!-- Settings Page -->
                 <div id="page-settings" class="page">
                     <div class="settings-wrap">
-                        <div class="settings-card">
-                            <h4>Appearance</h4>
-                            <div class="setting-row">
-                                <div class="sl">
-                                    <div class="sl-title">Dark Mode</div>
-                                    <div class="sl-desc">Switch to dark theme</div>
+                        <section class="settings-section">
+                            <h3 class="settings-section-title">Your preferences</h3>
+                            <div class="settings-section-grid">
+                                <div class="settings-card">
+                                    <h4>Appearance</h4>
+                                    <div class="setting-row">
+                                        <div class="sl">
+                                            <div class="sl-title">Dark Mode</div>
+                                            <div class="sl-desc">Switch to dark theme</div>
+                                        </div>
+                                        <div class="toggle" id="dark-toggle">
+                                            <div class="knob"></div>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <div class="sl">
+                                            <div class="sl-title">Font Size</div>
+                                            <div class="sl-desc">Adjust text size across the app</div>
+                                        </div>
+                                        <div class="fs-btns">
+                                            <button data-size="13" class="fs-btn">S</button>
+                                            <button data-size="14" class="fs-btn active">M</button>
+                                            <button data-size="17" class="fs-btn">L</button>
+                                            <button data-size="21" class="fs-btn">XL</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="toggle" id="dark-toggle">
-                                    <div class="knob"></div>
-                                </div>
-                            </div>
-                            <div class="setting-row">
-                                <div class="sl">
-                                    <div class="sl-title">Font Size</div>
-                                    <div class="sl-desc">Adjust text size across the app</div>
-                                </div>
-                                <div class="fs-btns">
-                                    <button data-size="13" class="fs-btn">S</button>
-                                    <button data-size="14" class="fs-btn active">M</button>
-                                    <button data-size="17" class="fs-btn">L</button>
-                                    <button data-size="21" class="fs-btn">XL</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="settings-card">
-                            <h4>Security</h4>
-                            <div class="setting-row">
-                                <div class="sl">
-                                    <div class="sl-title">Password</div>
-                                    <div class="sl-desc">Update your sign-in password</div>
-                                </div>
-                                <button type="button" id="settings-change-pw" class="btn btn-sm btn-edit">Change password</button>
-                            </div>
-                        </div>
-                        <div class="settings-card">
-                            <h4>System Info</h4>
-                            <div class="setting-row">
-                                <div class="sl">
-                                    <div class="sl-title">Version</div>
-                                </div>
-                                <span
-                                    style="font-size:0.8571rem;font-weight:700;color:var(--blue-700);font-family:'DM Mono',monospace;">v1.0.0</span>
-                            </div>
-                            <div class="setting-row">
-                                <div class="sl">
-                                    <div class="sl-title">Records</div>
-                                    <div class="sl-desc" id="db-stats">—</div>
-                                </div>
-                                <button id="refresh" class="btn btn-sm btn-edit">Refresh</button>
-                            </div>
-                        </div>
-                        <div class="settings-card settings-card--wide needs-superadmin">
-                            <h4>Storage paths</h4>
-                            <p class="settings-hint">
-                                Absolute paths on the <strong>server</strong> machine. Changing a path does not move
-                                existing files — new scans/backups use the new folder from then on.
-                            </p>
-                            <div class="storage-paths-form">
-                                <div class="fg full">
-                                    <label for="storage-files-root">Files root (read-only)</label>
-                                    <input id="storage-files-root" type="text" readonly />
-                                </div>
-                                <div class="fg full">
-                                    <label for="storage-scan-inbox">Scan inbox path</label>
-                                    <input id="storage-scan-inbox" type="text"
-                                        placeholder="C:\nsc-erms-files\inbox" autocomplete="off" />
-                                    <span class="field-hint" id="storage-scan-source"></span>
-                                </div>
-                                <div class="fg full">
-                                    <label for="storage-backups-root">Backup path</label>
-                                    <input id="storage-backups-root" type="text"
-                                        placeholder="C:\nsc-erms-backups" autocomplete="off" />
-                                    <span class="field-hint" id="storage-backups-source"></span>
-                                </div>
-                                <p class="login-err" id="storage-paths-err" hidden></p>
-                                <div class="storage-paths-actions">
-                                    <button type="button" id="storage-paths-validate" class="btn btn-cancel">Test paths</button>
-                                    <button type="button" id="storage-paths-save" class="btn btn-primary">Save paths</button>
+                                <div class="settings-card">
+                                    <h4>Account</h4>
+                                    <div class="setting-row">
+                                        <div class="sl">
+                                            <div class="sl-title">Password</div>
+                                            <div class="sl-desc">Update your sign-in password</div>
+                                        </div>
+                                        <button type="button" id="settings-change-pw" class="btn btn-sm btn-edit">Change password</button>
+                                    </div>
+                                    <div class="setting-row">
+                                        <div class="sl">
+                                            <div class="sl-title">Version</div>
+                                        </div>
+                                        <span class="settings-mono-value">v1.0.0</span>
+                                    </div>
+                                    <div class="setting-row">
+                                        <div class="sl">
+                                            <div class="sl-title">Records</div>
+                                            <div class="sl-desc" id="db-stats">—</div>
+                                        </div>
+                                        <button id="refresh" class="btn btn-sm btn-edit">Refresh</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="settings-card settings-card--wide needs-admin">
-                            <h4>User Accounts</h4>
-                            <table class="user-table" id="user-table"></table>
-                            <button id="add-user-btn" class="btn btn-primary" style="margin-top:16px">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5">
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                                Add User
-                            </button>
-                        </div>
-                        <div class="settings-card settings-card--wide needs-admin">
-                            <h4>Audit log</h4>
-                            <div class="audit-toolbar">
-                                <input type="search" id="audit-q" placeholder="Search action, user, IP…" />
-                                <select id="audit-action">
-                                    <option value="">All actions</option>
-                                    <option value="auth.login">Login</option>
-                                    <option value="auth.login_failed">Login failed</option>
-                                    <option value="auth.logout">Logout</option>
-                                    <option value="auth.change_password">Password change</option>
-                                    <option value="employee.create">Employee create</option>
-                                    <option value="employee.update">Employee update</option>
-                                    <option value="employee.delete">Employee delete</option>
-                                    <option value="employee.restore">Employee restore</option>
-                                    <option value="employee.permanent_delete">Employee permanent delete</option>
-                                    <option value="document.upload">Document upload</option>
-                                    <option value="document.soft_delete">Document trash</option>
-                                    <option value="document.restore">Document restore</option>
-                                    <option value="document.permanent_delete">Document purge</option>
-                                    <option value="backup.create">Backup create</option>
-                                    <option value="settings.storage_update">Storage paths update</option>
-                                    <option value="user.create">User create</option>
-                                    <option value="user.update">User update</option>
-                                    <option value="user.password_reset">User password reset</option>
-                                    <option value="user.delete">User delete</option>
-                                    <option value="position.create">Position create</option>
-                                    <option value="position.update">Position update</option>
-                                    <option value="position.delete">Position delete</option>
-                                </select>
-                                <button type="button" id="audit-refresh" class="btn btn-sm btn-edit">Refresh</button>
+                        </section>
+
+                        <section class="settings-section needs-admin">
+                            <h3 class="settings-section-title">Administration</h3>
+                            <div class="settings-section-stack">
+                                <div class="settings-card">
+                                    <h4>User Accounts</h4>
+                                    <table class="user-table" id="user-table"></table>
+                                    <button id="add-user-btn" class="btn btn-primary" style="margin-top:16px">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2.5">
+                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                        </svg>
+                                        Add User
+                                    </button>
+                                </div>
+                                <div class="settings-card">
+                                    <h4>Audit log</h4>
+                                    <div class="audit-toolbar">
+                                        <input type="search" id="audit-q" placeholder="Search action, user, IP…" />
+                                        <select id="audit-action">
+                                            <option value="">All actions</option>
+                                            <option value="auth.login">Login</option>
+                                            <option value="auth.login_failed">Login failed</option>
+                                            <option value="auth.logout">Logout</option>
+                                            <option value="auth.change_password">Password change</option>
+                                            <option value="employee.create">Employee create</option>
+                                            <option value="employee.update">Employee update</option>
+                                            <option value="employee.delete">Employee delete</option>
+                                            <option value="employee.restore">Employee restore</option>
+                                            <option value="employee.permanent_delete">Employee permanent delete</option>
+                                            <option value="document.upload">Document upload</option>
+                                            <option value="document.soft_delete">Document trash</option>
+                                            <option value="document.restore">Document restore</option>
+                                            <option value="document.permanent_delete">Document purge</option>
+                                            <option value="backup.create">Backup create</option>
+                                            <option value="settings.storage_update">Storage paths update</option>
+                                            <option value="user.create">User create</option>
+                                            <option value="user.update">User update</option>
+                                            <option value="user.password_reset">User password reset</option>
+                                            <option value="user.delete">User delete</option>
+                                            <option value="position.create">Position create</option>
+                                            <option value="position.update">Position update</option>
+                                            <option value="position.delete">Position delete</option>
+                                        </select>
+                                        <button type="button" id="audit-refresh" class="btn btn-sm btn-edit">Refresh</button>
+                                    </div>
+                                    <div id="audit-list" class="audit-list"></div>
+                                    <div class="pager">
+                                        <button type="button" class="btn btn-sm btn-edit" id="audit-prev">Prev</button>
+                                        <span class="pager-info" id="audit-page-info">—</span>
+                                        <button type="button" class="btn btn-sm btn-edit" id="audit-next">Next</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="audit-list" class="audit-list"></div>
-                            <div class="pager">
-                                <button type="button" class="btn btn-sm btn-edit" id="audit-prev">Prev</button>
-                                <span class="pager-info" id="audit-page-info">—</span>
-                                <button type="button" class="btn btn-sm btn-edit" id="audit-next">Next</button>
+                        </section>
+
+                        <section class="settings-section needs-superadmin">
+                            <h3 class="settings-section-title">Server storage</h3>
+                            <div class="settings-section-stack">
+                                <div class="settings-card">
+                                    <h4>Storage paths</h4>
+                                    <p class="settings-hint">
+                                        Absolute paths on the <strong>server</strong> machine. Changing a path does not move
+                                        existing files — new scans/backups use the new folder from then on.
+                                        <span class="desktop-only-hint" hidden>
+                                            Browse picks a folder on <em>this</em> computer — use it only when the desktop app
+                                            runs on the same machine as the API.
+                                        </span>
+                                    </p>
+                                    <div class="storage-paths-form">
+                                        <div class="fg full">
+                                            <label for="storage-files-root">Files root (read-only)</label>
+                                            <input id="storage-files-root" type="text" readonly />
+                                        </div>
+                                        <div class="fg full">
+                                            <label for="storage-scan-inbox">Scan inbox path</label>
+                                            <div class="path-field-row">
+                                                <input id="storage-scan-inbox" type="text"
+                                                    placeholder="C:\nsc-erms-files\inbox" autocomplete="off" />
+                                                <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
+                                                    id="browse-scan-inbox" hidden>Browse…</button>
+                                            </div>
+                                            <span class="field-hint" id="storage-scan-source"></span>
+                                        </div>
+                                        <div class="fg full">
+                                            <label for="storage-backups-root">Backup path</label>
+                                            <div class="path-field-row">
+                                                <input id="storage-backups-root" type="text"
+                                                    placeholder="C:\nsc-erms-backups" autocomplete="off" />
+                                                <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
+                                                    id="browse-backups-root" hidden>Browse…</button>
+                                            </div>
+                                            <span class="field-hint" id="storage-backups-source"></span>
+                                        </div>
+                                        <p class="login-err" id="storage-paths-err" hidden></p>
+                                        <div class="storage-paths-actions">
+                                            <button type="button" id="storage-paths-validate" class="btn btn-cancel">Test paths</button>
+                                            <button type="button" id="storage-paths-save" class="btn btn-primary">Save paths</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
 
