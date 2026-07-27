@@ -120,6 +120,14 @@ async function main() {
         examPlace: 'CSC RO VIII',
         licenseNumber: 'N/A',
       },
+      ...Array.from({ length: 8 }, (_v, i) => ({
+        careerService: `Eligibility ${i + 2}`,
+        rating: `${80 + i}.00`,
+        examDate: `201${(i % 5) + 3}-01-0${(i % 9) + 1}`,
+        examPlace: `Testing Center ${i + 2}`,
+        licenseNumber: `LIC-${i + 2}`,
+        licenseValidity: `202${(i % 5) + 6}-12-31`,
+      })),
     ],
     workExperience: [
       {
@@ -130,6 +138,14 @@ async function main() {
         statusOfAppointment: 'Permanent',
         govService: true,
       },
+      ...Array.from({ length: 29 }, (_v, i) => ({
+        from: `20${String(10 + (i % 10)).padStart(2, '0')}-01-01`,
+        to: i % 3 === 0 ? '' : `20${String(10 + (i % 10)).padStart(2, '0')}-12-31`,
+        positionTitle: `Role ${i + 2}`,
+        departmentAgency: `Agency ${i + 2}`,
+        statusOfAppointment: i % 2 === 0 ? 'Permanent' : 'Contractual',
+        govService: i % 2 === 0,
+      })),
     ],
     voluntaryWork: [
       {
@@ -140,6 +156,14 @@ async function main() {
         hours: '120',
         positionNature: 'Volunteer IT Support',
       },
+      ...Array.from({ length: 8 }, (_v, i) => ({
+        orgName: `Volunteer Org ${i + 2}`,
+        orgAddress: `Town ${i + 2}`,
+        from: `202${i % 4}-02-01`,
+        to: `202${i % 4}-03-15`,
+        hours: String(24 + i),
+        positionNature: `Role ${i + 2}`,
+      })),
     ],
     learningDevelopment: [
       {
@@ -150,6 +174,14 @@ async function main() {
         type: 'Technical',
         conductedBy: 'DICT Region VIII',
       },
+      ...Array.from({ length: 22 }, (_v, i) => ({
+        title: `Training ${i + 2}`,
+        from: `202${i % 4}-04-01`,
+        to: `202${i % 4}-04-02`,
+        hours: String(8 + (i % 5) * 8),
+        type: i % 2 === 0 ? 'Technical' : 'Supervisory',
+        conductedBy: `Provider ${i + 2}`,
+      })),
     ],
     otherInfo: {
       skills: ['Network administration'],
@@ -215,6 +247,10 @@ async function main() {
   const c2 = wb.getWorksheet('C2');
   const c3 = wb.getWorksheet('C3');
   const c4 = wb.getWorksheet('C4');
+  const c2EligCont = wb.getWorksheet('C2 Eligibility Cont.');
+  const c2WorkCont = wb.getWorksheet('C2 Work Experience Cont.');
+  const c3VolCont = wb.getWorksheet('C3 Voluntary Work Cont.');
+  const c3LdCont = wb.getWorksheet('C3 Learning & Development Cont.');
 
   /** @type {{ sheet: string, addr: string, expect: string, actual: string, ok: boolean }[]} */
   const checks = [];
@@ -260,6 +296,14 @@ async function main() {
   expect('C3', c3, 'B42', 'Network administration');
   expect('C3', c3, 'D42', 'Outstanding Employee 2022');
   expect('C3', c3, 'J42', 'PSITE');
+  expect('C2 Eligibility Cont.', c2EligCont, 'B5', 'Eligibility 8');
+  expect('C2 Eligibility Cont.', c2EligCont, 'B6', 'Eligibility 9');
+  expect('C2 Work Experience Cont.', c2WorkCont, 'D6', 'Role 29');
+  expect('C2 Work Experience Cont.', c2WorkCont, 'D7', 'Role 30');
+  expect('C3 Voluntary Work Cont.', c3VolCont, 'B5', 'Volunteer Org 8');
+  expect('C3 Voluntary Work Cont.', c3VolCont, 'B6', 'Volunteer Org 9');
+  expect('C3 Learning & Development Cont.', c3LdCont, 'B5', 'Training 22');
+  expect('C3 Learning & Development Cont.', c3LdCont, 'B6', 'Training 23');
 
   expect('C4', c4, 'A52', 'Dr. Elena Ramos');
   expect('C4', c4, 'D61', 'Passport');
@@ -268,6 +312,51 @@ async function main() {
   expect('C4', c4, 'J65', '27/07/2026');
 
   const zip = await JSZip.loadAsync(buf);
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.sheet6',
+    expect: 'present',
+    actual: zip.file('xl/worksheets/sheet6.xml') ? 'present' : 'missing',
+    ok: Boolean(zip.file('xl/worksheets/sheet6.xml')),
+  });
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.sheet9',
+    expect: 'present',
+    actual: zip.file('xl/worksheets/sheet9.xml') ? 'present' : 'missing',
+    ok: Boolean(zip.file('xl/worksheets/sheet9.xml')),
+  });
+  const workbookXml = await zip.file('xl/workbook.xml').async('string');
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.name.c2elig',
+    expect: 'C2 Eligibility Cont.',
+    actual: workbookXml.includes('C2 Eligibility Cont.') ? 'C2 Eligibility Cont.' : 'missing',
+    ok: workbookXml.includes('C2 Eligibility Cont.'),
+  });
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.name.c2work',
+    expect: 'C2 Work Experience Cont.',
+    actual: workbookXml.includes('C2 Work Experience Cont.') ? 'C2 Work Experience Cont.' : 'missing',
+    ok: workbookXml.includes('C2 Work Experience Cont.'),
+  });
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.name.c3vol',
+    expect: 'C3 Voluntary Work Cont.',
+    actual: workbookXml.includes('C3 Voluntary Work Cont.') ? 'C3 Voluntary Work Cont.' : 'missing',
+    ok: workbookXml.includes('C3 Voluntary Work Cont.'),
+  });
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.name.c3ld',
+    expect: 'C3 Learning & Development Cont.',
+    actual: workbookXml.includes('C3 Learning &amp; Development Cont.')
+      ? 'C3 Learning & Development Cont.'
+      : 'missing',
+    ok: workbookXml.includes('C3 Learning &amp; Development Cont.'),
+  });
   const vml1 = await zip.file('xl/drawings/vmlDrawing1.vml').async('string');
   const vml2 = await zip.file('xl/drawings/vmlDrawing2.vml').async('string');
   // C1 form checkboxes (demo: Male, Married, Filipino)

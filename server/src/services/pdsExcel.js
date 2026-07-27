@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { coercePdsFromRow, normalizePds } from './pds.js';
 import { applyPdsFormCheckboxes } from './pdsExcelCheckboxes.js';
 import { embedC4PhotoFromEmployee } from './pdsExcelPhoto.js';
+import { addContinuationSheets } from './pdsExcelContinuation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../..');
@@ -11,6 +12,74 @@ export const PDS_TEMPLATE_PATH = path.join(
   projectRoot,
   'assets/forms/CS-Form-212-Revised-2025.xlsx',
 );
+
+const C2_ELIGIBILITY_CONT = {
+  baseName: 'C2 Eligibility',
+  sourceSheetName: 'C2',
+  cloneFromRow: 2,
+  cloneToRow: 12,
+  dataStartRow: 5,
+  pageSize: 7,
+  fillRow(ws, row, e) {
+    set(ws, `B${row}`, raw(e.careerService));
+    set(ws, `F${row}`, raw(e.rating));
+    set(ws, `G${row}`, dmy(e.examDate));
+    set(ws, `I${row}`, raw(e.examPlace));
+    set(ws, `J${row}`, raw(e.licenseNumber));
+    set(ws, `K${row}`, dmy(e.licenseValidity));
+  },
+};
+
+const C2_WORK_CONT = {
+  baseName: 'C2 Work Experience',
+  sourceSheetName: 'C2',
+  cloneFromRow: 13,
+  cloneToRow: 46,
+  dataStartRow: 6,
+  pageSize: 28,
+  fillRow(ws, row, w) {
+    set(ws, `A${row}`, dmy(w.from));
+    set(ws, `C${row}`, dmy(w.to));
+    set(ws, `D${row}`, raw(w.positionTitle));
+    set(ws, `G${row}`, raw(w.departmentAgency));
+    set(ws, `J${row}`, raw(w.statusOfAppointment));
+    set(ws, `K${row}`, w.govService ? 'Y' : raw(w.govService) === '' ? '' : 'N');
+  },
+};
+
+const C3_VOLUNTARY_CONT = {
+  baseName: 'C3 Voluntary Work',
+  sourceSheetName: 'C3',
+  cloneFromRow: 2,
+  cloneToRow: 13,
+  dataStartRow: 5,
+  pageSize: 7,
+  fillRow(ws, row, v) {
+    const org = [v.orgName, v.orgAddress].filter(Boolean).join(' — ');
+    set(ws, `B${row}`, raw(org));
+    set(ws, `E${row}`, dmy(v.from));
+    set(ws, `F${row}`, dmy(v.to));
+    set(ws, `G${row}`, raw(v.hours));
+    set(ws, `H${row}`, raw(v.positionNature));
+  },
+};
+
+const C3_LD_CONT = {
+  baseName: 'C3 Learning & Development',
+  sourceSheetName: 'C3',
+  cloneFromRow: 14,
+  cloneToRow: 39,
+  dataStartRow: 5,
+  pageSize: 21,
+  fillRow(ws, row, item) {
+    set(ws, `B${row}`, raw(item.title));
+    set(ws, `E${row}`, dmy(item.from));
+    set(ws, `F${row}`, dmy(item.to));
+    set(ws, `G${row}`, raw(item.hours));
+    set(ws, `H${row}`, raw(item.type));
+    set(ws, `I${row}`, raw(item.conductedBy));
+  },
+};
 
 function na(value) {
   const s = value == null ? '' : String(value).trim();
@@ -73,8 +142,8 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   await wb.xlsx.readFile(PDS_TEMPLATE_PATH);
 
   fillC1(wb.getWorksheet('C1'), pds, employee);
-  fillC2(wb.getWorksheet('C2'), pds);
-  fillC3(wb.getWorksheet('C3'), pds);
+  fillC2(wb, wb.getWorksheet('C2'), pds);
+  fillC3(wb, wb.getWorksheet('C3'), pds);
   fillC4(wb.getWorksheet('C4'), pds);
 
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
@@ -199,18 +268,13 @@ function fillC1(ws, pds, employee) {
   }
 }
 
-function fillC2(ws, pds) {
+function fillC2(wb, ws, pds) {
   if (!ws) return;
   const elig = Array.isArray(pds.eligibility) ? pds.eligibility : [];
   for (let i = 0; i < Math.min(elig.length, 7); i++) {
     const r = 5 + i;
     const e = elig[i];
-    set(ws, `B${r}`, raw(e.careerService));
-    set(ws, `F${r}`, raw(e.rating));
-    set(ws, `G${r}`, dmy(e.examDate));
-    set(ws, `I${r}`, raw(e.examPlace));
-    set(ws, `J${r}`, raw(e.licenseNumber));
-    set(ws, `K${r}`, dmy(e.licenseValidity));
+    C2_ELIGIBILITY_CONT.fillRow(ws, r, e);
   }
   if (!elig.length) {
     set(ws, 'B5', 'N/A');
@@ -220,6 +284,7 @@ function fillC2(ws, pds) {
     set(ws, 'J5', 'N/A');
     set(ws, 'K5', 'N/A');
   }
+  addContinuationSheets(wb, C2_ELIGIBILITY_CONT, elig.slice(7));
 
   const work = Array.isArray(pds.workExperience) ? pds.workExperience : [];
   // CS Form 212 (Revised 2025) C2 work block has no Monthly Salary / Salary Grade columns
@@ -228,12 +293,7 @@ function fillC2(ws, pds) {
   for (let i = 0; i < Math.min(work.length, 28); i++) {
     const r = 18 + i;
     const w = work[i];
-    set(ws, `A${r}`, dmy(w.from));
-    set(ws, `C${r}`, dmy(w.to));
-    set(ws, `D${r}`, raw(w.positionTitle));
-    set(ws, `G${r}`, raw(w.departmentAgency));
-    set(ws, `J${r}`, raw(w.statusOfAppointment));
-    set(ws, `K${r}`, w.govService ? 'Y' : raw(w.govService) === '' ? '' : 'N');
+    C2_WORK_CONT.fillRow(ws, r, w);
   }
   if (!work.length) {
     set(ws, 'A18', 'N/A');
@@ -243,20 +303,15 @@ function fillC2(ws, pds) {
     set(ws, 'J18', 'N/A');
     set(ws, 'K18', 'N/A');
   }
+  addContinuationSheets(wb, C2_WORK_CONT, work.slice(28));
 }
 
-function fillC3(ws, pds) {
+function fillC3(wb, ws, pds) {
   if (!ws) return;
   const vol = Array.isArray(pds.voluntaryWork) ? pds.voluntaryWork : [];
   for (let i = 0; i < Math.min(vol.length, 7); i++) {
     const r = 6 + i;
-    const v = vol[i];
-    const org = [v.orgName, v.orgAddress].filter(Boolean).join(' — ');
-    set(ws, `B${r}`, raw(org));
-    set(ws, `E${r}`, dmy(v.from));
-    set(ws, `F${r}`, dmy(v.to));
-    set(ws, `G${r}`, raw(v.hours));
-    set(ws, `H${r}`, raw(v.positionNature));
+    C3_VOLUNTARY_CONT.fillRow(ws, r, vol[i]);
   }
   if (!vol.length) {
     set(ws, 'B6', 'N/A');
@@ -265,17 +320,12 @@ function fillC3(ws, pds) {
     set(ws, 'G6', 'N/A');
     set(ws, 'H6', 'N/A');
   }
+  addContinuationSheets(wb, C3_VOLUNTARY_CONT, vol.slice(7));
 
   const ld = Array.isArray(pds.learningDevelopment) ? pds.learningDevelopment : [];
   for (let i = 0; i < Math.min(ld.length, 21); i++) {
     const r = 18 + i;
-    const row = ld[i];
-    set(ws, `B${r}`, raw(row.title));
-    set(ws, `E${r}`, dmy(row.from));
-    set(ws, `F${r}`, dmy(row.to));
-    set(ws, `G${r}`, raw(row.hours));
-    set(ws, `H${r}`, raw(row.type));
-    set(ws, `I${r}`, raw(row.conductedBy));
+    C3_LD_CONT.fillRow(ws, r, ld[i]);
   }
   if (!ld.length) {
     set(ws, 'B18', 'N/A');
@@ -285,6 +335,7 @@ function fillC3(ws, pds) {
     set(ws, 'H18', 'N/A');
     set(ws, 'I18', 'N/A');
   }
+  addContinuationSheets(wb, C3_LD_CONT, ld.slice(21));
 
   const o = pds.otherInfo || {};
   const skills = (o.skills || []).join('\n') || 'N/A';

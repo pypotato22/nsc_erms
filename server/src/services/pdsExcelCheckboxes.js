@@ -84,6 +84,95 @@ function swapSheetData(templateSheet, filledSheet) {
   return templateSheet.replace(/<sheetData[\s\S]*?<\/sheetData>/, filledData);
 }
 
+function parseSheetEntries(workbookXml) {
+  return [...String(workbookXml || '').matchAll(/<sheet\b([^>]*)\/>/g)].map((m) => {
+    const attrs = m[1] || '';
+    return {
+      raw: m[0],
+      attrs,
+      name: /name="([^"]+)"/.exec(attrs)?.[1] || '',
+      sheetId: Number(/sheetId="(\d+)"/.exec(attrs)?.[1] || 0),
+      state: /state="([^"]+)"/.exec(attrs)?.[1] || 'visible',
+      relId: /r:id="([^"]+)"/.exec(attrs)?.[1] || '',
+    };
+  });
+}
+
+function parseRelationships(xml) {
+  return [...String(xml || '').matchAll(/<Relationship\b([^>]*)\/>/g)].map((m) => {
+    const attrs = m[1] || '';
+    return {
+      raw: m[0],
+      attrs,
+      id: /Id="([^"]+)"/.exec(attrs)?.[1] || '',
+      type: /Type="([^"]+)"/.exec(attrs)?.[1] || '',
+      target: /Target="([^"]+)"/.exec(attrs)?.[1] || '',
+    };
+  });
+}
+
+function appendBeforeClose(xml, closeTag, addition) {
+  return String(xml || '').replace(closeTag, `${addition}${closeTag}`);
+}
+
+async function preserveExtraWorksheets(templateZip, filledZip) {
+  const workbookPath = 'xl/workbook.xml';
+  const relsPath = 'xl/_rels/workbook.xml.rels';
+  const contentTypesPath = '[Content_Types].xml';
+
+  let templateWorkbook = await templateZip.file(workbookPath).async('string');
+  let templateRels = await templateZip.file(relsPath).async('string');
+  let contentTypes = await templateZip.file(contentTypesPath).async('string');
+
+  const filledWorkbook = await filledZip.file(workbookPath).async('string');
+  const filledRels = await filledZip.file(relsPath).async('string');
+
+  const templateSheets = parseSheetEntries(templateWorkbook);
+  const filledSheets = parseSheetEntries(filledWorkbook);
+  const filledRelationships = parseRelationships(filledRels);
+  const existingNames = new Set(templateSheets.map((s) => s.name));
+  const extraSheets = filledSheets.filter((s) => s.name && !existingNames.has(s.name));
+  if (!extraSheets.length) return;
+
+  const templateRelIds = parseRelationships(templateRels)
+    .map((r) => Number(/rId(\d+)/i.exec(r.id)?.[1] || 0))
+    .filter(Boolean);
+  let nextRelNum = Math.max(0, ...templateRelIds) + 1;
+  let nextSheetId = Math.max(0, ...templateSheets.map((s) => s.sheetId)) + 1;
+
+  for (const sheet of extraSheets) {
+    const rel = filledRelationships.find((r) => r.id === sheet.relId);
+    if (!rel?.target) continue;
+
+    const targetPath = `xl/${rel.target}`;
+    const sheetBuf = await filledZip.file(targetPath)?.async('nodebuffer');
+    if (!sheetBuf) continue;
+    templateZip.file(targetPath, sheetBuf);
+
+    const relTarget = rel.target.replace('worksheets/', '');
+    const sheetRelsPath = `xl/worksheets/_rels/${relTarget}.rels`;
+    const sheetRels = filledZip.file(sheetRelsPath);
+    if (sheetRels) {
+      templateZip.file(sheetRelsPath, await sheetRels.async('nodebuffer'));
+    }
+
+    const newRelId = `rId${nextRelNum++}`;
+    const sheetTag = `<sheet sheetId="${nextSheetId++}" name="${sheet.name}" state="${sheet.state}" r:id="${newRelId}"/>`;
+    const relTag = `<Relationship Id="${newRelId}" Type="${rel.type}" Target="${rel.target}"/>`;
+    const contentTag = `<Override PartName="/xl/${rel.target}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;
+
+    templateWorkbook = appendBeforeClose(templateWorkbook, '</sheets>', sheetTag);
+    templateRels = appendBeforeClose(templateRels, '</Relationships>', relTag);
+    if (!contentTypes.includes(`PartName="/xl/${rel.target}"`)) {
+      contentTypes = appendBeforeClose(contentTypes, '</Types>', contentTag);
+    }
+  }
+
+  templateZip.file(workbookPath, templateWorkbook);
+  templateZip.file(relsPath, templateRels);
+  templateZip.file(contentTypesPath, contentTypes);
+}
+
 /** Only emit checked="Checked"; omitting the attribute means unchecked. */
 function setCtrlPropChecked(xml, checked) {
   let out = xml.replace(/\schecked="[^"]*"/i, '');
@@ -311,6 +400,7 @@ export async function applyPdsFormCheckboxes(filledBuffer, pds) {
     const filledSheet = await filledZip.file(part).async('string');
     templateZip.file(part, swapSheetData(templateSheet, filledSheet));
   }
+  await preserveExtraWorksheets(templateZip, filledZip);
 
   // C1 sex / civil status / citizenship
   let vml1 = await templateZip.file('xl/drawings/vmlDrawing1.vml').async('string');
