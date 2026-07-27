@@ -26,6 +26,11 @@ import {
   PDS_TEMPLATE_PATH,
 } from '../services/pdsExcel.js';
 import { convertXlsxBufferToPdf, pdsPdfFilename } from '../services/pdsPdf.js';
+import {
+  getCachedPdsPdf,
+  putCachedPdsPdf,
+  invalidatePdsPdfCache,
+} from '../services/pdsPdfCache.js';
 
 export const employeesRouter = Router();
 
@@ -361,8 +366,30 @@ employeesRouter.get('/:id/pds-pdf', async (req, res, next) => {
     const row = await getEmployeeRow(req.params.id);
     if (!row) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
     const employee = mapEmployee(row);
-    const xlsx = await buildFilledPdsWorkbook(employee);
-    const { pdf, engine } = await convertXlsxBufferToPdf(xlsx);
+    const skipCache =
+      String(req.query.noCache || '') === '1' || String(req.query.noCache || '') === 'true';
+
+    let pdf;
+    let engine;
+    let cacheStatus = 'miss';
+
+    if (!skipCache) {
+      const cached = await getCachedPdsPdf(employee);
+      if (cached) {
+        pdf = cached.pdf;
+        engine = cached.engine;
+        cacheStatus = 'hit';
+      }
+    }
+
+    if (!pdf) {
+      const xlsx = await buildFilledPdsWorkbook(employee);
+      const converted = await convertXlsxBufferToPdf(xlsx);
+      pdf = converted.pdf;
+      engine = converted.engine;
+      await putCachedPdsPdf(employee, pdf, engine);
+    }
+
     const filename = pdsPdfFilename(employee);
 
     await writeAudit({
@@ -370,13 +397,14 @@ employeesRouter.get('/:id/pds-pdf', async (req, res, next) => {
       action: 'employee.pds_pdf_download',
       entityType: 'employee',
       entityId: req.params.id,
-      meta: { filename, engine },
+      meta: { filename, engine, cache: cacheStatus },
       ip: clientIp(req),
     });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.setHeader('X-PDS-PDF-Engine', engine);
+    res.setHeader('X-PDS-PDF-Cache', cacheStatus);
     res.send(pdf);
   } catch (err) {
     next(err);
@@ -660,6 +688,8 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
       }
     });
 
+    await invalidatePdsPdfCache(req.params.id);
+
     await writeAudit({
       actorUserId: req.session.userId,
       action: 'employee.update',
@@ -929,6 +959,8 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
           entityId: req.params.id,
           ip: clientIp(req),
         });
+
+        await invalidatePdsPdfCache(req.params.id);
 
         publish('employees.changed', {
           action: 'photo',

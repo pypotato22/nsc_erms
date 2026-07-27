@@ -13,7 +13,8 @@
     "seed:pds-demo": "node src/db/seed-pds-demo.js",
     "verify:pds-excel": "node src/db/verify-pds-excel.js",
     "verify:pds-excel-yes": "node src/db/verify-pds-excel-yes.js",
-    "verify:pds-excel-dual": "node src/db/verify-pds-excel-dual.js"
+    "verify:pds-excel-dual": "node src/db/verify-pds-excel-dual.js",
+    "verify:pds-pdf-cache": "node src/db/verify-pds-pdf-cache.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
