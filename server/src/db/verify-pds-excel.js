@@ -90,6 +90,10 @@ async function main() {
       children: [
         { name: 'Ana Marie Dela Cruz', dateOfBirth: '2015-03-10' },
         { name: 'Jose Miguel Dela Cruz', dateOfBirth: '2018-11-22' },
+        ...Array.from({ length: 12 }, (_, i) => ({
+          name: `Child ${i + 3}`,
+          dateOfBirth: `2020-0${(i % 9) + 1}-15`,
+        })),
       ],
     },
     education: [
@@ -247,6 +251,7 @@ async function main() {
   const c2 = wb.getWorksheet('C2');
   const c3 = wb.getWorksheet('C3');
   const c4 = wb.getWorksheet('C4');
+  const c1ChildCont = wb.getWorksheet('C1 Children Cont.');
   const c2EligCont = wb.getWorksheet('C2 Eligibility Cont.');
   const c2WorkCont = wb.getWorksheet('C2 Work Experience Cont.');
   const c3VolCont = wb.getWorksheet('C3 Voluntary Work Cont.');
@@ -283,6 +288,9 @@ async function main() {
   expect('C1', c1, 'M37', '10/03/2015');
   expect('C1', c1, 'D54', 'Catarman Central Elementary School');
   expect('C1', c1, 'D57', 'Northern Samar Colleges');
+
+  expect('C1 Children Cont.', c1ChildCont, 'I2', 'Child 13');
+  expect('C1 Children Cont.', c1ChildCont, 'I3', 'Child 14');
 
   expect('C2', c2, 'B5', 'Professional (Second Level)');
   expect('C2', c2, 'F5', '85.50');
@@ -327,6 +335,13 @@ async function main() {
     ok: Boolean(zip.file('xl/worksheets/sheet9.xml')),
   });
   const workbookXml = await zip.file('xl/workbook.xml').async('string');
+  checks.push({
+    sheet: 'Workbook',
+    addr: 'continuation.name.c1children',
+    expect: 'C1 Children Cont.',
+    actual: workbookXml.includes('C1 Children Cont.') ? 'C1 Children Cont.' : 'missing',
+    ok: workbookXml.includes('C1 Children Cont.'),
+  });
   checks.push({
     sheet: 'Workbook',
     addr: 'continuation.name.c2elig',

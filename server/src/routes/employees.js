@@ -1001,6 +1001,7 @@ employeesRouter.get('/:id/photo', async (req, res, next) => {
          WHERE id = $1 AND profile_picture_path IS NOT NULL`,
         [req.params.id],
       );
+      await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Photo missing on disk', 'NOT_FOUND');
     }
     res.sendFile(abs);

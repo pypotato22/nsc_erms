@@ -13,6 +13,19 @@ export const PDS_TEMPLATE_PATH = path.join(
   'assets/forms/CS-Form-212-Revised-2025.xlsx',
 );
 
+const C1_CHILDREN_CONT = {
+  baseName: 'C1 Children',
+  sourceSheetName: 'C1',
+  cloneFromRow: 36,
+  cloneToRow: 49,
+  dataStartRow: 2,
+  pageSize: 12,
+  fillRow(ws, row, child) {
+    set(ws, `I${row}`, raw(child.name));
+    set(ws, `M${row}`, dmy(child.dateOfBirth));
+  },
+};
+
 const C2_ELIGIBILITY_CONT = {
   baseName: 'C2 Eligibility',
   sourceSheetName: 'C2',
@@ -141,7 +154,7 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(PDS_TEMPLATE_PATH);
 
-  fillC1(wb.getWorksheet('C1'), pds, employee);
+  fillC1(wb, wb.getWorksheet('C1'), pds, employee);
   fillC2(wb, wb.getWorksheet('C2'), pds);
   fillC3(wb, wb.getWorksheet('C3'), pds);
   fillC4(wb.getWorksheet('C4'), pds);
@@ -156,7 +169,7 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   return out;
 }
 
-function fillC1(ws, pds, employee) {
+function fillC1(wb, ws, pds, employee) {
   if (!ws) return;
   const p = pds.personal;
   const f = pds.family;
@@ -237,6 +250,7 @@ function fillC1(ws, pds, employee) {
     set(ws, `I${row}`, raw(child.name));
     set(ws, `M${row}`, dmy(child.dateOfBirth));
   }
+  addContinuationSheets(wb, C1_CHILDREN_CONT, children.slice(12));
 
   // Education fixed levels 54–58
   const levels = [
