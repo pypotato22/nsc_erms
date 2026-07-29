@@ -2868,6 +2868,38 @@ body.dark .pds-view-banner-loading {
     font-style: italic;
 }
 
+.cs212-sig-block {
+    margin-top: 4px;
+}
+
+.cs212-sig-cell {
+    width: 33.33%;
+    text-align: center;
+    vertical-align: top;
+    padding: 4px !important;
+}
+
+.cs212-sig-label {
+    font-weight: 700;
+    font-size: 8px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.cs212-sig-area {
+    min-height: 60px;
+    border: 1px dashed #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cs212-photo-img {
+    max-height: 56px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .cs212-muted {
     color: #555;
     font-size: 8px;

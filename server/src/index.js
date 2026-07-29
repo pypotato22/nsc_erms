@@ -4,6 +4,7 @@ import https from 'node:https';
 import { createApp } from './app.js';
 import { config, validateProductionConfig } from './config.js';
 import { checkConnection } from './db/pool.js';
+import { pruneExpiredPdsPdfCache } from './services/pdsPdfCache.js';
 
 async function main() {
   validateProductionConfig(config);
@@ -38,6 +39,10 @@ async function main() {
     const scheme = useTls ? 'https' : 'http';
     console.log(`NSC-ERMS API listening on ${scheme}://localhost:${config.port}`);
     console.log(`Health: ${scheme}://localhost:${config.port}/api/v1/health`);
+
+    pruneExpiredPdsPdfCache()
+      .then((n) => { if (n) console.log(`Pruned ${n} expired PDS-PDF cache entries`); })
+      .catch(() => {});
   });
 }
 

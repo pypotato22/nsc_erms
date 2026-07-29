@@ -9,6 +9,18 @@ import { PDS_TEMPLATE_PATH } from './pdsExcel.js';
 /** Bump when cache payload shape changes. */
 const CACHE_SCHEMA = 1;
 
+/** Default max-age for cached PDFs (7 days). Override via PDS_PDF_CACHE_TTL_MS env. */
+const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function cacheTtlMs() {
+  const env = process.env.PDS_PDF_CACHE_TTL_MS;
+  if (env) {
+    const n = Number(env);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return DEFAULT_TTL_MS;
+}
+
 function cacheEnabled() {
   const v = String(process.env.PDS_PDF_CACHE ?? '1').trim().toLowerCase();
   return v !== '0' && v !== 'false' && v !== 'off';
@@ -81,6 +93,16 @@ export async function getCachedPdsPdf(employee) {
 
   if (!fsSync.existsSync(pdfAbs)) return null;
 
+  try {
+    const stat = await fs.stat(pdfAbs);
+    if (Date.now() - stat.mtimeMs > cacheTtlMs()) {
+      await fs.rm(path.dirname(pdfAbs), { recursive: true, force: true }).catch(() => {});
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
   const pdf = await fs.readFile(pdfAbs);
   let engine = 'excel-com';
   try {
@@ -134,6 +156,51 @@ export async function invalidatePdsPdfCache(employeeId) {
   if (!employeeId) return;
   const dir = await employeeCacheDir(employeeId);
   await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+}
+
+/**
+ * Remove all cache entries older than the configured TTL.
+ * Safe to call periodically (e.g. on server start or via cron).
+ * @returns {Promise<number>} number of employee dirs pruned
+ */
+export async function pruneExpiredPdsPdfCache() {
+  if (!cacheEnabled()) return 0;
+  const root = await getFilesRoot();
+  const cacheRoot = path.join(root, 'cache', 'pds-pdf');
+  let dirs;
+  try {
+    dirs = await fs.readdir(cacheRoot);
+  } catch {
+    return 0;
+  }
+  const ttl = cacheTtlMs();
+  let pruned = 0;
+  for (const empDir of dirs) {
+    const empPath = path.join(cacheRoot, empDir);
+    let files;
+    try {
+      files = await fs.readdir(empPath);
+    } catch {
+      continue;
+    }
+    let allExpired = true;
+    for (const file of files) {
+      if (!file.endsWith('.pdf')) continue;
+      try {
+        const stat = await fs.stat(path.join(empPath, file));
+        if (Date.now() - stat.mtimeMs <= ttl) {
+          allExpired = false;
+        }
+      } catch {
+        /* skip */
+      }
+    }
+    if (allExpired && files.length > 0) {
+      await fs.rm(empPath, { recursive: true, force: true }).catch(() => {});
+      pruned++;
+    }
+  }
+  return pruned;
 }
 
 export function isPdsPdfCacheEnabled() {
