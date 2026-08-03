@@ -12,9 +12,13 @@ const PHOTO_EXT = {
   '.webp': { ext: 'png', contentType: 'image/png' },
 };
 
-/** C4 PHOTO box — merged J50:M55 (+ adjacent rows) on CS Form 212 Rev. 2025. */
-const PHOTO_FROM = { col: 9, row: 49 }; // J50
-const PHOTO_TO = { col: 12, row: 56 }; // M57
+/**
+ * Align to template "Text Box 100" — the printed PHOTO frame on C4
+ * (passport-sized ~3.45 cm × 4.26 cm). Anchors are 0-based OOXML indices;
+ * offsets are EMUs copied from the official CS Form 212 Rev. 2025 drawing.
+ */
+const PHOTO_FROM = { col: 10, row: 50, colOff: 207066, rowOff: 37270 };
+const PHOTO_TO = { col: 11, row: 54, colOff: 952500, rowOff: 418270 };
 
 function photoMetaFromPath(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -22,11 +26,11 @@ function photoMetaFromPath(filePath) {
 }
 
 function buildPhotoAnchorXml() {
-  const { col: fc, row: fr } = PHOTO_FROM;
-  const { col: tc, row: tr } = PHOTO_TO;
+  const { col: fc, row: fr, colOff: fColOff, rowOff: fRowOff } = PHOTO_FROM;
+  const { col: tc, row: tr, colOff: tColOff, rowOff: tRowOff } = PHOTO_TO;
   return `<xdr:twoCellAnchor editAs="oneCell">
-  <xdr:from><xdr:col>${fc}</xdr:col><xdr:colOff>28575</xdr:colOff><xdr:row>${fr}</xdr:row><xdr:rowOff>28575</xdr:rowOff></xdr:from>
-  <xdr:to><xdr:col>${tc}</xdr:col><xdr:colOff>9525</xdr:colOff><xdr:row>${tr}</xdr:row><xdr:rowOff>9525</xdr:rowOff></xdr:to>
+  <xdr:from><xdr:col>${fc}</xdr:col><xdr:colOff>${fColOff}</xdr:colOff><xdr:row>${fr}</xdr:row><xdr:rowOff>${fRowOff}</xdr:rowOff></xdr:from>
+  <xdr:to><xdr:col>${tc}</xdr:col><xdr:colOff>${tColOff}</xdr:colOff><xdr:row>${tr}</xdr:row><xdr:rowOff>${tRowOff}</xdr:rowOff></xdr:to>
   <xdr:pic>
     <xdr:nvPicPr>
       <xdr:cNvPr id="99001" name="Employee Photo"/>
