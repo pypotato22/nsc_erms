@@ -16,7 +16,11 @@ import { canWrite } from '../utils/authz.js';
 
 let _emp = null;
 let _documentTypes = [];
+/** @type {Array<object>} */
+let _employeeDocs = [];
 let _preselectTypeId = '';
+/** Last auto-filled display name (so we can replace it when type/file changes). */
+let _autoDisplayName = '';
 /** @type {Array<object>} */
 let _inboxFiles = [];
 
@@ -38,6 +42,8 @@ export function initDocuments() {
     });
   });
   getEl('doc-file').addEventListener('change', onFilePicked);
+  getEl('doc-file-browse')?.addEventListener('click', () => getEl('doc-file')?.click());
+  getEl('doc-type')?.addEventListener('change', onDocTypeChanged);
 
   getEl('close-doc-inbox-modal')?.addEventListener('click', closeInboxModal);
   getEl('doc-inbox-cancel')?.addEventListener('click', closeInboxModal);
@@ -143,6 +149,7 @@ export async function renderTabDocs(emp) {
       listDocumentTypes(),
     ]);
     _documentTypes = documentTypes;
+    _employeeDocs = documents;
 
     const recommended = checklist.filter((c) => c.isRequired);
     const onFile = recommended.filter((c) => c.satisfied).length;
@@ -279,9 +286,10 @@ export async function renderTabDocs(emp) {
 function openUploadModal(preselectTypeId = '', droppedFile = null) {
   if (!_emp) return;
   _preselectTypeId = preselectTypeId || '';
+  _autoDisplayName = '';
   getEl('doc-err').textContent = '';
   getEl('doc-file').value = '';
-  getEl('doc-file-meta').textContent = '';
+  clearFileSelectedUi();
   getEl('doc-display-name').value = '';
   getEl('doc-issued').value = '';
   getEl('doc-expiry').value = '';
@@ -298,6 +306,9 @@ function openUploadModal(preselectTypeId = '', droppedFile = null) {
       .join('');
   if (_preselectTypeId) typeEl.value = _preselectTypeId;
 
+  updateTypeHintAndSaveLabel();
+  maybeAutofillDisplayName({ preferType: Boolean(_preselectTypeId) });
+
   if (droppedFile) applyPickedFile(droppedFile);
 
   getEl('doc-overlay').classList.add('open');
@@ -307,10 +318,81 @@ function closeUploadModal() {
   getEl('doc-overlay').classList.remove('open');
 }
 
+function onDocTypeChanged() {
+  updateTypeHintAndSaveLabel();
+  maybeAutofillDisplayName({ preferType: true });
+}
+
+function selectedDocType() {
+  const id = getEl('doc-type')?.value || '';
+  return _documentTypes.find((t) => t.id === id) || null;
+}
+
+function typeAlreadyOnFile(typeId) {
+  if (!typeId) return false;
+  return _employeeDocs.some((d) => d.documentTypeId === typeId);
+}
+
+function updateTypeHintAndSaveLabel() {
+  const type = selectedDocType();
+  const hint = getEl('doc-type-hint');
+  const saveBtn = getEl('doc-modal-save');
+  if (!hint || !saveBtn) return;
+
+  if (type && typeAlreadyOnFile(type.id)) {
+    hint.hidden = false;
+    hint.textContent = `Already on file — this upload will be saved as a new version of ${type.name}.`;
+    saveBtn.textContent = 'Upload as new version';
+  } else if (type) {
+    hint.hidden = false;
+    hint.textContent = type.isRequired ? 'Recommended document type for this employee.' : '';
+    hint.hidden = !hint.textContent;
+    saveBtn.textContent = 'Upload';
+  } else {
+    hint.hidden = true;
+    hint.textContent = '';
+    saveBtn.textContent = 'Upload';
+  }
+}
+
+function displayNameIsAuto() {
+  const current = getEl('doc-display-name')?.value.trim() || '';
+  return !current || current === _autoDisplayName;
+}
+
+function maybeAutofillDisplayName({ preferType = false } = {}) {
+  if (!displayNameIsAuto()) return;
+  const type = selectedDocType();
+  const file = getEl('doc-file')?.files?.[0];
+  let next = '';
+  if (preferType && type) {
+    next = type.name;
+  } else if (type) {
+    next = type.name;
+  } else if (file) {
+    next = file.name.includes('.')
+      ? file.name.slice(0, file.name.lastIndexOf('.'))
+      : file.name;
+  }
+  if (!next) return;
+  _autoDisplayName = next;
+  getEl('doc-display-name').value = next;
+}
+
+function clearFileSelectedUi() {
+  const meta = getEl('doc-file-meta');
+  const browse = getEl('doc-file-browse');
+  if (meta) {
+    meta.hidden = true;
+    meta.innerHTML = '';
+  }
+  if (browse) browse.hidden = false;
+}
+
 function onFilePicked() {
   const file = getEl('doc-file').files?.[0];
   if (!file) {
-    getEl('doc-file-meta').textContent = '';
+    clearFileSelectedUi();
     return;
   }
   applyPickedFile(file);
@@ -321,14 +403,22 @@ function applyPickedFile(file) {
   const dt = new DataTransfer();
   dt.items.add(file);
   input.files = dt.files;
-  getEl('doc-file-meta').textContent = `${file.name} · ${formatFileSize(file.size)}`;
-  const nameInput = getEl('doc-display-name');
-  if (!nameInput.value.trim()) {
-    const base = file.name.includes('.')
-      ? file.name.slice(0, file.name.lastIndexOf('.'))
-      : file.name;
-    nameInput.value = base;
+
+  const browse = getEl('doc-file-browse');
+  const meta = getEl('doc-file-meta');
+  if (browse) browse.hidden = true;
+  if (meta) {
+    meta.hidden = false;
+    meta.innerHTML = `
+      <div class="doc-file-selected-main">
+        <strong>${escapeHtml(file.name)}</strong>
+        <span>${formatFileSize(file.size)}</span>
+      </div>
+      <button type="button" class="btn btn-sm btn-cancel" id="doc-file-change">Change</button>`;
+    getEl('doc-file-change')?.addEventListener('click', () => getEl('doc-file')?.click());
   }
+
+  maybeAutofillDisplayName({ preferType: Boolean(selectedDocType()) });
 }
 
 async function submitUpload() {
@@ -377,7 +467,7 @@ async function submitUpload() {
     refreshPanelHeader();
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Upload';
+    updateTypeHintAndSaveLabel();
   }
 }
 

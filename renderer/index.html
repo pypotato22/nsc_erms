@@ -882,40 +882,48 @@
 
     <!-- ── DOCUMENT UPLOAD ─────────────────────────────────────────── -->
     <div id="doc-overlay" class="overlay">
-        <div class="modal" style="width:520px;">
+        <div class="modal doc-upload-modal">
             <button id="close-doc-modal" class="modal-close" type="button">×</button>
             <h3>Upload document</h3>
-            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 16px;">
-                Each upload creates a new version. Rename and add details before saving.
+            <p class="modal-lead">
+                PDF, Word, or image. Each upload for the same type becomes a new version.
             </p>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>File *</label>
-                <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                <div id="doc-file-meta" style="font-size:0.7857rem;color:var(--text-3);margin-top:6px;"></div>
-            </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Display name *</label>
-                <input type="text" id="doc-display-name" placeholder="e.g. NBI Clearance 2026" />
-            </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Document type *</label>
-                <select id="doc-type"></select>
-            </div>
-            <div class="form-grid" style="margin-bottom:4px;">
+            <div class="doc-upload-form">
                 <div class="fg">
-                    <label>Issued date</label>
-                    <input type="date" id="doc-issued" />
+                    <label for="doc-type">Document type *</label>
+                    <select id="doc-type"></select>
+                    <div id="doc-type-hint" class="field-hint" hidden></div>
                 </div>
                 <div class="fg">
-                    <label>Expiry date</label>
-                    <input type="date" id="doc-expiry" />
+                    <label>File *</label>
+                    <div class="doc-file-picker">
+                        <input type="file" id="doc-file" class="doc-file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <button type="button" id="doc-file-browse" class="fab fab-upload">Choose file</button>
+                        <div id="doc-file-meta" class="doc-file-selected" hidden></div>
+                    </div>
+                    <div class="field-hint">Accepted: PDF, DOC, DOCX, JPG, PNG</div>
+                </div>
+                <div class="fg">
+                    <label for="doc-display-name">Display name *</label>
+                    <input type="text" id="doc-display-name" placeholder="e.g. NBI Clearance 2026" />
+                    <div class="field-hint">Shown in the Documents list</div>
+                </div>
+                <div class="form-grid">
+                    <div class="fg">
+                        <label for="doc-issued">Issued date</label>
+                        <input type="date" id="doc-issued" />
+                    </div>
+                    <div class="fg">
+                        <label for="doc-expiry">Expiry date</label>
+                        <input type="date" id="doc-expiry" />
+                    </div>
+                </div>
+                <div class="fg">
+                    <label for="doc-remarks">Remarks</label>
+                    <textarea id="doc-remarks" rows="2" placeholder="Optional notes"></textarea>
                 </div>
             </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Remarks</label>
-                <textarea id="doc-remarks" placeholder="Optional notes"></textarea>
-            </div>
-            <div class="login-err" id="doc-err" style="margin-top:4px;"></div>
+            <div class="login-err" id="doc-err"></div>
             <div class="modal-actions">
                 <button id="doc-modal-cancel" class="btn btn-cancel" type="button">Cancel</button>
                 <button id="doc-modal-save" class="btn btn-primary" type="button">Upload</button>

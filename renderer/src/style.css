@@ -1231,6 +1231,84 @@ body.dark .panel-hdr {
     color: var(--text-1);
 }
 
+.doc-upload-modal {
+    width: 520px;
+}
+
+.modal-lead {
+    font-size: 0.8571rem;
+    color: var(--text-2);
+    margin: -8px 0 16px;
+    line-height: 1.4;
+}
+
+.doc-upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.doc-upload-form .form-grid {
+    margin: 0;
+}
+
+.field-hint {
+    margin-top: 6px;
+    font-size: 0.7857rem;
+    color: var(--text-3);
+    line-height: 1.35;
+}
+
+.doc-file-picker {
+    position: relative;
+}
+
+.doc-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.doc-file-selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg-hover);
+}
+
+.doc-file-selected[hidden] {
+    display: none;
+}
+
+.doc-file-selected-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.doc-file-selected-main strong {
+    font-size: 0.8571rem;
+    color: var(--text-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-file-selected-main span {
+    font-size: 0.7857rem;
+    color: var(--text-3);
+}
+
 /* ── Documents tab ────────────────────────────────────────────── */
 .file-toolbar {
     display: flex;
