@@ -175,9 +175,9 @@ export async function renderTabDocs(emp) {
       : '<div class="empty" style="padding:20px 0">No documents on file yet.</div>';
 
     const uploadToolbar = canWrite()
-      ? `<div class="file-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      ? `<div class="file-toolbar">
         <button type="button" class="fab fab-upload" id="doc-open-upload">Upload document</button>
-        <button type="button" class="btn btn-sm btn-edit" id="doc-open-inbox">Attach from inbox</button>
+        <button type="button" class="fab fab-upload" id="doc-open-inbox">Attach from inbox</button>
       </div>`
       : '';
 

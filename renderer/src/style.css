@@ -1237,6 +1237,7 @@ body.dark .panel-hdr {
     gap: 8px;
     margin-bottom: 14px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .fab {
