@@ -82,7 +82,7 @@ function wireDocDropZone() {
       return;
     }
     if (!_emp) {
-      showToast('Open an employee 201 File tab first.', 'info');
+      showToast('Open an employee Documents tab first.', 'info');
       return;
     }
     openUploadModal('', file);
@@ -108,7 +108,7 @@ function isAllowedDocFile(file) {
 }
 
 /**
- * Live-sync: refresh the open 201 File tab when documents change for that employee.
+ * Live-sync: refresh the open Documents tab when documents change for that employee.
  * @param {{ employeeId?: string }} [payload]
  */
 export async function refreshOpenDocsTabForLiveSync(payload = {}) {
@@ -134,7 +134,7 @@ export async function renderTabDocs(emp) {
   _emp = emp;
   setHTML(
     'tab-docs',
-    `<div class="empty" style="padding:20px 0">Loading 201 File…</div>`,
+    `<div class="empty" style="padding:20px 0">Loading documents…</div>`,
   );
 
   try {
@@ -146,33 +146,48 @@ export async function renderTabDocs(emp) {
 
     const recommended = checklist.filter((c) => c.isRequired);
     const onFile = recommended.filter((c) => c.satisfied).length;
-    const stillRecommended = recommended.length - onFile;
+    const missing = recommended.filter((c) => !c.satisfied);
+    const complete = recommended.filter((c) => c.satisfied);
 
     const checklistHtml = recommended.length
-      ? `<div class="doc-checklist" style="margin-bottom:14px;">
-          <div style="font-size:0.8571rem;color:var(--text-2);margin-bottom:8px;">
-            Recommended docs: ${onFile}/${recommended.length} on file
-            ${stillRecommended
-              ? `<span style="color:var(--blue-700);"> · ${stillRecommended} recommended</span>`
-              : '<span style="color:var(--success);"> · complete</span>'}
+      ? `<div class="doc-checklist">
+          <div class="doc-checklist-head">
+            <span class="doc-checklist-title">Recommended</span>
+            <span class="doc-checklist-progress">${onFile}/${recommended.length} on file${
+              missing.length === 0 ? ' · complete' : ''
+            }</span>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            ${recommended
-              .map((c) =>
-                c.satisfied
-                  ? `<span class="ph-badge" style="background:rgba(13,147,115,.12);color:var(--success)">${escapeHtml(c.name)} ✓</span>`
-                  : canWrite()
-                    ? `<button type="button" class="ph-badge doc-rec-chip" data-rec-type="${c.id}" style="background:rgba(46,111,255,.1);color:var(--blue-700);border:none;cursor:pointer;">${escapeHtml(c.name)} · recommended</button>`
-                    : `<span class="ph-badge" style="background:rgba(46,111,255,.1);color:var(--blue-700);">${escapeHtml(c.name)} · recommended</span>`,
-              )
-              .join('')}
-          </div>
+          ${
+            missing.length
+              ? `<div class="doc-chip-row">
+                  ${missing
+                    .map((c) =>
+                      canWrite()
+                        ? `<button type="button" class="doc-chip doc-chip-missing" data-rec-type="${c.id}">${escapeHtml(c.name)}</button>`
+                        : `<span class="doc-chip doc-chip-missing">${escapeHtml(c.name)}</span>`,
+                    )
+                    .join('')}
+                </div>`
+              : ''
+          }
+          ${
+            complete.length
+              ? `<div class="doc-chip-row">
+                  ${complete
+                    .map(
+                      (c) =>
+                        `<span class="doc-chip doc-chip-done">${escapeHtml(c.name)}</span>`,
+                    )
+                    .join('')}
+                </div>`
+              : ''
+          }
         </div>`
       : '';
 
     const docsHtml = documents.length
       ? documents.map((doc) => buildDocRow(doc)).join('')
-      : '<div class="empty" style="padding:20px 0">No documents on file yet.</div>';
+      : '<div class="empty doc-empty">No documents on file yet.</div>';
 
     const uploadToolbar = canWrite()
       ? `<div class="file-toolbar">
@@ -184,11 +199,12 @@ export async function renderTabDocs(emp) {
     setHTML(
       'tab-docs',
       `
-      ${checklistHtml}
       ${uploadToolbar}
-      <p style="font-size:0.8571rem;color:var(--text-3);margin-bottom:12px;">
-        ${documents.length} file(s) · sorted by most recent · multiple versions allowed per type
-        ${canWrite() ? ' · drag & drop files here to upload' : ''}
+      ${checklistHtml}
+      <p class="doc-meta">
+        ${documents.length} file${documents.length === 1 ? '' : 's'} · most recent first · versions allowed per type${
+          canWrite() ? ' · drag & drop to upload' : ''
+        }
       </p>
       <div class="doc-list">${docsHtml}</div>`,
     );
@@ -491,7 +507,7 @@ async function submitInboxAttach() {
     refreshPanelHeader();
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Attach to 201 File';
+    btn.textContent = 'Attach to Documents';
   }
 }
 

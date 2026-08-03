@@ -1231,13 +1231,109 @@ body.dark .panel-hdr {
     color: var(--text-1);
 }
 
-/* ── 201 File ─────────────────────────────────────────────────── */
+/* ── Documents tab ────────────────────────────────────────────── */
 .file-toolbar {
     display: flex;
     gap: 8px;
     margin-bottom: 14px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+.doc-checklist {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-hover);
+}
+
+.doc-checklist-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.doc-checklist-title {
+    font-size: 0.8571rem;
+    font-weight: 700;
+    color: var(--text-1);
+}
+
+.doc-checklist-progress {
+    font-size: 0.7857rem;
+    color: var(--text-3);
+    font-family: 'DM Mono', monospace;
+}
+
+.doc-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.doc-chip-row + .doc-chip-row {
+    margin-top: 8px;
+}
+
+.doc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.7857rem;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1.2;
+}
+
+button.doc-chip {
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.doc-chip-missing {
+    background: #fff;
+    color: var(--blue-700);
+    border: 1px solid var(--border-strong);
+}
+
+button.doc-chip-missing:hover {
+    background: var(--bg-subtle);
+    border-color: var(--blue-500);
+}
+
+.doc-chip-done {
+    background: rgba(13, 147, 115, 0.12);
+    color: var(--success);
+    border: 1px solid transparent;
+}
+
+.doc-chip-done::before {
+    content: '✓';
+    margin-right: 5px;
+    font-weight: 700;
+}
+
+.doc-meta {
+    font-size: 0.7857rem;
+    color: var(--text-3);
+    margin: 0 0 12px;
+    line-height: 1.4;
+}
+
+.doc-empty {
+    padding: 20px 0;
+}
+
+body.dark .doc-checklist {
+    background: var(--bg-subtle);
+}
+
+body.dark .doc-chip-missing {
+    background: var(--bg-hover);
 }
 
 .fab {

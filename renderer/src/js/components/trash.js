@@ -59,7 +59,7 @@ export async function renderTrashPage() {
         'trash-list',
         `<div class="empty" style="padding:28px 0;text-align:center;">
           <p style="font-weight:600;margin-bottom:6px;">Trash is empty</p>
-          <p style="font-size:0.8571rem;color:var(--text-3);">Soft-deleted 201 File documents appear here. Restore or delete permanently.</p>
+          <p style="font-size:0.8571rem;color:var(--text-3);">Soft-deleted documents appear here. Restore or delete permanently.</p>
         </div>`,
       );
       return;
@@ -125,7 +125,7 @@ export async function renderTrashPage() {
       btn.addEventListener('click', async () => {
         try {
           const result = await restoreDocument(btn.dataset.trashRestore);
-          showToast('Document restored to 201 File.', 'success');
+          showToast('Document restored.', 'success');
           await renderTrashPage();
           refreshOpenDocsTabForLiveSync({
             employeeId: result?.employeeId,

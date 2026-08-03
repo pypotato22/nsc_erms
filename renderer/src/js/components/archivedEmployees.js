@@ -120,7 +120,7 @@ export async function renderArchivedEmployeesPage() {
       btn.addEventListener('click', async () => {
         if (
           !confirm(
-            'Permanently delete this employee, all 201 File documents, and photo files from disk? This cannot be undone.',
+            'Permanently delete this employee, all documents, and photo files from disk? This cannot be undone.',
           )
         ) {
           return;

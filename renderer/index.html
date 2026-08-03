@@ -356,7 +356,7 @@
                     <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
                         <div>
                             <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
-                                Files dropped here (or sent by Epson scan-to-folder) wait for assignment to an employee 201 File.
+                                Files dropped here (or sent by Epson scan-to-folder) wait for assignment to an employee’s Documents.
                             </p>
                             <p style="font-size:0.7857rem;color:var(--text-3);margin:0;font-family:'DM Mono',monospace;" id="scan-inbox-path">—</p>
                         </div>
@@ -372,7 +372,7 @@
                     <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
                         <div>
                             <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
-                                Soft-deleted 201 File documents. Restore to put them back, or delete forever to remove the file from disk.
+                                Soft-deleted documents. Restore to put them back, or delete forever to remove the file from disk.
                             </p>
                         </div>
                         <button type="button" id="trash-refresh" class="btn btn-sm btn-edit">Refresh</button>
@@ -688,7 +688,7 @@
         <div class="panel-tabs">
             <button data-tab="info" class="tab-btn active">Personal Info</button>
             <button data-tab="employment" class="tab-btn">Employment</button>
-            <button data-tab="docs" class="tab-btn">201 File</button>
+            <button data-tab="docs" class="tab-btn">Documents</button>
         </div>
         <div class="panel-body">
             <div id="tab-info" class="tab-pane active"></div>
@@ -875,7 +875,7 @@
             <div class="login-err" id="scan-assign-err"></div>
             <div class="modal-actions">
                 <button id="scan-assign-cancel" class="btn btn-cancel" type="button">Cancel</button>
-                <button id="scan-assign-save" class="btn btn-primary" type="button">Assign to 201 File</button>
+                <button id="scan-assign-save" class="btn btn-primary" type="button">Assign to Documents</button>
             </div>
         </div>
     </div>
@@ -930,7 +930,7 @@
             <h3>Attach from Scan Inbox</h3>
             <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 Assign a pending scanned file to
-                <strong id="doc-inbox-employee-name">this employee</strong>’s 201 File.
+                <strong id="doc-inbox-employee-name">this employee</strong>’s Documents.
             </p>
             <div class="fg" style="margin-bottom:13px;">
                 <label>Inbox file *</label>
@@ -962,7 +962,7 @@
             <div class="login-err" id="doc-inbox-err" style="margin-top:4px;"></div>
             <div class="modal-actions">
                 <button id="doc-inbox-cancel" class="btn btn-cancel" type="button">Cancel</button>
-                <button id="doc-inbox-save" class="btn btn-primary" type="button">Attach to 201 File</button>
+                <button id="doc-inbox-save" class="btn btn-primary" type="button">Attach to Documents</button>
             </div>
         </div>
     </div>

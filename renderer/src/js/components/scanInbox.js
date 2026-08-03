@@ -43,7 +43,7 @@ export async function renderScanInboxPage() {
           <p style="font-weight:600;margin-bottom:8px;">Inbox is empty</p>
           <p style="font-size:0.8571rem;color:var(--text-3);max-width:420px;margin:0 auto;">
             Drop scanned PDFs/images into the inbox folder (or use Epson scan-to-folder when available).
-            Then refresh and assign each file to an employee 201 File.
+            Then refresh and assign each file to an employee’s Documents.
           </p>
         </div>`,
       );
@@ -180,7 +180,7 @@ async function submitAssign() {
     await renderScanInboxPage();
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Assign to 201 File';
+    btn.textContent = 'Assign to Documents';
   }
 }
 
