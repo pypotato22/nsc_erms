@@ -9,7 +9,7 @@ import {
   listEmploymentTypes,
   listEmploymentStatuses,
 } from '../api/departments.js';
-import { uploadEmployeePhoto, employeePhotoUrl } from '../api/documents.js';
+import { uploadEmployeePhoto, employeePhotoUrl, uploadEmployeeSignature, employeeSignatureUrl } from '../api/documents.js';
 import { ApiError } from '../api/client.js';
 import { getEl, getInitials, getToday, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
@@ -29,6 +29,8 @@ let _employmentTypes = [];
 let _employmentStatuses = [];
 let _pendingPhotoFile = null;
 let _previewObjectUrl = null;
+let _pendingSignatureFile = null;
+let _signaturePreviewObjectUrl = null;
 let _step = 1;
 let _pds = emptyPds();
 let _assignment = {
@@ -75,9 +77,14 @@ export function initEmployeeModal(getSearchQuery) {
 export async function openEmployeeModal(empId = null) {
   _editingEmpId = empId;
   _pendingPhotoFile = null;
+  _pendingSignatureFile = null;
   if (_previewObjectUrl) {
     URL.revokeObjectURL(_previewObjectUrl);
     _previewObjectUrl = null;
+  }
+  if (_signaturePreviewObjectUrl) {
+    URL.revokeObjectURL(_signaturePreviewObjectUrl);
+    _signaturePreviewObjectUrl = null;
   }
   _step = 1;
   getEl('emp-modal-title').textContent = empId ? 'Edit Employee' : 'Add Employee';
@@ -115,12 +122,18 @@ export function closeEmployeeModal() {
   getEl('emp-overlay').classList.remove('open');
   _editingEmpId = null;
   _pendingPhotoFile = null;
+  _pendingSignatureFile = null;
   if (_previewObjectUrl) {
     URL.revokeObjectURL(_previewObjectUrl);
     _previewObjectUrl = null;
   }
+  if (_signaturePreviewObjectUrl) {
+    URL.revokeObjectURL(_signaturePreviewObjectUrl);
+    _signaturePreviewObjectUrl = null;
+  }
   _step = 1;
   _pds = emptyPds();
+  _photoEmp = null;
 }
 
 function goToStep(step) {
@@ -583,7 +596,12 @@ function renderOtherStep() {
         <div class="fg full"><label>Date / Place of Issuance</label><input data-decl="datePlaceOfIssuance" type="text" value="${escapeAttr(o.declaration?.datePlaceOfIssuance || '')}" placeholder="e.g. 15/03/2020, Manila" /></div>
         <div class="fg"><label>Date Accomplished</label><input data-decl="dateAccomplished" type="date" value="${escapeAttr(o.declaration?.dateAccomplished || '')}" /></div>
       </div>
-      <p class="pds-hint">Signature and right thumbmark are left blank for wet-ink signing on the printed form.</p>
+      <div class="sig-wrap needs-write">
+        ${signaturePreviewHtml()}
+        <label class="pic-lbl" for="sig-input">Upload Digital Signature</label>
+        <input type="file" id="sig-input" accept="image/png,image/jpeg,image/webp,image/*" style="display:none" />
+      </div>
+      <p class="pds-hint">Upload a signature image (PNG with transparent background preferred). It is placed in the PDS “Sign inside the box” area. Right thumbmark remains blank for wet-ink signing.</p>
     </div>
   `;
 }
@@ -840,6 +858,7 @@ function validateForSave() {
 
 function onWizardClick(e) {
   if (e.target.id === 'pic-input' || e.target.closest?.('#pic-input')) return;
+  if (e.target.id === 'sig-input' || e.target.closest?.('#sig-input')) return;
 
   if (e.target.matches('[data-add-child]')) {
     collectCurrentStep();
@@ -961,6 +980,10 @@ function onWizardChange(e) {
     previewPhoto(t);
     return;
   }
+  if (t.id === 'sig-input') {
+    previewSignature(t);
+    return;
+  }
   if (t.id === 'f-dept') {
     loadPositionsForDepartment(t.value).catch(() => resetPositionSelect());
     return;
@@ -1006,6 +1029,9 @@ async function saveEmployee() {
     if (_pendingPhotoFile && employeeId) {
       await uploadEmployeePhoto(employeeId, _pendingPhotoFile);
     }
+    if (_pendingSignatureFile && employeeId) {
+      await uploadEmployeeSignature(employeeId, _pendingSignatureFile);
+    }
     closeEmployeeModal();
     await renderEmployeeTable(_getSearchQuery());
     await refreshFilterDropdowns();
@@ -1039,11 +1065,16 @@ function prefillFromEmployee(emp) {
     startDate: a?.startDate ? String(a.startDate).slice(0, 10) : getToday(),
   };
   _pendingPhotoFile = null;
+  _pendingSignatureFile = null;
   if (_previewObjectUrl) {
     URL.revokeObjectURL(_previewObjectUrl);
     _previewObjectUrl = null;
   }
-  // stash photo url for preview via emp
+  if (_signaturePreviewObjectUrl) {
+    URL.revokeObjectURL(_signaturePreviewObjectUrl);
+    _signaturePreviewObjectUrl = null;
+  }
+  // stash photo/signature urls for preview via emp
   _photoEmp = emp;
 }
 
@@ -1064,6 +1095,17 @@ function photoPreviewHtml() {
   return `<div id="pic-preview" class="pic-ini">${escapeHtml(initials)}</div>`;
 }
 
+function signaturePreviewHtml() {
+  if (_signaturePreviewObjectUrl) {
+    return `<img id="sig-preview" src="${_signaturePreviewObjectUrl}" class="pds-signature" alt="Signature preview"/>`;
+  }
+  if (_photoEmp && (_photoEmp.signatureUrl || _photoEmp.signaturePath)) {
+    const src = escapeAttr(_photoEmp.signatureUrl || employeeSignatureUrl(_photoEmp.id));
+    return `<img id="sig-preview" class="pds-signature" src="${src}" alt="Signature" data-emp-signature />`;
+  }
+  return `<div id="sig-preview" class="sig-placeholder">No signature uploaded</div>`;
+}
+
 function previewPhoto(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1073,6 +1115,18 @@ function previewPhoto(input) {
   const prev = getEl('pic-preview');
   if (prev) {
     prev.outerHTML = `<img id="pic-preview" class="pds-photo" src="${_previewObjectUrl}" alt=""/>`;
+  }
+}
+
+function previewSignature(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _pendingSignatureFile = file;
+  if (_signaturePreviewObjectUrl) URL.revokeObjectURL(_signaturePreviewObjectUrl);
+  _signaturePreviewObjectUrl = URL.createObjectURL(file);
+  const prev = getEl('sig-preview');
+  if (prev) {
+    prev.outerHTML = `<img id="sig-preview" class="pds-signature" src="${_signaturePreviewObjectUrl}" alt="Signature preview"/>`;
   }
 }
 

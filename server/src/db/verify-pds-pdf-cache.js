@@ -56,6 +56,9 @@ async function main() {
   const photo = demoEmployee({ profilePicturePath: 'employees/x/photo.jpg' });
   ok('key changes with photo path', pdsPdfCacheKey(photo) !== key1);
 
+  const signature = demoEmployee({ signaturePath: 'employees/x/signature.png' });
+  ok('key changes with signature path', pdsPdfCacheKey(signature) !== key1);
+
   await invalidatePdsPdfCache(emp.id);
   const miss = await getCachedPdsPdf(emp);
   ok('miss before put', miss === null);

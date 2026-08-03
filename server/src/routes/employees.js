@@ -9,6 +9,7 @@ import { getFilesRoot, getMaxUploadBytes } from '../services/settings.js';
 import {
   absoluteFromRelative,
   writeEmployeePhoto,
+  writeEmployeeSignature,
   removeStoredFile,
   removeEmployeeStorage,
 } from '../services/files.js';
@@ -52,6 +53,7 @@ const EMPLOYEE_LIST_SQL = `
     e.contact_number,
     e.address,
     e.profile_picture_path,
+    e.signature_path,
     e.remarks,
     e.pds,
     ea.id AS assignment_id,
@@ -99,6 +101,10 @@ function mapEmployee(row, { includePds = true } = {}) {
     profilePicturePath: row.profile_picture_path,
     photoUrl: row.profile_picture_path
       ? `/api/v1/employees/${row.id}/photo`
+      : null,
+    signaturePath: row.signature_path,
+    signatureUrl: row.signature_path
+      ? `/api/v1/employees/${row.id}/signature`
       : null,
     remarks: row.remarks,
     assignment: row.assignment_id
@@ -216,6 +222,7 @@ employeesRouter.get('/', async (req, res, next) => {
     e.contact_number,
     e.address,
     e.profile_picture_path,
+    e.signature_path,
     e.remarks,
     ea.id AS assignment_id,
     ea.start_date,
@@ -822,7 +829,7 @@ employeesRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
 employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
   try {
     const { rows: empRows } = await query(
-      `SELECT id, employee_no, first_name, last_name, profile_picture_path
+      `SELECT id, employee_no, first_name, last_name, profile_picture_path, signature_path
        FROM employees
        WHERE id = $1 AND deleted_at IS NOT NULL`,
       [req.params.id],
@@ -853,6 +860,15 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
       }
     } catch (err) {
       console.error('Failed to remove employee photo:', err.message);
+    }
+
+    let signatureRemoved = false;
+    try {
+      if (emp.signature_path) {
+        signatureRemoved = await removeStoredFile(emp.signature_path);
+      }
+    } catch (err) {
+      console.error('Failed to remove employee signature:', err.message);
     }
 
     await withClient(async (client) => {
@@ -888,6 +904,7 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
         documentsPurged: docs.length,
         fileRemovedCount,
         photoRemoved,
+        signatureRemoved,
         storageRemoved,
       },
       ip: clientIp(req),
@@ -904,6 +921,7 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
       documentsPurged: docs.length,
       fileRemovedCount,
       photoRemoved,
+      signatureRemoved,
       storageRemoved,
     });
   } catch (err) {
@@ -1003,6 +1021,103 @@ employeesRouter.get('/:id/photo', async (req, res, next) => {
       );
       await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Photo missing on disk', 'NOT_FOUND');
+    }
+    res.sendFile(abs);
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.post('/:id/signature', writeRoles, async (req, res, next) => {
+  try {
+    const maxBytes = await getMaxUploadBytes();
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: maxBytes },
+      fileFilter(_req, file, cb) {
+        if (!['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.mimetype)) {
+          return cb(new Error('Only JPEG/PNG/WebP signatures are allowed'));
+        }
+        cb(null, true);
+      },
+    }).single('signature');
+
+    upload(req, res, async (err) => {
+      try {
+        if (err) {
+          throw new HttpError(400, err.message || 'Upload failed', 'VALIDATION');
+        }
+        if (!req.file) throw new HttpError(400, 'signature is required', 'VALIDATION');
+
+        const { rows: emp } = await query(
+          `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,
+          [req.params.id],
+        );
+        if (!emp[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+
+        const saved = await writeEmployeeSignature({
+          employeeId: req.params.id,
+          originalName: req.file.originalname,
+          buffer: req.file.buffer,
+        });
+
+        const { rows } = await query(
+          `UPDATE employees
+           SET signature_path = $2, updated_at = NOW(), updated_by = $3
+           WHERE id = $1
+           RETURNING id, signature_path`,
+          [req.params.id, saved.relativePath, req.session.userId],
+        );
+
+        await writeAudit({
+          actorUserId: req.session.userId,
+          action: 'employee.signature_upload',
+          entityType: 'employee',
+          entityId: req.params.id,
+          ip: clientIp(req),
+        });
+
+        await invalidatePdsPdfCache(req.params.id);
+
+        publish('employees.changed', {
+          action: 'signature',
+          employeeId: req.params.id,
+          actorUserId: req.session.userId,
+        });
+        res.json({
+          employeeId: rows[0].id,
+          signaturePath: rows[0].signature_path,
+          signatureUrl: `/api/v1/employees/${rows[0].id}/signature`,
+        });
+      } catch (e) {
+        next(e);
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.get('/:id/signature', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT signature_path FROM employees WHERE id = $1`,
+      [req.params.id],
+    );
+    const pathRel = rows[0]?.signature_path;
+    if (!pathRel) throw new HttpError(404, 'No signature', 'NOT_FOUND');
+
+    const root = await getFilesRoot();
+    const abs = absoluteFromRelative(root, pathRel);
+    if (!fs.existsSync(abs)) {
+      await query(
+        `UPDATE employees
+         SET signature_path = NULL, updated_at = NOW()
+         WHERE id = $1 AND signature_path IS NOT NULL`,
+        [req.params.id],
+      );
+      await invalidatePdsPdfCache(req.params.id);
+      throw new HttpError(404, 'Signature missing on disk', 'NOT_FOUND');
     }
     res.sendFile(abs);
   } catch (err) {

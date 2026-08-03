@@ -316,8 +316,12 @@ export function buildCs212Html(employee, opts = {}) {
     <table class="cs212-table cs212-sig-block">
       <tr>
         <td class="cs212-sig-cell">
-          <div class="cs212-sig-label">Signature (Sign inside this box)</div>
-          <div class="cs212-sig-area"></div>
+          <div class="cs212-sig-label">Signature (Sign inside the box)</div>
+          <div class="cs212-sig-area">${
+            employee?.signatureUrl || employee?.signaturePath
+              ? `<img src="${escapeHtml(employee.signatureUrl || `/api/v1/employees/${encodeURIComponent(employee.id)}/signature`)}" alt="Signature" class="cs212-signature-img"/>`
+              : ''
+          }</div>
         </td>
         <td class="cs212-sig-cell">
           <div class="cs212-sig-label">Right Thumbmark</div>
@@ -326,8 +330,8 @@ export function buildCs212Html(employee, opts = {}) {
         <td class="cs212-sig-cell">
           <div class="cs212-sig-label">PHOTO</div>
           <div class="cs212-sig-area cs212-photo-box">${
-            employee?.profilePicturePath
-              ? `<img src="/api/employees/${encodeURIComponent(employee.id)}/photo" alt="ID Photo" class="cs212-photo-img"/>`
+            employee?.photoUrl || employee?.profilePicturePath
+              ? `<img src="${escapeHtml(employee.photoUrl || `/api/v1/employees/${encodeURIComponent(employee.id)}/photo`)}" alt="ID Photo" class="cs212-photo-img"/>`
               : ''
           }</div>
         </td>

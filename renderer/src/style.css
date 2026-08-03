@@ -2900,6 +2900,12 @@ body.dark .pds-view-banner-loading {
     object-fit: contain;
 }
 
+.cs212-signature-img {
+    max-height: 56px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .cs212-muted {
     color: #555;
     font-size: 8px;
@@ -3240,6 +3246,38 @@ body.dark .pds-view-banner-loading {
     border-radius: 50%;
     object-fit: cover;
     border: 2.5px solid var(--blue-500);
+}
+
+.sig-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 14px 0 8px;
+}
+
+.pds-signature {
+    max-width: 280px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 6px 10px;
+}
+
+.sig-placeholder {
+    min-width: 200px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--border);
+    color: var(--text-3);
+    font-size: 0.7857rem;
+    background: var(--bg-hover);
+    padding: 8px 12px;
 }
 
 .pds-wizard-actions {

@@ -258,6 +258,8 @@ SSE: `positions.changed`.
   "address": "",
   "profilePicturePath": "employees/…/photo.jpg",
   "photoUrl": "/api/v1/employees/{id}/photo",
+  "signaturePath": "employees/…/signature.png",
+  "signatureUrl": "/api/v1/employees/{id}/signature",
   "remarks": "",
   "assignment": {
     "id": "…",
@@ -334,11 +336,19 @@ Hard delete + remove employee storage directory.
 
 ### `POST /employees/:id/photo`
 
-**Write.** Multipart field `file` (image). Updates `profile_picture_path`.
+**Write.** Multipart field `photo` (JPEG/PNG/WebP). Updates `profile_picture_path`. Invalidates PDS PDF cache.
 
 ### `GET /employees/:id/photo`
 
-Streams the photo file (auth required).
+Streams the photo file (auth required). Soft-deleted employees allowed.
+
+### `POST /employees/:id/signature`
+
+**Write.** Multipart field `signature` (JPEG/PNG/WebP). Updates `signature_path`. Embedded into PDS C4 signature box (F60:I62). Invalidates PDS PDF cache.
+
+### `GET /employees/:id/signature`
+
+Streams the signature file (auth required). Soft-deleted employees allowed.
 
 SSE: `employees.changed` with `action` like `created` / updates / deletes.
 
@@ -586,7 +596,7 @@ Use `EventSource` with cookies (same-origin). Multi-process / multi-server deplo
 | `renderer/src/js/api/client.js` | Shared fetch + `ApiError` |
 | `auth.js` | login, logout, me, changePassword |
 | `employees.js` | CRUD, trash, restore |
-| `documents.js` | docs, photo, download URLs |
+| `documents.js` | docs, photo, signature, download URLs |
 | `departments.js` / `positions.js` | catalogs |
 | `users.js` | user admin |
 | `setup.js` | setup status/complete |

@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { coercePdsFromRow, normalizePds } from './pds.js';
 import { applyPdsFormCheckboxes } from './pdsExcelCheckboxes.js';
 import { embedC4PhotoFromEmployee } from './pdsExcelPhoto.js';
+import { embedC4SignatureFromEmployee } from './pdsExcelSignature.js';
 import { addContinuationSheets } from './pdsExcelContinuation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -157,7 +158,7 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   fillC1(wb, wb.getWorksheet('C1'), pds, employee);
   fillC2(wb, wb.getWorksheet('C2'), pds);
   fillC3(wb, wb.getWorksheet('C3'), pds);
-  fillC4(wb.getWorksheet('C4'), pds);
+  fillC4(wb.getWorksheet('C4'), pds, employee);
 
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   if (options.skipFormCheckboxes) return buf;
@@ -165,6 +166,9 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   let out = await applyPdsFormCheckboxes(buf, pds);
   if (!options.skipPhoto && employee?.profilePicturePath) {
     out = await embedC4PhotoFromEmployee(out, employee);
+  }
+  if (!options.skipSignature && employee?.signaturePath) {
+    out = await embedC4SignatureFromEmployee(out, employee);
   }
   return out;
 }
@@ -360,7 +364,7 @@ function fillC3(wb, ws, pds) {
   set(ws, 'J42', memberships);
 }
 
-function fillC4(ws, pds) {
+function fillC4(ws, pds, employee = null) {
   if (!ws) return;
   const o = pds.otherInfo || {};
 
@@ -412,6 +416,12 @@ function fillC4(ws, pds) {
   set(ws, 'D62', raw(decl.idNumber));
   set(ws, 'D64', raw(decl.datePlaceOfIssuance));
   if (decl.dateAccomplished) set(ws, 'J65', dmy(decl.dateAccomplished));
+
+  // Clear CSC red placeholder so the digital signature image is readable.
+  // Keep F63 label. Leave placeholder when no signature (wet-ink guidance).
+  if (employee?.signaturePath) {
+    set(ws, 'F60', '');
+  }
 }
 
 export function pdsDownloadFilename(employee) {

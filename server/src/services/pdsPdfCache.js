@@ -7,7 +7,7 @@ import { coercePdsFromRow, normalizePds } from './pds.js';
 import { PDS_TEMPLATE_PATH } from './pdsExcel.js';
 
 /** Bump when cache payload shape or Excel/PDF layout (e.g. photo size) changes. */
-const CACHE_SCHEMA = 3;
+const CACHE_SCHEMA = 5;
 
 /** Default max-age for cached PDFs (7 days). Override via PDS_PDF_CACHE_TTL_MS env. */
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -59,6 +59,7 @@ export function pdsPdfCacheKey(employee) {
     schema: CACHE_SCHEMA,
     template: templateFingerprint(),
     profilePicturePath: employee?.profilePicturePath || null,
+    signaturePath: employee?.signaturePath || null,
     pds,
   });
 

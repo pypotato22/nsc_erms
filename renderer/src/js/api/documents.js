@@ -81,3 +81,24 @@ export async function uploadEmployeePhoto(employeeId, file) {
 export function employeePhotoUrl(employeeId) {
   return `/api/v1/employees/${employeeId}/photo`;
 }
+
+export async function uploadEmployeeSignature(employeeId, file) {
+  const form = new FormData();
+  form.append('signature', file);
+  const res = await fetch(`/api/v1/employees/${employeeId}/signature`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data?.error?.message || 'Signature upload failed');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+export function employeeSignatureUrl(employeeId) {
+  return `/api/v1/employees/${employeeId}/signature`;
+}

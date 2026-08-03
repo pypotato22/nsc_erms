@@ -12,6 +12,7 @@ import JSZip from 'jszip';
 import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
 import { C1_CTRL, C4_YN, isCtrlChecked, isVmlChecked } from '../services/pdsExcelCheckboxes.js';
 import { embedC4Photo } from '../services/pdsExcelPhoto.js';
+import { embedC4Signature } from '../services/pdsExcelSignature.js';
 import { normalizePds } from '../services/pds.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -485,6 +486,32 @@ async function main() {
       ? 'present'
       : 'missing',
     ok: Boolean(await zipPhoto.file('xl/drawings/vmlDrawing2.vml')),
+  });
+
+  const withSignature = await embedC4Signature(withPhoto, iconBuf, 'icon.png');
+  const zipSig = await JSZip.loadAsync(withSignature);
+  const hasSigMedia = Boolean(zipSig.file('xl/media/image2.png'));
+  const drawingSig = await zipSig.file('xl/drawings/drawing2.xml').async('string');
+  checks.push({
+    sheet: 'C4',
+    addr: 'signature.media',
+    expect: 'image2.png',
+    actual: hasSigMedia ? 'image2.png' : 'missing',
+    ok: hasSigMedia,
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'signature.anchor',
+    expect: 'Employee Signature',
+    actual: drawingSig.includes('Employee Signature') ? 'Employee Signature' : 'missing',
+    ok: drawingSig.includes('Employee Signature'),
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'signature.photoKept',
+    expect: 'Employee Photo',
+    actual: drawingSig.includes('Employee Photo') ? 'Employee Photo' : 'missing',
+    ok: drawingSig.includes('Employee Photo'),
   });
 
   const failed = checks.filter((c) => !c.ok);

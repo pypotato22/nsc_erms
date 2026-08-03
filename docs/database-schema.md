@@ -9,6 +9,8 @@ Source of truth: SQL migrations under [`db/migrations/`](../db/migrations/). App
 | [`001_initial_schema.sql`](../db/migrations/001_initial_schema.sql) | Core tables, session store, audit |
 | [`002_document_versioning.sql`](../db/migrations/002_document_versioning.sql) | `documents.version_number`, `replaces_id` |
 | [`003_employee_no_nullable.sql`](../db/migrations/003_employee_no_nullable.sql) | `employees.employee_no` nullable (UNIQUE allows many NULLs) |
+| [`004_employee_pds.sql`](../db/migrations/004_employee_pds.sql) | `employees.pds` JSONB (CS Form 212 payload) |
+| [`005_employee_signature.sql`](../db/migrations/005_employee_signature.sql) | `employees.signature_path` for PDS digital signature |
 
 Tracking table: `schema_migrations (id TEXT PK, applied_at)`.
 
@@ -74,6 +76,8 @@ erDiagram
 | `sex` | `male` \| `female` \| `other` \| NULL |
 | `birth_date`, contact, `email`, `address` | |
 | `profile_picture_path` | Relative path under FILES_ROOT |
+| `signature_path` | Relative path for digital signature (PDS C4 embed) |
+| `pds` | JSONB CS Form 212 payload (migration 004) |
 | `is_archived`, `deleted_at` | Soft-delete / archive |
 | `created_by`, `updated_by` | FK → `users` |
 
