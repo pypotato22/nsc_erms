@@ -72,6 +72,10 @@ authRouter.post('/login', loginByIpLimiter, loginByAccountLimiter, async (req, r
       throw new HttpError(401, 'Invalid username or password', 'INVALID_CREDENTIALS');
     }
 
+    // Regenerate session id to prevent fixation (do not reuse pre-login sid)
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => (err ? reject(err) : resolve()));
+    });
     req.session.userId = user.id;
     req.session.roleCode = user.role_code;
 

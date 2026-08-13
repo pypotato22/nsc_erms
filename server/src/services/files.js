@@ -23,10 +23,21 @@ export async function ensureEmployeePhotoDir(employeeId) {
   return { root, dir };
 }
 
-export function absoluteFromRelative(root, relativePath) {
-  const abs = path.resolve(root, relativePath);
+/**
+ * Resolve a path under FILES_ROOT and reject traversal / sibling-prefix escapes
+ * (e.g. root `C:\storage` must not allow `C:\storage2\...`).
+ */
+export function isInsideRoot(root, candidateAbs) {
   const rootAbs = path.resolve(root);
-  if (!abs.startsWith(rootAbs)) {
+  const abs = path.resolve(candidateAbs);
+  const rel = path.relative(rootAbs, abs);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
+export function absoluteFromRelative(root, relativePath) {
+  const rootAbs = path.resolve(root);
+  const abs = path.resolve(rootAbs, relativePath);
+  if (!isInsideRoot(rootAbs, abs)) {
     throw new Error('Invalid storage path');
   }
   return abs;
@@ -86,6 +97,20 @@ export async function removeStoredFile(relativePath) {
   return true;
 }
 
+/** Best-effort unlink of an absolute path previously written under FILES_ROOT. */
+export function rollbackAbsoluteFile(absolutePath) {
+  if (!absolutePath) return false;
+  try {
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+      return true;
+    }
+  } catch (err) {
+    console.error('Failed to rollback written file:', err.message);
+  }
+  return false;
+}
+
 /**
  * Remove an employee's storage directory (photo, signature + documents folder).
  * Safe if the directory is missing.
@@ -96,7 +121,7 @@ export async function removeEmployeeStorage(employeeId) {
   const dir = path.join(root, 'employees', String(employeeId));
   const rootAbs = path.resolve(root);
   const dirAbs = path.resolve(dir);
-  if (!dirAbs.startsWith(rootAbs + path.sep) && dirAbs !== rootAbs) {
+  if (!isInsideRoot(rootAbs, dirAbs)) {
     throw new Error('Invalid employee storage path');
   }
   if (!fs.existsSync(dirAbs)) return false;

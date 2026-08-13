@@ -12,6 +12,7 @@ import {
   writeEmployeeSignature,
   removeStoredFile,
   removeEmployeeStorage,
+  rollbackAbsoluteFile,
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
@@ -844,33 +845,7 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
       [emp.id],
     );
 
-    let fileRemovedCount = 0;
-    for (const doc of docs) {
-      try {
-        if (await removeStoredFile(doc.file_path)) fileRemovedCount += 1;
-      } catch (err) {
-        console.error('Failed to remove document file:', err.message);
-      }
-    }
-
-    let photoRemoved = false;
-    try {
-      if (emp.profile_picture_path) {
-        photoRemoved = await removeStoredFile(emp.profile_picture_path);
-      }
-    } catch (err) {
-      console.error('Failed to remove employee photo:', err.message);
-    }
-
-    let signatureRemoved = false;
-    try {
-      if (emp.signature_path) {
-        signatureRemoved = await removeStoredFile(emp.signature_path);
-      }
-    } catch (err) {
-      console.error('Failed to remove employee signature:', err.message);
-    }
-
+    // DB first — never leave rows pointing at files already deleted on disk
     await withClient(async (client) => {
       await client.query('BEGIN');
       try {
@@ -887,10 +862,37 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
     });
 
     let storageRemoved = false;
+    let fileRemovedCount = 0;
+    let photoRemoved = false;
+    let signatureRemoved = false;
     try {
       storageRemoved = await removeEmployeeStorage(emp.id);
+      fileRemovedCount = docs.length;
+      photoRemoved = Boolean(emp.profile_picture_path);
+      signatureRemoved = Boolean(emp.signature_path);
     } catch (err) {
       console.error('Failed to remove employee storage dir:', err.message);
+      for (const doc of docs) {
+        try {
+          if (await removeStoredFile(doc.file_path)) fileRemovedCount += 1;
+        } catch (e) {
+          console.error('Failed to remove document file:', e.message);
+        }
+      }
+      try {
+        if (emp.profile_picture_path) {
+          photoRemoved = await removeStoredFile(emp.profile_picture_path);
+        }
+      } catch (e) {
+        console.error('Failed to remove employee photo:', e.message);
+      }
+      try {
+        if (emp.signature_path) {
+          signatureRemoved = await removeStoredFile(emp.signature_path);
+        }
+      } catch (e) {
+        console.error('Failed to remove employee signature:', e.message);
+      }
     }
 
     await writeAudit({
@@ -962,13 +964,19 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
           buffer: req.file.buffer,
         });
 
-        const { rows } = await query(
-          `UPDATE employees
-           SET profile_picture_path = $2, updated_at = NOW(), updated_by = $3
-           WHERE id = $1
-           RETURNING id, profile_picture_path`,
-          [req.params.id, saved.relativePath, req.session.userId],
-        );
+        let rows;
+        try {
+          ({ rows } = await query(
+            `UPDATE employees
+             SET profile_picture_path = $2, updated_at = NOW(), updated_by = $3
+             WHERE id = $1
+             RETURNING id, profile_picture_path`,
+            [req.params.id, saved.relativePath, req.session.userId],
+          ));
+        } catch (dbErr) {
+          rollbackAbsoluteFile(saved.absolutePath);
+          throw dbErr;
+        }
 
         await writeAudit({
           actorUserId: req.session.userId,
@@ -1061,13 +1069,19 @@ employeesRouter.post('/:id/signature', writeRoles, async (req, res, next) => {
           buffer: req.file.buffer,
         });
 
-        const { rows } = await query(
-          `UPDATE employees
-           SET signature_path = $2, updated_at = NOW(), updated_by = $3
-           WHERE id = $1
-           RETURNING id, signature_path`,
-          [req.params.id, saved.relativePath, req.session.userId],
-        );
+        let rows;
+        try {
+          ({ rows } = await query(
+            `UPDATE employees
+             SET signature_path = $2, updated_at = NOW(), updated_by = $3
+             WHERE id = $1
+             RETURNING id, signature_path`,
+            [req.params.id, saved.relativePath, req.session.userId],
+          ));
+        } catch (dbErr) {
+          rollbackAbsoluteFile(saved.absolutePath);
+          throw dbErr;
+        }
 
         await writeAudit({
           actorUserId: req.session.userId,

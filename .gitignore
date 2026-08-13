@@ -20,3 +20,5 @@ tmp/
 .work-*/
 electron/config.json
 dist/desktop/
+Capstone-Template.pdf
+capstone/

@@ -5,6 +5,7 @@ import {
   getMaxUploadBytes,
   getScanInboxPath,
 } from './settings.js';
+import { isInsideRoot } from './files.js';
 
 const ALLOWED_EXT = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']);
 
@@ -76,7 +77,7 @@ export function resolveInboxFile(inbox, fileName) {
   }
   const abs = path.join(inbox, base);
   const resolved = path.resolve(abs);
-  if (!resolved.startsWith(path.resolve(inbox))) {
+  if (!isInsideRoot(inbox, resolved)) {
     throw new Error('Invalid file path');
   }
   return { base, abs: resolved };
@@ -142,7 +143,31 @@ export async function claimInboxFileForEmployee({ fileName, employeeId, document
     originalName: base,
     storedName,
     relativePath,
+    absolutePath: destAbs,
+    inboxAbsolutePath: abs,
     fileSize: st.size,
     mimeType: MIME_BY_EXT[ext] || 'application/octet-stream',
   };
+}
+
+/**
+ * If DB insert fails after a successful claim, move the file back into the inbox.
+ */
+export function restoreClaimedToInbox(inbox, absolutePath, originalName) {
+  if (!absolutePath || !originalName) return false;
+  if (!fs.existsSync(absolutePath)) return false;
+  const preferred = path.join(inbox, path.basename(originalName));
+  const dest = fs.existsSync(preferred)
+    ? path.join(inbox, `${Date.now()}_restored_${path.basename(originalName)}`)
+    : preferred;
+  if (!isInsideRoot(inbox, dest)) {
+    throw new Error('Invalid restore destination');
+  }
+  fs.renameSync(absolutePath, dest);
+  return true;
+}
+
+export async function restoreClaimedInboxFile({ absolutePath, originalName }) {
+  const { inbox } = await ensureInboxDirs();
+  return restoreClaimedToInbox(inbox, absolutePath, originalName);
 }

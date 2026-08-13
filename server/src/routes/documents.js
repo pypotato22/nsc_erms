@@ -10,6 +10,7 @@ import {
   absoluteFromRelative,
   writeEmployeeDocument,
   removeStoredFile,
+  rollbackAbsoluteFile,
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
@@ -186,33 +187,39 @@ documentsRouter.post('/', writeRoles, async (req, res, next) => {
           buffer: req.file.buffer,
         });
 
-        const { rows } = await query(
-          `INSERT INTO documents (
-             id, employee_id, document_type_id, file_name, stored_name, file_path,
-             file_size, mime_type, source, version_number, replaces_id,
-             issued_date, expiry_date, remarks,
-             uploaded_by, updated_by
-           ) VALUES (
-             $1,$2,$3,$4,$5,$6,$7,$8,'upload',$9,$10,$11,$12,$13,$14,$14
-           )
-           RETURNING *`,
-          [
-            documentId,
-            employeeId,
-            documentTypeId,
-            displayName,
-            saved.storedName,
-            saved.relativePath,
-            req.file.size,
-            req.file.mimetype,
-            versionNumber,
-            replacesId,
-            issuedDate,
-            expiryDate,
-            remarks,
-            req.session.userId,
-          ],
-        );
+        let rows;
+        try {
+          ({ rows } = await query(
+            `INSERT INTO documents (
+               id, employee_id, document_type_id, file_name, stored_name, file_path,
+               file_size, mime_type, source, version_number, replaces_id,
+               issued_date, expiry_date, remarks,
+               uploaded_by, updated_by
+             ) VALUES (
+               $1,$2,$3,$4,$5,$6,$7,$8,'upload',$9,$10,$11,$12,$13,$14,$14
+             )
+             RETURNING *`,
+            [
+              documentId,
+              employeeId,
+              documentTypeId,
+              displayName,
+              saved.storedName,
+              saved.relativePath,
+              req.file.size,
+              req.file.mimetype,
+              versionNumber,
+              replacesId,
+              issuedDate,
+              expiryDate,
+              remarks,
+              req.session.userId,
+            ],
+          ));
+        } catch (dbErr) {
+          rollbackAbsoluteFile(saved.absolutePath);
+          throw dbErr;
+        }
 
         const { rows: joined } = await query(
           `SELECT d.*, dt.name AS document_type_name, dt.is_required
@@ -410,7 +417,7 @@ documentItemRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
   }
 });
 
-/** Permanent delete — removes DB row and file from disk */
+/** Permanent delete — removes DB row first, then file from disk */
 documentItemRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
   try {
     const { rows } = await query(
@@ -421,14 +428,15 @@ documentItemRouter.delete('/:id/permanent', writeRoles, async (req, res, next) =
       throw new HttpError(404, 'Trashed document not found', 'NOT_FOUND');
     }
 
+    const filePath = rows[0].file_path;
+    await query(`DELETE FROM documents WHERE id = $1`, [req.params.id]);
+
     let fileRemoved = false;
     try {
-      fileRemoved = await removeStoredFile(rows[0].file_path);
+      fileRemoved = await removeStoredFile(filePath);
     } catch (err) {
       console.error('Failed to remove document file from disk:', err.message);
     }
-
-    await query(`DELETE FROM documents WHERE id = $1`, [req.params.id]);
 
     await writeAudit({
       actorUserId: req.session.userId,

@@ -1,5 +1,13 @@
-import { query } from '../db/pool.js';
+import { query as dbQuery } from '../db/pool.js';
 import { HttpError } from './errors.js';
+
+/** @type {typeof dbQuery} */
+let queryImpl = dbQuery;
+
+/** Test-only: swap the DB query function. */
+export function __setQueryForTests(fn) {
+  queryImpl = fn || dbQuery;
+}
 
 /** Paths allowed while must_change_password is true (prefix match on /api/v1). */
 const ALLOWED = [
@@ -13,6 +21,7 @@ const ALLOWED = [
 
 /**
  * Block authenticated API use until the user sets a new password.
+ * Also rejects deactivated users so a stale cookie cannot pass the gate.
  */
 export async function passwordChangeGate(req, _res, next) {
   const path = (req.originalUrl || req.url || '').split('?')[0];
@@ -21,13 +30,17 @@ export async function passwordChangeGate(req, _res, next) {
   if (!req.session?.userId) return next();
 
   try {
-    const { rows } = await query(
-      `SELECT must_change_password
+    const { rows } = await queryImpl(
+      `SELECT must_change_password, is_active
        FROM users
-       WHERE id = $1 AND is_active = TRUE`,
+       WHERE id = $1`,
       [req.session.userId],
     );
-    if (rows[0]?.must_change_password) {
+    const user = rows[0];
+    if (!user || !user.is_active) {
+      throw new HttpError(401, 'Authentication required', 'UNAUTHORIZED');
+    }
+    if (user.must_change_password) {
       throw new HttpError(
         403,
         'You must change your password before using the system',

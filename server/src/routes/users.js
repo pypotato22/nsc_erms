@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { ulid } from 'ulid';
 import { query } from '../db/pool.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, clearUserSessions } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 
@@ -213,6 +213,17 @@ usersRouter.patch('/:id', manageRoles, async (req, res, next) => {
       params,
     );
 
+    // Deactivate or role change: drop existing sessions so cookies cannot linger
+    const shouldClearSessions =
+      req.body?.isActive === false || Boolean(req.body?.roleCode);
+    if (shouldClearSessions) {
+      try {
+        await clearUserSessions(req.params.id);
+      } catch {
+        /* session cleanup best-effort */
+      }
+    }
+
     await writeAudit({
       actorUserId: req.session.userId,
       action: 'user.update',
@@ -265,10 +276,7 @@ usersRouter.post('/:id/reset-password', manageRoles, async (req, res, next) => {
     );
 
     try {
-      await query(
-        `DELETE FROM session WHERE (sess::jsonb ->> 'userId') = $1`,
-        [req.params.id],
-      );
+      await clearUserSessions(req.params.id);
     } catch {
       /* session cleanup best-effort */
     }
@@ -340,13 +348,8 @@ usersRouter.delete('/:id', manageRoles, async (req, res, next) => {
 
     await query(`DELETE FROM users WHERE id = $1`, [req.params.id]);
 
-    // Drop any leftover sessions for that user
     try {
-      await query(
-        `DELETE FROM session
-         WHERE (sess::jsonb ->> 'userId') = $1`,
-        [req.params.id],
-      );
+      await clearUserSessions(req.params.id);
     } catch {
       /* session cleanup best-effort */
     }

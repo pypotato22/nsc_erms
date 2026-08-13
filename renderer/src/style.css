@@ -3360,10 +3360,15 @@ body.dark .pds-view-banner-loading {
 }
 
 .pds-card-row {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    background: var(--bg-base);
+    border: none;
+    border-radius: 0;
+    padding: 4px 0 12px;
+    background: transparent;
+}
+
+.pds-card-row + .pds-card-row {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
 }
 
 .pds-card-row > .btn {
