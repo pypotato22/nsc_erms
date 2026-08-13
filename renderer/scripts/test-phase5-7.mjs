@@ -25,16 +25,29 @@ function test(name, fn) {
   }
 }
 
-test('SettingsPage + bridge exist', () => {
+const appShell = fs.readFileSync(path.join(root, 'src/layouts/AppShell.jsx'), 'utf8');
+
+test('SettingsPage is routed with its prefs props', () => {
   assert(fs.existsSync(path.join(root, 'src/features/settings/SettingsPage.jsx')));
-  const bridge = fs.readFileSync(path.join(root, 'src/js/components/settings.js'), 'utf8');
-  assert(bridge.includes('SettingsPage') && bridge.includes('mountIsland'));
+  assert(!fs.existsSync(path.join(root, 'src/js/components/settings.js')), 'settings bridge should be gone');
+  assert(appShell.includes('<SettingsPage'), 'SettingsPage not rendered by AppShell');
+  for (const prop of ['getPrefs={getPrefs}', 'savePrefs={savePrefs}', 'getCurrentUser={getCurrentUser}']) {
+    assert(appShell.includes(prop), `${prop} not passed to SettingsPage`);
+  }
 });
 
-test('EmployeesPage + table bridge exist', () => {
-  assert(fs.existsSync(path.join(root, 'src/features/employees/EmployeesPage.jsx')));
-  const bridge = fs.readFileSync(path.join(root, 'src/js/components/employeeTable.js'), 'utf8');
-  assert(bridge.includes('EmployeesPage') && bridge.includes('mountIsland'));
+test('EmployeesPage is routed and event driven', () => {
+  const page = fs.readFileSync(path.join(root, 'src/features/employees/EmployeesPage.jsx'), 'utf8');
+  assert(!fs.existsSync(path.join(root, 'src/js/components/employeeTable.js')), 'table bridge should be gone');
+  assert(appShell.includes('<EmployeesPage'), 'EmployeesPage not rendered by AppShell');
+  assert(!page.includes('registerApi'), 'registerApi should be replaced by app events');
+  for (const event of [
+    "onAppEvent('employees.refresh'",
+    "onAppEvent('employees.refreshFilters'",
+    "onAppEvent('employees.clearSearch'",
+  ]) {
+    assert(page.includes(event), `${event} subscription missing`);
+  }
 });
 
 test('dense surfaces are React islands', () => {
@@ -58,12 +71,14 @@ test('docs/frontend documents the React boot', () => {
   const docs = fs.readFileSync(path.join(root, '../docs/frontend.md'), 'utf8');
   assert(/React/i.test(docs) && /HashRouter/.test(docs));
   assert(docs.includes('main.jsx') && docs.includes('RootApp'));
+  assert(docs.includes('appEvents'), 'app event bus not documented');
+  assert(docs.includes('styles/'), 'split stylesheets not documented');
 });
 
-test('page hosts are empty React nodes owned by AppShell', () => {
-  const shell = fs.readFileSync(path.join(root, 'src/layouts/AppShell.jsx'), 'utf8').replace(/\s+/g, ' ');
-  assert(/id=\{`page-\$\{page\}`\}/.test(shell), 'page hosts are not rendered by AppShell');
-  assert(/className=\{page === activePage \? 'page active' : 'page'\}/.test(shell), 'active page class missing');
+test('routes render the page inside the legacy #page-* host', () => {
+  const shell = appShell.replace(/\s+/g, ' ');
+  assert(/id=\{`page-\$\{id\}`\} className="page active"/.test(shell), 'page host wrapper missing');
+  assert(!/'page active' : 'page'/.test(shell), 'stale multi-host page switching');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

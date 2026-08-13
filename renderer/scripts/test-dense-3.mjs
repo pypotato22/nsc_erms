@@ -38,6 +38,10 @@ test('ProfilePanel feature exists', () => {
   assert(src.includes('listEmployeeAssignments'), 'assignment history missing');
   assert(src.includes('openPdsViewer') && src.includes('downloadOfficialPdsExcel'), 'PDS actions missing');
   assert(src.includes('deleteEmployee') && src.includes('restoreEmployee'), 'archive/undo missing');
+  assert(
+    src.includes("emitAppEvent('employees.refresh'") && src.includes("emitAppEvent('archived.refresh')"),
+    'archive/undo must announce refreshes over the event bus',
+  );
   assert(src.includes('canWrite'), 'write gating missing');
   assert(src.includes('getYearsOfService') && src.includes('getInitials'), 'helpers not reused');
   assert(!src.includes('getStatusBadge'), 'still using HTML-string status badge');

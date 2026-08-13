@@ -5,6 +5,7 @@ import { ApiError } from '../../js/api/client.js';
 import { getInitials } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
+import { onAppEvent } from '../../shared/lib/appEvents.js';
 
 const PAGE_SIZE = 12;
 const SORT_COLS = [
@@ -62,10 +63,9 @@ function EmployeeAvatar({ emp, size = 34, fontSize = 12 }) {
  * @param {{
  *   initialQuery?: string,
  *   onSearchSync?: (q: string) => void,
- *   registerApi?: (api: object | null) => void,
  * }} props
  */
-export function EmployeesPage({ initialQuery = '', onSearchSync, registerApi }) {
+export function EmployeesPage({ initialQuery = '', onSearchSync }) {
   const [query, setQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('name');
@@ -144,27 +144,31 @@ export function EmployeesPage({ initialQuery = '', onSearchSync, registerApi }) 
   }, [page, sort, dir, deptId, statusId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    registerApi?.({
-      load: (q = '') => {
-        setQuery(q);
-        queryRef.current = q;
-        onSearchSync?.(q);
+    const offs = [
+      onAppEvent('employees.refresh', (payload) => {
+        const q = payload?.q !== undefined ? payload.q : queryRef.current;
+        if (q !== queryRef.current) {
+          setQuery(q);
+          queryRef.current = q;
+          onSearchSync?.(q);
+        }
         setPage(1);
         load({ q, page: 1 });
-      },
-      resetPage: () => setPage(1),
-      refreshFilters: loadFilters,
-      clearSearch: () => {
+      }),
+      onAppEvent('employees.refreshFilters', () => {
+        loadFilters();
+      }),
+      onAppEvent('employees.clearSearch', () => {
+        if (!queryRef.current && pageRef.current === 1) return;
         setQuery('');
         queryRef.current = '';
         onSearchSync?.('');
         setPage(1);
         load({ q: '', page: 1 });
-      },
-      getQuery: () => queryRef.current,
-    });
-    return () => registerApi?.(null);
-  }, [registerApi, load, loadFilters, onSearchSync]);
+      }),
+    ];
+    return () => offs.forEach((off) => off());
+  }, [load, loadFilters, onSearchSync]);
 
   function onSearchInput(value) {
     setQuery(value);

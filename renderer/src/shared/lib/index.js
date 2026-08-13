@@ -7,3 +7,5 @@ export { canWrite, canManageUsers, isSuperadmin, setCurrentRole, clearCurrentRol
 export { showToast } from '../js/utils/toast.js';
 export { escapeHtml, escapeAttr, getEl } from '../js/utils/helpers.js';
 export { mountIsland, unmountIsland } from './mountIsland.js';
+export { onAppEvent, emitAppEvent } from './appEvents.js';
+export { legacyHashTarget, redirectLegacyHash } from './legacyHash.js';

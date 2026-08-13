@@ -1,0 +1,447 @@
+/**
+ * Tool pages: Backup & Restore, Settings and Export.
+ */
+/* ── Backup ───────────────────────────────────────────────────── */
+.backup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.backup-card {
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.backup-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    letter-spacing: -.2px;
+}
+
+.backup-card p {
+    font-size: 0.8571rem;
+    color: var(--text-2);
+    margin-bottom: 16px;
+    line-height: 1.7;
+}
+
+.bk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.bk-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    background: var(--bg-base);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    transition: border-color .15s;
+}
+
+.bk-item:hover {
+    border-color: var(--blue-300);
+}
+
+.bk-name {
+    font-size: 0.8929rem;
+    font-weight: 600;
+    color: var(--text-1);
+    font-family: 'DM Mono', monospace;
+}
+
+.bk-meta {
+    font-size: 0.7857rem;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+.bk-acts {
+    display: flex;
+    gap: 6px;
+}
+
+/* ── Settings ─────────────────────────────────────────────────── */
+.settings-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    width: 100%;
+    /* Shared type scale (rem tracks --fs) */
+    --settings-label: 0.7857rem;
+    --settings-body: 0.9286rem;
+    --settings-meta: 0.8571rem;
+    --settings-tiny: 0.75rem;
+}
+
+.settings-section {
+    min-width: 0;
+}
+
+.settings-section-title {
+    margin: 0 0 12px;
+    font-size: var(--settings-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+}
+
+.settings-section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.settings-section-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.settings-card {
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 0;
+    box-shadow: var(--shadow-sm);
+    min-width: 0;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .settings-section-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.settings-card h4 {
+    font-size: var(--settings-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--blue-700);
+    letter-spacing: .8px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+}
+
+.sl {
+    flex: 1;
+    min-width: 0;
+}
+
+.sl-title {
+    font-size: var(--settings-body);
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.sl-desc {
+    font-size: var(--settings-meta);
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+.settings-mono-value {
+    font-size: var(--settings-body);
+    font-weight: 700;
+    color: var(--blue-700);
+    font-family: 'DM Mono', monospace;
+}
+
+.settings-muted {
+    font-size: var(--settings-meta);
+    color: var(--text-3);
+}
+
+.settings-username {
+    display: inline-block;
+    background: var(--bg-base);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: var(--settings-meta);
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    cursor: pointer;
+    transition: background .3s;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border-strong);
+}
+
+.toggle.on {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.toggle .knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 19px;
+    height: 19px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left .28s cubic-bezier(.4, 0, .2, 1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+
+.toggle.on .knob {
+    left: 25px;
+}
+
+.fs-btns {
+    display: flex;
+    gap: 5px;
+}
+
+.fs-btn {
+    padding: 5px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: var(--settings-meta);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--bg-base);
+    color: var(--text-2);
+    transition: all .15s;
+}
+
+.fs-btn.active,
+.fs-btn:hover {
+    border-color: var(--blue-500);
+    background: var(--bg-hover);
+    color: var(--blue-700);
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--settings-body);
+    margin-top: 4px;
+    background: var(--bg-surface);
+    color: var(--text-1);
+}
+
+.user-table th {
+    text-align: left;
+    font-size: var(--settings-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: .4px;
+    background: var(--bg-surface);
+}
+
+.user-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: inherit;
+    background: transparent;
+}
+
+.user-table tr {
+    background: var(--bg-row);
+    color: var(--text-1);
+    transition: background .1s;
+}
+
+.user-table tr:nth-child(even) {
+    background: var(--bg-row-alt);
+}
+
+.user-table tr:hover {
+    background: var(--bg-hover);
+}
+
+.user-table tr:has(th) {
+    background: var(--bg-surface);
+}
+
+.user-table tr:has(th):hover {
+    background: var(--bg-surface);
+}
+
+.user-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── Export ───────────────────────────────────────────────────── */
+.export-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    max-width: 720px;
+}
+
+.assign-history {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assign-history-row {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-subtle);
+}
+
+.assign-history-main {
+    font-size: 0.9286rem;
+    margin-bottom: 4px;
+}
+
+.assign-history-meta {
+    font-size: 0.8214rem;
+    color: var(--text-3);
+}
+
+.export-card {
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+    box-shadow: var(--shadow-sm);
+}
+
+.export-card:hover {
+    border-color: var(--blue-500);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.export-card svg {
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 12px;
+}
+
+.export-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-1);
+    letter-spacing: -.2px;
+}
+
+.export-card p {
+    font-size: 0.8571rem;
+    color: var(--text-3);
+    margin-top: 5px;
+}
+
+/* ── Storage paths (Settings ▸ Server storage) ────────────────── */
+.settings-hint {
+    margin: -6px 0 16px;
+    font-size: var(--settings-meta, 0.8571rem);
+    color: var(--text-2);
+    line-height: 1.45;
+}
+
+.storage-paths-form .field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--settings-tiny, 0.75rem);
+    color: var(--text-3);
+    font-family: 'DM Mono', monospace;
+}
+
+.storage-paths-form .fg label {
+    font-size: var(--settings-tiny, 0.75rem);
+}
+
+.storage-paths-form .fg input {
+    font-size: var(--settings-body, 0.9286rem);
+}
+
+.storage-paths-form input[readonly] {
+    opacity: 0.75;
+    cursor: default;
+    background: var(--bg-row-alt, var(--bg-base));
+}
+
+.path-field-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.path-field-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.path-field-row .desktop-folder-btn {
+    flex-shrink: 0;
+    align-self: stretch;
+    /* .btn { display:inline-flex } overrides [hidden] — gate on desktop shell */
+    display: none !important;
+}
+
+body.desktop-shell .path-field-row .desktop-folder-btn {
+    display: inline-flex !important;
+}
+
+.settings-hint .desktop-only-hint {
+    display: none;
+    margin-top: 6px;
+}
+
+body.desktop-shell .settings-hint .desktop-only-hint {
+    display: block;
+}
+
+.storage-paths-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+#storage-paths-err {
+    margin: 4px 0 0;
+    font-size: 0.8571rem;
+    color: var(--red-500, #d64545);
+}

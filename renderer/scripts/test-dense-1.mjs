@@ -42,7 +42,7 @@ test('pds-view-overlay is an empty host rendered by RootApp', () => {
 });
 
 test('full-bleed layout rules present', () => {
-  const css = fs.readFileSync(path.join(root, 'src/style.css'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'src/styles/layout.css'), 'utf8');
   assert(/#app\s*\{[^}]*position:\s*fixed/s.test(css));
   assert(/#sidebar\s*\{[^}]*box-shadow:\s*none/s.test(css));
 });

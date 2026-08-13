@@ -1,27 +1,25 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo } from 'react';
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import logoUrl from '../../school_logo.jpg';
 
 import { getInitials } from '../js/utils/helpers.js';
-import { showToast } from '../js/utils/toast.js';
-import { ApiError } from '../js/api/client.js';
 import { canManageUsers } from '../js/utils/authz.js';
-
-import {
-  renderEmployeeTable,
-  refreshFilterDropdowns,
-  resetEmployeePage,
-  clearEmployeeSearch,
-} from '../js/components/employeeTable.js';
 import { closeProfilePanel } from '../js/components/profilePanel.js';
-import { renderDepartmentPage } from '../js/components/departments.js';
-import { renderPositionsPage } from '../js/components/positions.js';
-import { renderScanInboxPage } from '../js/components/scanInbox.js';
-import { renderTrashPage } from '../js/components/trash.js';
-import { renderArchivedEmployeesPage } from '../js/components/archivedEmployees.js';
-import { renderBackupPage } from '../js/components/backup.js';
-import { renderSettingsPage, initSettings } from '../js/components/settings.js';
-import { initExport } from '../js/components/export.js';
+import { emitAppEvent, onAppEvent } from '../shared/lib/appEvents.js';
+
+import { listArchivedEmployees } from '../js/api/employees.js';
+import { listTrashDocuments } from '../js/api/documents.js';
+import { listScanInbox } from '../js/api/scanInbox.js';
+
+import { EmployeesPage } from '../features/employees/EmployeesPage.jsx';
+import { DepartmentsPage } from '../features/departments/DepartmentsPage.jsx';
+import { PositionsPage } from '../features/positions/PositionsPage.jsx';
+import { ScanInboxPage } from '../features/scan-inbox/ScanInboxPage.jsx';
+import { TrashPage } from '../features/trash/TrashPage.jsx';
+import { ArchivedEmployeesPage } from '../features/archived/ArchivedEmployeesPage.jsx';
+import { BackupPage } from '../features/backup/BackupPage.jsx';
+import { ExportPage } from '../features/export/ExportPage.jsx';
+import { SettingsPage } from '../features/settings/SettingsPage.jsx';
 
 const ICONS = {
   employees: (
@@ -89,7 +87,7 @@ const ICONS = {
 };
 
 /**
- * Sidebar sections mirror the legacy `#sidebar-nav` markup so `style.css`
+ * Sidebar sections mirror the legacy `#sidebar-nav` markup so `styles/layout.css`
  * (`#sidebar nav a`, `a.active`, `.nav-badge`) keeps applying unchanged.
  */
 const NAV_SECTIONS = [
@@ -128,21 +126,14 @@ const PAGE_TITLES = Object.fromEntries(
   NAV_SECTIONS.flatMap((section) => section.items.map((item) => [item.page, item.title])),
 );
 
-const PAGE_RENDERERS = {
-  employees: () => renderEmployeeTable(),
-  departments: () => renderDepartmentPage(),
-  positions: () => renderPositionsPage(),
-  'scan-inbox': () => renderScanInboxPage(),
-  trash: () => renderTrashPage(),
-  'archived-employees': () => renderArchivedEmployeesPage(),
-  backup: () => renderBackupPage(),
-  export: () => initExport(),
-  settings: () => renderSettingsPage(),
-};
-
 function pageFromPath(pathname) {
   const segment = (pathname || '').replace(/^\/+/, '').split('/')[0];
   return PAGES.includes(segment) ? segment : null;
+}
+
+function setBadge(id, value) {
+  const badge = document.getElementById(id);
+  if (badge) badge.textContent = String(value);
 }
 
 function NavIcon({ page }) {
@@ -150,6 +141,15 @@ function NavIcon({ page }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       {ICONS[page]}
     </svg>
+  );
+}
+
+/** Wraps a routed page in the legacy `#page-*` container so page CSS still applies. */
+function Page({ id, children }) {
+  return (
+    <div id={`page-${id}`} className="page active">
+      {children}
+    </div>
   );
 }
 
@@ -161,47 +161,63 @@ export function AppShell(props) {
   );
 }
 
-function Shell({ user, onLogout, onPageChange, getPrefs, savePrefs, getCurrentUser }) {
+function Shell({ user, onLogout, onPageChange, onSearchSync, getPrefs, savePrefs, getCurrentUser }) {
   const location = useLocation();
-  const [activePage, setActivePage] = useState(() => pageFromPath(location.pathname) || 'employees');
+  const activePage = pageFromPath(location.pathname) || 'employees';
+  const admin = canManageUsers();
 
   const initials = useMemo(() => {
     const [first = '', last = ''] = String(user?.name || '').split(' ');
     return getInitials(first, last);
   }, [user?.name]);
 
-  useEffect(() => {
-    initSettings(getPrefs, savePrefs, getCurrentUser);
-  }, [getPrefs, savePrefs, getCurrentUser]);
+  const primeScanBadge = useCallback(
+    () =>
+      listScanInbox()
+        .then(({ files }) => setBadge('scan-inbox-badge', files?.length ?? 0))
+        .catch(() => {}),
+    [],
+  );
 
+  const primeTrashBadge = useCallback(
+    () =>
+      listTrashDocuments({ page: 1, limit: 1 })
+        .then((data) => setBadge('trash-badge', data.total ?? 0))
+        .catch(() => {}),
+    [],
+  );
+
+  const primeArchivedBadge = useCallback(
+    () =>
+      listArchivedEmployees({ page: 1, limit: 1 })
+        .then((data) => setBadge('archived-employees-badge', data.total ?? 0))
+        .catch(() => {}),
+    [],
+  );
+
+  // Sidebar counts must stay correct even while the owning page is unmounted.
   useEffect(() => {
-    (async () => {
-      try {
-        await refreshFilterDropdowns();
-        await renderEmployeeTable();
-        await renderScanInboxPage();
-        await renderTrashPage();
-        await renderArchivedEmployeesPage();
-      } catch (err) {
-        showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
-      }
-    })();
-  }, []);
+    primeScanBadge();
+    primeTrashBadge();
+    primeArchivedBadge();
+    const offs = [
+      onAppEvent('scan.refresh', primeScanBadge),
+      onAppEvent('trash.refresh', primeTrashBadge),
+      onAppEvent('archived.refresh', primeArchivedBadge),
+    ];
+    return () => offs.forEach((off) => off());
+  }, [primeScanBadge, primeTrashBadge, primeArchivedBadge]);
 
   useEffect(() => {
     const page = pageFromPath(location.pathname);
     if (!page) return;
-    if (page === 'backup' && !canManageUsers()) return;
+    if (page === 'backup' && !admin) return;
 
-    setActivePage(page);
     onPageChange?.(page);
-
-    clearEmployeeSearch();
-    resetEmployeePage();
+    onSearchSync?.('');
+    emitAppEvent('employees.clearSearch');
     closeProfilePanel();
-
-    Promise.resolve(PAGE_RENDERERS[page]?.()).catch(() => {});
-  }, [location.pathname, onPageChange]);
+  }, [location.pathname, onPageChange, onSearchSync, admin]);
 
   return (
     <div id="app">
@@ -269,23 +285,92 @@ function Shell({ user, onLogout, onPageChange, getPrefs, savePrefs, getCurrentUs
         </div>
 
         <div id="content">
-          {PAGES.map((page) => (
-            <div key={page} id={`page-${page}`} className={page === activePage ? 'page active' : 'page'} />
-          ))}
+          <Routes>
+            <Route path="/" element={<Navigate to="/employees" replace />} />
+            <Route
+              path="/employees"
+              element={
+                <Page id="employees">
+                  <EmployeesPage onSearchSync={onSearchSync} />
+                </Page>
+              }
+            />
+            <Route
+              path="/departments"
+              element={
+                <Page id="departments">
+                  <DepartmentsPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/positions"
+              element={
+                <Page id="positions">
+                  <PositionsPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/scan-inbox"
+              element={
+                <Page id="scan-inbox">
+                  <ScanInboxPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/trash"
+              element={
+                <Page id="trash">
+                  <TrashPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/archived-employees"
+              element={
+                <Page id="archived-employees">
+                  <ArchivedEmployeesPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/backup"
+              element={
+                admin ? (
+                  <Page id="backup">
+                    <BackupPage />
+                  </Page>
+                ) : (
+                  <Navigate to="/employees" replace />
+                )
+              }
+            />
+            <Route
+              path="/export"
+              element={
+                <Page id="export">
+                  <ExportPage />
+                </Page>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <Page id="settings">
+                  <SettingsPage
+                    getPrefs={getPrefs}
+                    savePrefs={savePrefs}
+                    getCurrentUser={getCurrentUser}
+                  />
+                </Page>
+              }
+            />
+            <Route path="*" element={<Navigate to="/employees" replace />} />
+          </Routes>
         </div>
       </div>
-
-      <Routes>
-        <Route path="/" element={<Navigate to="/employees" replace />} />
-        {PAGES.map((page) => (
-          <Route
-            key={page}
-            path={`/${page}`}
-            element={page === 'backup' && !canManageUsers() ? <Navigate to="/employees" replace /> : null}
-          />
-        ))}
-        <Route path="*" element={<Navigate to="/employees" replace />} />
-      </Routes>
     </div>
   );
 }

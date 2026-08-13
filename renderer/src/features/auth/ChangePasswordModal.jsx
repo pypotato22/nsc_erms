@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { changePassword } from '../../js/api/auth.js';
 import { ApiError } from '../../js/api/client.js';
 import { showToast } from '../../js/utils/toast.js';
+import { PasswordInput } from '../../shared/ui/PasswordInput.jsx';
 
 export function ChangePasswordModal({ open, forced, onDone, onCancel }) {
   const [currentPassword, setCurrent] = useState('');
@@ -75,9 +76,8 @@ export function ChangePasswordModal({ open, forced, onDone, onCancel }) {
         <form onSubmit={handleSave}>
           <div className="fg" style={{ marginBottom: 13 }}>
             <label htmlFor="pw-current">Current password *</label>
-            <input
+            <PasswordInput
               id="pw-current"
-              type="password"
               autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrent(e.target.value)}
@@ -86,9 +86,8 @@ export function ChangePasswordModal({ open, forced, onDone, onCancel }) {
           </div>
           <div className="fg" style={{ marginBottom: 13 }}>
             <label htmlFor="pw-new">New password *</label>
-            <input
+            <PasswordInput
               id="pw-new"
-              type="password"
               placeholder="Min. 8 characters"
               autoComplete="new-password"
               value={newPassword}
@@ -98,9 +97,8 @@ export function ChangePasswordModal({ open, forced, onDone, onCancel }) {
           </div>
           <div className="fg" style={{ marginBottom: 13 }}>
             <label htmlFor="pw-confirm">Confirm new password *</label>
-            <input
+            <PasswordInput
               id="pw-confirm"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

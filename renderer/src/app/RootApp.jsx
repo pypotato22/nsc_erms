@@ -12,8 +12,8 @@ import { getSetupStatus } from '../js/api/setup.js';
 import { showToast } from '../js/utils/toast.js';
 import { setCurrentRole, clearCurrentRole } from '../js/utils/authz.js';
 import { startLiveSync, stopLiveSync } from '../js/utils/liveSync.js';
+import { emitAppEvent } from '../shared/lib/appEvents.js';
 
-import { initEmployeeTable, renderEmployeeTable, refreshFilterDropdowns } from '../js/components/employeeTable.js';
 import { initEmployeeModal } from '../js/components/employeeModal.js';
 import {
   initProfilePanel,
@@ -22,13 +22,7 @@ import {
   refreshPanelHeader,
 } from '../js/components/profilePanel.js';
 import { initPdsViewer } from '../js/components/pdsViewer.js';
-import { initDocuments, refreshOpenDocsTabForLiveSync } from '../js/components/documents.js';
-import { initScanInbox, renderScanInboxPage } from '../js/components/scanInbox.js';
-import { initTrash, renderTrashPage } from '../js/components/trash.js';
-import { initArchivedEmployees, renderArchivedEmployeesPage } from '../js/components/archivedEmployees.js';
-import { initDepartments, renderDepartmentPage } from '../js/components/departments.js';
-import { initPositions, renderPositionsPage } from '../js/components/positions.js';
-import { initBackup } from '../js/components/backup.js';
+import { initDocuments } from '../js/components/documents.js';
 
 const PREFS_KEY = 'nsc_erms_prefs';
 const LEGACY_PREFS_KEY = 'edurecords_prefs';
@@ -114,21 +108,13 @@ export function RootApp() {
     applyPrefs(prefsRef.current);
     if (isDesktop) document.body.classList.add('desktop-shell');
 
-    initEmployeeTable((q) => {
-      searchRef.current = q;
-    });
+    // Overlays still live outside the router, so their bridges stay.
     initEmployeeModal(getSearchQuery);
     initProfilePanel(getSearchQuery);
     initPdsViewer(getPrefs);
     initDocuments(() => {
       refreshPanelHeader().catch(() => {});
     });
-    initScanInbox();
-    initTrash();
-    initArchivedEmployees(getSearchQuery);
-    initDepartments();
-    initPositions();
-    initBackup();
 
     let cancelled = false;
     (async () => {
@@ -154,30 +140,26 @@ export function RootApp() {
     startLiveSync({
       getCurrentUserId: () => userRef.current?.id,
       'employees.changed': (payload) => {
-        renderArchivedEmployeesPage().catch(() => {});
-        if (pageRef.current === 'employees') {
-          renderEmployeeTable(searchRef.current).catch(() => {});
-        }
+        emitAppEvent('employees.refresh', { q: searchRef.current });
+        emitAppEvent('archived.refresh');
         refreshOpenProfileForLiveSync(payload).catch(() => {});
       },
       'documents.changed': (payload) => {
-        renderTrashPage().catch(() => {});
-        refreshOpenDocsTabForLiveSync(payload).catch(() => {});
+        emitAppEvent('trash.refresh');
+        emitAppEvent('documents.refresh', payload);
       },
       'scan.changed': () => {
-        renderScanInboxPage().catch(() => {});
+        emitAppEvent('scan.refresh');
       },
       'departments.changed': () => {
-        refreshFilterDropdowns().catch(() => {});
-        if (pageRef.current === 'departments') renderDepartmentPage().catch(() => {});
-        if (pageRef.current === 'employees') {
-          renderEmployeeTable(searchRef.current).catch(() => {});
-        }
+        emitAppEvent('employees.refreshFilters');
+        emitAppEvent('departments.refresh');
+        emitAppEvent('employees.refresh', { q: searchRef.current });
       },
       'positions.changed': () => {
-        refreshFilterDropdowns().catch(() => {});
-        if (pageRef.current === 'positions') renderPositionsPage().catch(() => {});
-        if (pageRef.current === 'departments') renderDepartmentPage().catch(() => {});
+        emitAppEvent('employees.refreshFilters');
+        emitAppEvent('positions.refresh');
+        emitAppEvent('departments.refresh');
       },
     });
     return () => stopLiveSync();
@@ -227,6 +209,10 @@ export function RootApp() {
     pageRef.current = page;
   }, []);
 
+  const handleSearchSync = useCallback((q) => {
+    searchRef.current = q;
+  }, []);
+
   return (
     <>
       {isDesktop && (
@@ -254,6 +240,7 @@ export function RootApp() {
           user={user}
           onLogout={handleLogout}
           onPageChange={handlePageChange}
+          onSearchSync={handleSearchSync}
           getPrefs={getPrefs}
           savePrefs={savePrefs}
           getCurrentUser={getCurrentUser}

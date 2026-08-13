@@ -11,6 +11,7 @@ import { ApiError } from '../../js/api/client.js';
 import { formatFileSize } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
+import { onAppEvent } from '../../shared/lib/appEvents.js';
 
 export function ScanInboxPage() {
   const [inboxPath, setPath] = useState('—');
@@ -46,6 +47,7 @@ export function ScanInboxPage() {
 
   useEffect(() => {
     load();
+    return onAppEvent('scan.refresh', load);
   }, [load]);
 
   async function openAssign(fileName) {

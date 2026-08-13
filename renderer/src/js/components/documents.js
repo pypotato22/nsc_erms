@@ -1,10 +1,12 @@
 import { createElement } from 'react';
 import { mountIsland } from '../../shared/lib/mountIsland.js';
+import { onAppEvent } from '../../shared/lib/appEvents.js';
 import { DocumentsTab } from '../../features/documents/DocumentsTab.jsx';
 
 let mounted = false;
 let reloadKey = 0;
 let _emp = null;
+let subscribed = false;
 /** @type {(() => void) | null} */
 let _onHeaderRefresh = null;
 
@@ -14,6 +16,11 @@ let _onHeaderRefresh = null;
  */
 export function initDocuments(onHeaderRefresh) {
   if (typeof onHeaderRefresh === 'function') _onHeaderRefresh = onHeaderRefresh;
+  if (subscribed) return;
+  subscribed = true;
+  onAppEvent('documents.refresh', (payload) => {
+    refreshOpenDocsTabForLiveSync(payload).catch(() => {});
+  });
 }
 
 export async function renderTabDocs(emp) {

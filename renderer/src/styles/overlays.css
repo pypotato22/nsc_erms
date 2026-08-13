@@ -1,0 +1,282 @@
+/**
+ * Overlay/modal chrome, the desktop print preview and the scanner modal.
+ */
+/* ── Overlay & Modal ──────────────────────────────────────────── */
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 21, 46, .6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    animation: overlayIn .18s ease;
+}
+
+.overlay.open {
+    display: flex;
+}
+
+@keyframes overlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.modal {
+    background: var(--bg-surface);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    animation: modalIn .2s ease;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(.96) translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.modal h3 {
+    font-size: 1.2143rem;
+    font-weight: 800;
+    color: var(--text-1);
+    margin-bottom: 20px;
+    letter-spacing: -.3px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: var(--bg-base);
+    border: 1.5px solid var(--border);
+    font-size: 1.2857rem;
+    cursor: pointer;
+    color: var(--text-2);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background .15s, color .15s;
+}
+
+.modal-close:hover {
+    background: #fce8eb;
+    color: var(--error);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.fg {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.fg.full {
+    grid-column: 1 / -1;
+}
+
+.fg label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-2);
+    letter-spacing: .5px;
+}
+
+.fg input,
+.fg select,
+.fg textarea {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-size: 0.9286rem;
+    font-family: inherit;
+    background: var(--bg-base);
+    color: var(--text-1);
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.fg input:focus,
+.fg select:focus,
+.fg textarea:focus {
+    outline: none;
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 3px rgba(46, 111, 255, .1);
+}
+
+.fg textarea {
+    resize: vertical;
+    min-height: 62px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 22px;
+}
+
+/* ── Print preview (desktop) ──────────────────────────────────── */
+.print-preview-overlay {
+    z-index: 260;
+    padding: 16px;
+}
+
+.print-preview-modal {
+    width: min(1200px, 96vw);
+    height: min(92vh, 900px);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px 22px 18px;
+}
+
+.print-preview-top h3 {
+    margin-bottom: 4px;
+}
+
+.print-preview-filename {
+    margin: 0 0 12px;
+    font-size: 0.8571rem;
+    color: var(--text-2);
+    word-break: break-all;
+    padding-right: 36px;
+}
+
+.print-preview-stage {
+    flex: 1;
+    min-height: 0;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.print-preview-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #fff;
+}
+
+.print-preview-image-wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.print-preview-image-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.print-preview-actions {
+    flex-shrink: 0;
+    margin-top: 16px;
+}
+
+/* ── Scanner Modal ────────────────────────────────────────────── */
+.scan-dev-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    background: var(--bg-base);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+.scan-dev-row.sel,
+.scan-dev-row:hover {
+    border-color: var(--blue-500);
+    background: var(--bg-hover);
+    box-shadow: 0 0 0 3px rgba(46, 111, 255, .08);
+}
+
+.scan-opts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0 4px;
+}
+
+.scan-opts label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-2);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    letter-spacing: .4px;
+}
+
+.scan-opts select {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8571rem;
+    font-family: inherit;
+    background: var(--bg-base);
+    color: var(--text-1);
+}
+
+.scan-prog {
+    text-align: center;
+    padding: 20px 0;
+    display: none;
+}
+
+.scan-bar {
+    width: 100%;
+    height: 5px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.scan-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-700), var(--cyan-500));
+    width: 0%;
+    transition: width .35s cubic-bezier(.4, 0, .2, 1);
+}

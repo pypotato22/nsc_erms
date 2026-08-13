@@ -47,6 +47,14 @@ test('documents bridge mounts React', () => {
     bridge.includes('export async function refreshOpenDocsTabForLiveSync'),
     'refreshOpenDocsTabForLiveSync missing',
   );
+  assert(bridge.includes("onAppEvent('documents.refresh'"), 'documents.refresh subscription missing');
+});
+
+test('DocumentsTab announces trash and scan changes over the event bus', () => {
+  const src = fs.readFileSync(featurePath, 'utf8');
+  assert(src.includes("emitAppEvent('trash.refresh')"), 'trash refresh event missing');
+  assert(src.includes("emitAppEvent('scan.refresh')"), 'scan refresh event missing');
+  assert(!src.includes('components/trash.js'), 'still importing the retired trash bridge');
 });
 
 test('documents bridge does not import profilePanel', () => {

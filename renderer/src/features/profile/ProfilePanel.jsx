@@ -8,8 +8,7 @@ import { ApiError } from '../../js/api/client.js';
 import { getInitials, getYearsOfService } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
-import { renderEmployeeTable } from '../../js/components/employeeTable.js';
-import { renderArchivedEmployeesPage } from '../../js/components/archivedEmployees.js';
+import { emitAppEvent } from '../../shared/lib/appEvents.js';
 import { openPdsViewer, downloadOfficialPdsExcel } from '../../js/components/pdsViewer.js';
 import { renderTabDocs } from '../../js/components/documents.js';
 
@@ -312,8 +311,8 @@ export function ProfilePanel({
       try {
         await deleteEmployee(id);
         onClose();
-        await renderEmployeeTable(getSearchQuery());
-        renderArchivedEmployeesPage().catch(() => {});
+        emitAppEvent('employees.refresh', { q: getSearchQuery() });
+        emitAppEvent('archived.refresh');
         showToast('Moved to Archived Employees.', 'info', {
           actionLabel: 'Undo',
           duration: 8000,
@@ -321,8 +320,8 @@ export function ProfilePanel({
             try {
               await restoreEmployee(id);
               showToast('Employee restored as Inactive.', 'success');
-              await renderEmployeeTable(getSearchQuery());
-              renderArchivedEmployeesPage().catch(() => {});
+              emitAppEvent('employees.refresh', { q: getSearchQuery() });
+              emitAppEvent('archived.refresh');
             } catch (err) {
               showToast(err instanceof ApiError ? err.message : 'Restore failed.', 'error');
             }

@@ -9,6 +9,7 @@ import {
 import { ApiError } from '../../js/api/client.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
+import { onAppEvent } from '../../shared/lib/appEvents.js';
 
 export function PositionsPage() {
   const [positions, setPositions] = useState([]);
@@ -33,6 +34,7 @@ export function PositionsPage() {
 
   useEffect(() => {
     load();
+    return onAppEvent('positions.refresh', load);
   }, [load]);
 
   const rows = useMemo(() => {

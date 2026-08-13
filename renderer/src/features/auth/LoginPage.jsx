@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { login as apiLogin } from '../../js/api/auth.js';
 import { ApiError } from '../../js/api/client.js';
 import { normalizeUser } from './normalizeUser.js';
+import { PasswordInput } from '../../shared/ui/PasswordInput.jsx';
 import logoUrl from '../../../school_logo.jpg';
 
 export function LoginPage({ onSuccess, notice = '' }) {
@@ -57,9 +58,8 @@ export function LoginPage({ onSuccess, notice = '' }) {
         </div>
         <div className="login-field">
           <label htmlFor="login-pass">Password</label>
-          <input
+          <PasswordInput
             id="login-pass"
-            type="password"
             autoComplete="current-password"
             placeholder="Enter password"
             value={password}

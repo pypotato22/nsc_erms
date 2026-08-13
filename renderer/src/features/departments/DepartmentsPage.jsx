@@ -12,7 +12,7 @@ import {
 import { ApiError } from '../../js/api/client.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
-import { refreshFilterDropdowns } from '../../js/components/employeeTable.js';
+import { emitAppEvent, onAppEvent } from '../../shared/lib/appEvents.js';
 
 const CHIP_LIMIT = 4;
 
@@ -41,6 +41,7 @@ export function DepartmentsPage() {
 
   useEffect(() => {
     load();
+    return onAppEvent('departments.refresh', load);
   }, [load]);
 
   const rows = useMemo(() => {
@@ -137,7 +138,7 @@ export function DepartmentsPage() {
       }
       setModalOpen(false);
       await load();
-      await refreshFilterDropdowns();
+      emitAppEvent('employees.refreshFilters');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Something went wrong.', 'error');
     }
@@ -148,7 +149,7 @@ export function DepartmentsPage() {
     try {
       await deleteDepartment(deptId);
       await load();
-      await refreshFilterDropdowns();
+      emitAppEvent('employees.refreshFilters');
       showToast('Department deleted.', 'success');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Something went wrong.', 'error');

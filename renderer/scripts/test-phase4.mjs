@@ -1,5 +1,6 @@
 /**
- * Phase 4 smoke tests for migrated catalog/tool pages.
+ * Phase 4 smoke tests for migrated catalog/tool pages. The page bridges are
+ * gone, so the pages must be imported and routed by AppShell instead.
  * Run: node renderer/scripts/test-phase4.mjs
  */
 import fs from 'node:fs';
@@ -25,23 +26,27 @@ function test(name, fn) {
   }
 }
 
+const appShell = fs.readFileSync(path.join(root, 'src/layouts/AppShell.jsx'), 'utf8');
+
 const features = [
-  'positions/PositionsPage.jsx',
-  'departments/DepartmentsPage.jsx',
-  'export/ExportPage.jsx',
-  'backup/BackupPage.jsx',
-  'trash/TrashPage.jsx',
-  'archived/ArchivedEmployeesPage.jsx',
-  'scan-inbox/ScanInboxPage.jsx',
+  ['positions/PositionsPage.jsx', 'PositionsPage'],
+  ['departments/DepartmentsPage.jsx', 'DepartmentsPage'],
+  ['export/ExportPage.jsx', 'ExportPage'],
+  ['backup/BackupPage.jsx', 'BackupPage'],
+  ['trash/TrashPage.jsx', 'TrashPage'],
+  ['archived/ArchivedEmployeesPage.jsx', 'ArchivedEmployeesPage'],
+  ['scan-inbox/ScanInboxPage.jsx', 'ScanInboxPage'],
 ];
 
-for (const f of features) {
-  test(`feature ${f}`, () => {
-    assert(fs.existsSync(path.join(root, 'src/features', f)), f);
+for (const [file, component] of features) {
+  test(`AppShell routes ${component}`, () => {
+    assert(fs.existsSync(path.join(root, 'src/features', file)), `${file} missing`);
+    assert(appShell.includes(`../features/${file}`), `${component} not imported`);
+    assert(appShell.includes(`<${component}`), `${component} not rendered`);
   });
 }
 
-const bridges = [
+const retiredBridges = [
   'positions.js',
   'departments.js',
   'export.js',
@@ -49,14 +54,30 @@ const bridges = [
   'trash.js',
   'archivedEmployees.js',
   'scanInbox.js',
+  'settings.js',
+  'employeeTable.js',
 ];
 
-for (const b of bridges) {
-  test(`bridge ${b} mounts React`, () => {
-    const src = fs.readFileSync(path.join(root, 'src/js/components', b), 'utf8');
-    assert(src.includes('mountIsland'), b);
+for (const b of retiredBridges) {
+  test(`bridge ${b} is retired`, () => {
+    assert(!fs.existsSync(path.join(root, 'src/js/components', b)), `${b} should be deleted`);
   });
 }
+
+test('only overlay bridges remain', () => {
+  const remaining = fs.readdirSync(path.join(root, 'src/js/components')).sort();
+  const expected = [
+    'changePassword.js',
+    'documents.js',
+    'employeeModal.js',
+    'pdsViewer.js',
+    'profilePanel.js',
+  ];
+  assert(
+    JSON.stringify(remaining) === JSON.stringify(expected),
+    `unexpected bridges: ${remaining.join(', ')}`,
+  );
+});
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

@@ -47,7 +47,8 @@ test('EmployeeWizardModal feature exists', () => {
     'photo/signature upload missing',
   );
   assert(
-    src.includes('renderEmployeeTable') && src.includes('refreshFilterDropdowns'),
+    src.includes("emitAppEvent('employees.refresh'") &&
+      src.includes("emitAppEvent('employees.refreshFilters')"),
     'table refresh after save missing',
   );
   assert(!src.includes('profilePanel'), 'wizard must not import profilePanel');

@@ -1,5 +1,6 @@
 /**
- * Phase 9 smoke tests: React owns the boot — minimal index.html, HashRouter AppShell.
+ * Shell smoke tests: React owns the boot — minimal index.html, HashRouter
+ * AppShell that renders every page component inside its own route.
  * Run: node renderer/scripts/test-shell.mjs
  */
 import fs from 'node:fs';
@@ -88,6 +89,47 @@ test('RootApp wires overlay bridges and live sync', () => {
   assert(rootApp.includes("'nsc_erms_prefs'"), 'prefs key changed');
 });
 
+test('RootApp keeps only the overlay bridges', () => {
+  for (const gone of [
+    'initEmployeeTable',
+    'initScanInbox',
+    'initTrash',
+    'initArchivedEmployees',
+    'initDepartments',
+    'initPositions',
+    'initBackup',
+    'renderEmployeeTable',
+    'renderTrashPage',
+    'renderScanInboxPage',
+    'renderDepartmentPage',
+    'renderPositionsPage',
+    'renderArchivedEmployeesPage',
+  ]) {
+    assert(!rootApp.includes(gone), `${gone} should be gone from RootApp`);
+  }
+});
+
+test('RootApp turns live-sync pushes into app events', () => {
+  assert(rootApp.includes("emitAppEvent } from '../shared/lib/appEvents.js'"), 'appEvents not imported');
+  for (const event of [
+    "emitAppEvent('employees.refresh'",
+    "emitAppEvent('employees.refreshFilters')",
+    "emitAppEvent('archived.refresh')",
+    "emitAppEvent('trash.refresh')",
+    "emitAppEvent('documents.refresh'",
+    "emitAppEvent('scan.refresh')",
+    "emitAppEvent('departments.refresh')",
+    "emitAppEvent('positions.refresh')",
+  ]) {
+    assert(rootApp.includes(event), `${event} missing from RootApp live sync`);
+  }
+});
+
+test('RootApp passes the search sync callback down to the shell', () => {
+  assert(rootApp.includes('onSearchSync={handleSearchSync}'), 'onSearchSync prop missing');
+  assert(/searchRef\.current = q/.test(rootApp), 'search query is not tracked');
+});
+
 test('AppShell routes with HashRouter', () => {
   assert(appShell.includes('HashRouter'), 'HashRouter not imported');
   assert(appShell.includes('react-router-dom'), 'react-router-dom not imported');
@@ -108,10 +150,9 @@ test('AppShell routes with HashRouter', () => {
   }
 });
 
-test('AppShell renders the sidebar + page hosts React owns', () => {
+test('AppShell renders the sidebar', () => {
   assert(appShell.includes('id="sidebar-nav"'), 'sidebar nav missing');
   assert(appShell.includes('id="page-title"'), 'page title missing');
-  assert(appShell.includes('`page-${page}`'), 'page hosts not generated');
   for (const badge of ['emp-count-badge', 'scan-inbox-badge', 'trash-badge', 'archived-employees-badge']) {
     assert(appShell.includes(badge), `badge ${badge} missing`);
   }
@@ -119,12 +160,68 @@ test('AppShell renders the sidebar + page hosts React owns', () => {
   assert(appShell.includes('needs-admin'), 'needs-admin class missing');
 });
 
-test('migration phase is at least 9', () => {
+test('AppShell renders page components inside the routes', () => {
+  for (const [component, file] of [
+    ['EmployeesPage', 'features/employees/EmployeesPage.jsx'],
+    ['DepartmentsPage', 'features/departments/DepartmentsPage.jsx'],
+    ['PositionsPage', 'features/positions/PositionsPage.jsx'],
+    ['ScanInboxPage', 'features/scan-inbox/ScanInboxPage.jsx'],
+    ['TrashPage', 'features/trash/TrashPage.jsx'],
+    ['ArchivedEmployeesPage', 'features/archived/ArchivedEmployeesPage.jsx'],
+    ['BackupPage', 'features/backup/BackupPage.jsx'],
+    ['ExportPage', 'features/export/ExportPage.jsx'],
+    ['SettingsPage', 'features/settings/SettingsPage.jsx'],
+  ]) {
+    assert(appShell.includes(`../${file}`), `${component} not imported from ${file}`);
+    assert(appShell.includes(`<${component}`), `${component} not rendered`);
+  }
+  assert(/id=\{`page-\$\{id\}`\}/.test(appShell), 'routed pages must keep the #page-* host id');
+  assert(appShell.includes("className=\"page active\""), 'routed pages must be active');
+});
+
+test('AppShell no longer drives page bridges', () => {
+  for (const gone of [
+    'mountIsland',
+    'renderEmployeeTable',
+    'renderDepartmentPage',
+    'renderPositionsPage',
+    'renderScanInboxPage',
+    'renderTrashPage',
+    'renderArchivedEmployeesPage',
+    'renderBackupPage',
+    'renderSettingsPage',
+    'initSettings',
+    'initExport',
+    'refreshFilterDropdowns',
+    'PAGE_RENDERERS',
+  ]) {
+    assert(!appShell.includes(gone), `${gone} should be gone from AppShell`);
+  }
+  assert(appShell.includes('closeProfilePanel'), 'profile panel must still close on navigation');
+});
+
+test('AppShell hands SettingsPage its prefs props', () => {
+  const flat = appShell.replace(/\s+/g, ' ');
+  assert(/<SettingsPage getPrefs=\{getPrefs\} savePrefs=\{savePrefs\} getCurrentUser=\{getCurrentUser\}/.test(flat),
+    'SettingsPage props not wired');
+  assert(flat.includes('<EmployeesPage onSearchSync={onSearchSync} />'), 'EmployeesPage onSearchSync not wired');
+});
+
+test('AppShell primes the sidebar badges itself', () => {
+  for (const api of ['listScanInbox', 'listTrashDocuments', 'listArchivedEmployees']) {
+    assert(appShell.includes(api), `${api} not used for badge priming`);
+  }
+  for (const event of ["onAppEvent('scan.refresh'", "onAppEvent('trash.refresh'", "onAppEvent('archived.refresh'"]) {
+    assert(appShell.includes(event), `${event} subscription missing`);
+  }
+});
+
+test('migration phase is at least 10', () => {
   const ready = fs.readFileSync(path.join(root, 'src/reactReady.js'), 'utf8');
   const m = ready.match(/REACT_MIGRATION_PHASE\s*=\s*(\d+)/);
-  assert(m && Number(m[1]) >= 9, 'expected REACT_MIGRATION_PHASE >= 9');
+  assert(m && Number(m[1]) >= 10, 'expected REACT_MIGRATION_PHASE >= 10');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);
-console.log('ALL PASS — Phase 9 HashRouter AppShell');
+console.log('ALL PASS — routed AppShell');

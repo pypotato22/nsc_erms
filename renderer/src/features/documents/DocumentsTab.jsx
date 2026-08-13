@@ -13,6 +13,7 @@ import { formatFileSize } from '../../js/utils/helpers.js';
 import { printDocument } from '../../js/utils/printDocument.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
+import { emitAppEvent } from '../../shared/lib/appEvents.js';
 
 export const ALLOWED_DOC_MIMES = new Set([
   'application/pdf',
@@ -39,22 +40,6 @@ function pickDroppedFile(fileList) {
 
 function baseName(name = '') {
   return name.includes('.') ? name.slice(0, name.lastIndexOf('.')) : name;
-}
-
-function updateScanInboxBadge() {
-  listScanInbox()
-    .then(({ files }) => {
-      const badge = document.getElementById('scan-inbox-badge');
-      if (badge) badge.textContent = String(files?.length ?? 0);
-    })
-    .catch(() => {});
-}
-
-/** Refresh the Trash page if it was already rendered (kept dynamic to avoid an import cycle). */
-function refreshTrashPage() {
-  import('../../js/components/trash.js')
-    .then((mod) => mod.renderTrashPage?.())
-    .catch(() => {});
 }
 
 /**
@@ -172,7 +157,7 @@ export function DocumentsTab({ employee, reloadKey = 0, onHeaderRefresh }) {
     try {
       await deleteDocument(docId);
       await afterMutate();
-      refreshTrashPage();
+      emitAppEvent('trash.refresh');
       showToast('Moved to Trash.', 'info', {
         actionLabel: 'Undo',
         duration: 8000,
@@ -181,7 +166,7 @@ export function DocumentsTab({ employee, reloadKey = 0, onHeaderRefresh }) {
             await restoreDocument(docId);
             showToast('Document restored.', 'success');
             await afterMutate();
-            refreshTrashPage();
+            emitAppEvent('trash.refresh');
           } catch (err) {
             showToast(err.message || 'Restore failed.', 'error');
           }
@@ -305,7 +290,7 @@ export function DocumentsTab({ employee, reloadKey = 0, onHeaderRefresh }) {
             onAttached={async (versionNumber) => {
               setInboxOpen(false);
               showToast(`Attached as v${versionNumber || 1}.`, 'success');
-              updateScanInboxBadge();
+              emitAppEvent('scan.refresh');
               await afterMutate();
             }}
           />

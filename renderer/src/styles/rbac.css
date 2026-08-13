@@ -1,0 +1,18 @@
+/**
+ * Role-based visibility helpers driven by body[data-role].
+ */
+/* ── Role-based UI ─────────────────────────────────────────────── */
+body[data-role="viewer"] .needs-write {
+    display: none !important;
+}
+
+body[data-role="viewer"] .needs-admin,
+body[data-role="staff"] .needs-admin {
+    display: none !important;
+}
+
+body[data-role="viewer"] .needs-superadmin,
+body[data-role="staff"] .needs-superadmin,
+body[data-role="admin"] .needs-superadmin {
+    display: none !important;
+}

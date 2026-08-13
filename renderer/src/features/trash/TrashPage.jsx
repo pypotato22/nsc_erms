@@ -10,7 +10,7 @@ import { formatFileSize } from '../../js/utils/helpers.js';
 import { printDocument } from '../../js/utils/printDocument.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
-import { refreshOpenDocsTabForLiveSync } from '../../js/components/documents.js';
+import { emitAppEvent, onAppEvent } from '../../shared/lib/appEvents.js';
 
 const PAGE_SIZE = 25;
 
@@ -41,6 +41,7 @@ export function TrashPage() {
 
   useEffect(() => {
     load(page);
+    return onAppEvent('trash.refresh', () => load(page));
   }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onRestore(id) {
@@ -48,7 +49,7 @@ export function TrashPage() {
       await restoreDocument(id);
       showToast('Document restored.', 'success');
       await load(page);
-      refreshOpenDocsTabForLiveSync?.();
+      emitAppEvent('documents.refresh');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Restore failed.', 'error');
     }

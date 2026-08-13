@@ -19,6 +19,7 @@ import {
 import { ApiError } from '../../js/api/client.js';
 import { showToast } from '../../js/utils/toast.js';
 import { showChangePassword } from '../../js/components/changePassword.js';
+import { PasswordInput } from '../../shared/ui/PasswordInput.jsx';
 import { canManageUsers, isSuperadmin, setCurrentRole } from '../../js/utils/authz.js';
 
 const AUDIT_PAGE_SIZE = 20;
@@ -984,8 +985,7 @@ export function SettingsPage({ getPrefs, savePrefs, getCurrentUser, prefs: prefs
                   </div>
                   <div className="fg user-create-only" style={{ marginBottom: 13 }}>
                     <label>Password *</label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       placeholder="Min. 8 characters"
                       value={uPass}
                       onChange={(e) => setUPass(e.target.value)}
@@ -1043,8 +1043,7 @@ export function SettingsPage({ getPrefs, savePrefs, getCurrentUser, prefs: prefs
               </p>
               <div className="fg" style={{ marginBottom: 13 }}>
                 <label>New password *</label>
-                <input
-                  type="password"
+                <PasswordInput
                   placeholder="Min. 8 characters"
                   autoComplete="new-password"
                   value={resetPw}
@@ -1053,8 +1052,7 @@ export function SettingsPage({ getPrefs, savePrefs, getCurrentUser, prefs: prefs
               </div>
               <div className="fg" style={{ marginBottom: 13 }}>
                 <label>Confirm password *</label>
-                <input
-                  type="password"
+                <PasswordInput
                   autoComplete="new-password"
                   value={resetConfirm}
                   onChange={(e) => setResetConfirm(e.target.value)}

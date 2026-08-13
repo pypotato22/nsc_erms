@@ -14,7 +14,7 @@ import {
 import { ApiError } from '../../js/api/client.js';
 import { getInitials, getToday } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
-import { renderEmployeeTable, refreshFilterDropdowns } from '../../js/components/employeeTable.js';
+import { emitAppEvent } from '../../shared/lib/appEvents.js';
 import { clonePds, emptyAddress, emptyPds, WIZARD_STEPS } from '../../js/utils/pds.js';
 import { PersonalStep } from './steps/PersonalStep.jsx';
 import { FamilyStep } from './steps/FamilyStep.jsx';
@@ -383,8 +383,8 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
       if (photoFile && employeeId) await uploadEmployeePhoto(employeeId, photoFile);
       if (signatureFile && employeeId) await uploadEmployeeSignature(employeeId, signatureFile);
       onClose();
-      await renderEmployeeTable(getSearchQuery?.() || '');
-      await refreshFilterDropdowns();
+      emitAppEvent('employees.refresh', { q: getSearchQuery?.() || '' });
+      emitAppEvent('employees.refreshFilters');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Save failed.', 'error');
     } finally {

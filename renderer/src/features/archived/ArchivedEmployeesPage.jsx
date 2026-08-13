@@ -8,7 +8,7 @@ import { ApiError } from '../../js/api/client.js';
 import { getInitials } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
-import { renderEmployeeTable } from '../../js/components/employeeTable.js';
+import { emitAppEvent, onAppEvent } from '../../shared/lib/appEvents.js';
 
 const PAGE_SIZE = 25;
 
@@ -43,7 +43,7 @@ function Avatar({ emp, size = 36 }) {
   );
 }
 
-export function ArchivedEmployeesPage({ getSearchQuery = () => '' }) {
+export function ArchivedEmployeesPage() {
   const [page, setPage] = useState(1);
   const [employees, setEmployees] = useState([]);
   const [total, setTotal] = useState(0);
@@ -70,6 +70,7 @@ export function ArchivedEmployeesPage({ getSearchQuery = () => '' }) {
 
   useEffect(() => {
     load(page);
+    return onAppEvent('archived.refresh', () => load(page));
   }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -122,7 +123,7 @@ export function ArchivedEmployeesPage({ getSearchQuery = () => '' }) {
                             await restoreEmployee(emp.id);
                             showToast('Employee restored as Inactive.', 'success');
                             await load(page);
-                            renderEmployeeTable(getSearchQuery()).catch(() => {});
+                            emitAppEvent('employees.refresh');
                           } catch (err) {
                             showToast(err instanceof ApiError ? err.message : 'Restore failed.', 'error');
                           }
