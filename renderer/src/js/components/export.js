@@ -2,12 +2,14 @@ import { createElement } from 'react';
 import { mountIsland } from '../../shared/lib/mountIsland.js';
 import { ExportPage } from '../../features/export/ExportPage.jsx';
 
-let mounted = false;
+/** @type {HTMLElement | null} */
+let mountedHost = null;
 
+/** Mounts once per host element; the shell can hand us a fresh host after logout. */
 export function initExport() {
   const host = document.getElementById('page-export');
-  if (!host || mounted) return;
+  if (!host || host === mountedHost) return;
   host.innerHTML = '';
-  mounted = true;
+  mountedHost = host;
   mountIsland(host, createElement(ExportPage));
 }

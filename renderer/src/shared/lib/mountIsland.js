@@ -1,11 +1,15 @@
 import { createRoot } from 'react-dom/client';
 
-/** @type {Map<string, import('react-dom/client').Root>} */
+/** @type {Map<string, { el: HTMLElement, root: import('react-dom/client').Root }>} */
 const roots = new Map();
 
 /**
  * Mount (or remount) a React tree into a DOM container.
- * Used for strangler islands while vanilla still owns the rest of the app.
+ * Used for island roots that page/overlay bridges own inside the React shell.
+ *
+ * Hosts are rendered by the shell, so a host with a known id can be replaced by
+ * a brand new element (e.g. after logout unmounts the AppShell). Cached roots
+ * are therefore keyed to the element they were created for.
  *
  * @param {string|HTMLElement} containerOrId
  * @param {import('react').ReactNode} element
@@ -21,13 +25,17 @@ export function mountIsland(containerOrId, element) {
     );
   }
   const key = el.id || '_anon';
-  let root = roots.get(key);
-  if (!root) {
-    root = createRoot(el);
-    roots.set(key, root);
+  let entry = roots.get(key);
+  if (entry && entry.el !== el) {
+    entry.root.unmount();
+    entry = null;
   }
-  root.render(element);
-  return root;
+  if (!entry) {
+    entry = { el, root: createRoot(el) };
+    roots.set(key, entry);
+  }
+  entry.root.render(element);
+  return entry.root;
 }
 
 /**
@@ -41,9 +49,9 @@ export function unmountIsland(containerOrId) {
       : containerOrId;
   if (!el) return;
   const key = el.id || '_anon';
-  const root = roots.get(key);
-  if (root) {
-    root.unmount();
+  const entry = roots.get(key);
+  if (entry) {
+    entry.root.unmount();
     roots.delete(key);
   }
 }

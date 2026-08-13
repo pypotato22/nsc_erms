@@ -36,9 +36,9 @@ test('pdsViewer bridge mounts React', () => {
   assert(bridge.includes('export function downloadOfficialPdsExcel'));
 });
 
-test('pds-view-overlay is empty host', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert(/id="pds-view-overlay"\s+class="overlay"><\/div>/.test(html.replace(/\s+/g, ' ')));
+test('pds-view-overlay is an empty host rendered by RootApp', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8').replace(/\s+/g, ' ');
+  assert(/<div id="pds-view-overlay" className="overlay" \/>/.test(rootApp), 'pds-view-overlay host missing');
 });
 
 test('full-bleed layout rules present', () => {

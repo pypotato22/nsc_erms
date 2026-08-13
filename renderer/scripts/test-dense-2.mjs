@@ -55,16 +55,16 @@ test('documents bridge does not import profilePanel', () => {
   assert(bridge.includes('_onHeaderRefresh'), 'header refresh callback missing');
 });
 
-test('doc overlays are empty hosts', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/\s+/g, ' ');
-  assert(/id="doc-overlay" class="overlay"><\/div>/.test(html), 'doc-overlay not empty');
-  assert(/id="doc-inbox-overlay" class="overlay"><\/div>/.test(html), 'doc-inbox-overlay not empty');
+test('doc overlays are empty hosts rendered by RootApp', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8').replace(/\s+/g, ' ');
+  assert(/<div id="doc-overlay" className="overlay" \/>/.test(rootApp), 'doc-overlay host missing');
+  assert(/<div id="doc-inbox-overlay" className="overlay" \/>/.test(rootApp), 'doc-inbox-overlay host missing');
 });
 
-test('main.js passes header refresh into initDocuments', () => {
-  const main = fs.readFileSync(path.join(root, 'src/main.js'), 'utf8');
-  assert(/initDocuments\(\s*\(\)\s*=>/.test(main), 'initDocuments callback not wired');
-  assert(main.includes('refreshPanelHeader'), 'refreshPanelHeader not imported');
+test('RootApp passes header refresh into initDocuments', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
+  assert(/initDocuments\(\s*\(\)\s*=>/.test(rootApp), 'initDocuments callback not wired');
+  assert(rootApp.includes('refreshPanelHeader'), 'refreshPanelHeader not imported');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

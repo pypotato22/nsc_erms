@@ -41,15 +41,18 @@ test('usePrefs and useLiveSync hooks exist', () => {
   assert(prefs.includes('nsc_erms_prefs'));
 });
 
-test('Titlebar React layout + vanilla bridge', () => {
+test('Titlebar React layout is rendered by RootApp', () => {
   assert(fs.existsSync(path.join(root, 'src/layouts/Titlebar.jsx')));
-  const bridge = fs.readFileSync(path.join(root, 'src/js/components/titlebar.js'), 'utf8');
-  assert(bridge.includes('Titlebar'));
-  assert(bridge.includes('mountIsland'));
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
+  assert(rootApp.includes('<Titlebar />'), 'RootApp must render the titlebar');
+  assert(rootApp.includes('desktop-titlebar'), 'titlebar host missing');
+  assert(!fs.existsSync(path.join(root, 'src/js/components/titlebar.js')), 'titlebar bridge should be gone');
 });
 
-test('AppShell stub exists', () => {
-  assert(fs.existsSync(path.join(root, 'src/layouts/AppShell.jsx')));
+test('AppShell owns the routed shell', () => {
+  const shell = fs.readFileSync(path.join(root, 'src/layouts/AppShell.jsx'), 'utf8');
+  assert(shell.includes('HashRouter'));
+  assert(shell.includes('export function AppShell'));
 });
 
 test('migration phase is at least 3', () => {

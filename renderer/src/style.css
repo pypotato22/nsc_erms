@@ -211,10 +211,18 @@ body.desktop-shell #setup-screen {
     font-size: 0.9286rem;
     font-weight: 500;
     color: var(--text-2);
+    text-decoration: none;
     cursor: pointer;
     transition: background .15s, color .15s;
     user-select: none;
     position: relative;
+}
+
+#sidebar nav a:hover,
+#sidebar nav a:focus,
+#sidebar nav a:active,
+#sidebar nav a:visited {
+    text-decoration: none;
 }
 
 #sidebar nav a:hover {

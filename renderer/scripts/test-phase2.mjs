@@ -56,20 +56,26 @@ test('React auth feature files exist', () => {
   }
 });
 
-test('vanilla bridges mount React islands', () => {
-  const login = fs.readFileSync(path.join(root, 'src/js/components/login.js'), 'utf8');
-  const pw = fs.readFileSync(path.join(root, 'src/js/components/changePassword.js'), 'utf8');
-  const setup = fs.readFileSync(path.join(root, 'src/js/components/setupWizard.js'), 'utf8');
-  assert(login.includes('LoginPage'));
-  assert(login.includes('mountIsland'));
-  assert(pw.includes('ChangePasswordModal'));
-  assert(setup.includes('SetupWizard'));
+test('RootApp renders the auth screens directly (bridges retired)', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
+  assert(rootApp.includes('LoginPage'));
+  assert(rootApp.includes('SetupWizard'));
+  assert(rootApp.includes('ChangePasswordModal'));
+  assert(!fs.existsSync(path.join(root, 'src/js/components/login.js')), 'login bridge should be gone');
+  assert(!fs.existsSync(path.join(root, 'src/js/components/setupWizard.js')), 'setup bridge should be gone');
 });
 
-test('main.js mounts ToastHost', () => {
-  const main = fs.readFileSync(path.join(root, 'src/main.js'), 'utf8');
-  assert(main.includes('ToastHost'));
-  assert(main.includes('mountIsland'));
+test('changePassword bridge still serves the Settings page', () => {
+  const pw = fs.readFileSync(path.join(root, 'src/js/components/changePassword.js'), 'utf8');
+  assert(pw.includes('ChangePasswordModal'));
+  assert(pw.includes('mountIsland'));
+  assert(pw.includes('pw-react-host'));
+});
+
+test('RootApp renders ToastHost', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
+  assert(rootApp.includes('ToastHost'));
+  assert(rootApp.includes('<ToastHost />'));
 });
 
 test('showToast uses toastStore', () => {

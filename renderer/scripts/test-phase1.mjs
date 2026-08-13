@@ -52,9 +52,10 @@ test('style.css imports global.css and no longer duplicates :root block at top',
   assert(!beforeScrollbar.includes('--blue-900: #062b6e'));
 });
 
-test('index.html has #react-root island', () => {
-  assert(html.includes('id="react-root"'));
-  assert(html.includes('./src/main.js'));
+test('index.html is a single React root', () => {
+  assert(html.includes('id="root"'));
+  assert(html.includes('./src/main.jsx'));
+  assert(!html.includes('id="react-root"'), 'strangler island host is retired');
 });
 
 test('mountIsland helper exists', () => {

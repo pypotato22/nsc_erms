@@ -54,14 +54,16 @@ test('migration phase is at least 8', () => {
   assert(m && Number(m[1]) >= 8, 'expected REACT_MIGRATION_PHASE >= 8');
 });
 
-test('docs/frontend mentions React migration', () => {
+test('docs/frontend documents the React boot', () => {
   const docs = fs.readFileSync(path.join(root, '../docs/frontend.md'), 'utf8');
-  assert(/React/i.test(docs) && /strangler/i.test(docs));
+  assert(/React/i.test(docs) && /HashRouter/.test(docs));
+  assert(docs.includes('main.jsx') && docs.includes('RootApp'));
 });
 
-test('page-employees is an empty React host', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert(/id="page-employees"[^>]*class="page active"><\/div>/.test(html.replace(/\s+/g, ' ')));
+test('page hosts are empty React nodes owned by AppShell', () => {
+  const shell = fs.readFileSync(path.join(root, 'src/layouts/AppShell.jsx'), 'utf8').replace(/\s+/g, ' ');
+  assert(/id=\{`page-\$\{page\}`\}/.test(shell), 'page hosts are not rendered by AppShell');
+  assert(/className=\{page === activePage \? 'page active' : 'page'\}/.test(shell), 'active page class missing');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

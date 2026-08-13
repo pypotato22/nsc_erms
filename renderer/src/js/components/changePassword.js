@@ -34,8 +34,6 @@ function ensureHost() {
     host.id = 'pw-react-host';
     document.body.appendChild(host);
   }
-  // Hide legacy static overlay if still in DOM
-  document.getElementById('pw-overlay')?.remove();
   return host;
 }
 

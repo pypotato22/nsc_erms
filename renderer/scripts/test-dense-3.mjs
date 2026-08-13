@@ -81,16 +81,16 @@ test('bridge toggles open classes on panel and backdrop', () => {
   );
 });
 
-test('panel is an empty host in index.html', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/\s+/g, ' ');
-  assert(/id="panel-backdrop"><\/div>/.test(html), 'panel-backdrop missing');
-  assert(/<div id="panel"><\/div>/.test(html), 'panel is not an empty host');
-  assert(!html.includes('id="panel-header"'), 'stale panel-header markup');
-  assert(!html.includes('id="tab-info"'), 'stale tab markup');
+test('panel is an empty host rendered by RootApp', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8').replace(/\s+/g, ' ');
+  assert(/<div id="panel-backdrop" \/>/.test(rootApp), 'panel-backdrop missing');
+  assert(/<div id="panel" \/>/.test(rootApp), 'panel is not an empty host');
+  assert(!rootApp.includes('id="panel-header"'), 'stale panel-header markup');
+  assert(!rootApp.includes('id="tab-info"'), 'stale tab markup');
 });
 
-test('main.js can still call refreshPanelHeader().catch', () => {
-  const main = fs.readFileSync(path.join(root, 'src/main.js'), 'utf8');
+test('RootApp can still call refreshPanelHeader().catch', () => {
+  const main = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
   assert(main.includes('refreshPanelHeader().catch'), 'refreshPanelHeader().catch missing');
   const bridge = fs.readFileSync(bridgePath, 'utf8');
   assert(

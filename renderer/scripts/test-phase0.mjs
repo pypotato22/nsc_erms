@@ -47,10 +47,12 @@ test('vite.config.js registers react plugin', () => {
   assert(cfg.includes('plugins: [react()]'));
 });
 
-test('index.html still boots vanilla main.js (no UI swap yet)', () => {
+test('index.html boots React main.jsx into #root', () => {
   const html = fs.readFileSync(path.join(rendererRoot, 'index.html'), 'utf8');
-  assert(html.includes('./src/main.js'));
-  assert(!html.includes('main.jsx'));
+  assert(html.includes('./src/main.jsx'));
+  assert(html.includes('id="root"'));
+  const main = fs.readFileSync(path.join(rendererRoot, 'src/main.jsx'), 'utf8');
+  assert(main.includes('RootApp'));
 });
 
 test('migration folder structure exists', () => {

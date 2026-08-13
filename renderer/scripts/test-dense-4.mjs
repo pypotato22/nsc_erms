@@ -157,17 +157,17 @@ test('bridge mounts React and exports only the three entry points', () => {
   assert(!bridge.includes('profilePanel'), 'bridge must not import profilePanel');
 });
 
-test('emp-overlay is an empty host in index.html', () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/\s+/g, ' ');
-  assert(/<div id="emp-overlay" class="overlay"><\/div>/.test(html), 'emp-overlay not empty');
-  assert(!html.includes('id="pds-wizard-body"'), 'stale wizard body markup');
-  assert(!html.includes('id="pds-stepper"'), 'stale stepper markup');
-  assert(!html.includes('id="emp-modal-save"'), 'stale save button markup');
+test('emp-overlay is an empty host rendered by RootApp', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8').replace(/\s+/g, ' ');
+  assert(/<div id="emp-overlay" className="overlay" \/>/.test(rootApp), 'emp-overlay host missing');
+  assert(!rootApp.includes('id="pds-wizard-body"'), 'stale wizard body markup');
+  assert(!rootApp.includes('id="pds-stepper"'), 'stale stepper markup');
+  assert(!rootApp.includes('id="emp-modal-save"'), 'stale save button markup');
 });
 
-test('main.js still wires initEmployeeModal', () => {
-  const main = fs.readFileSync(path.join(root, 'src/main.js'), 'utf8');
-  assert(main.includes('initEmployeeModal(getSearchQuery)'), 'initEmployeeModal not wired');
+test('RootApp still wires initEmployeeModal', () => {
+  const rootApp = fs.readFileSync(path.join(root, 'src/app/RootApp.jsx'), 'utf8');
+  assert(rootApp.includes('initEmployeeModal(getSearchQuery)'), 'initEmployeeModal not wired');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

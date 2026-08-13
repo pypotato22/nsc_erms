@@ -4,7 +4,7 @@ import { ApiError } from '../../js/api/client.js';
 import { normalizeUser } from './normalizeUser.js';
 import logoUrl from '../../../school_logo.jpg';
 
-export function LoginPage({ onSuccess }) {
+export function LoginPage({ onSuccess, notice = '' }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -68,7 +68,7 @@ export function LoginPage({ onSuccess }) {
           />
         </div>
         <div className="login-err" id="login-err">
-          {error}
+          {error || notice}
         </div>
         <button id="login-btn" className="login-btn" type="submit" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign In'}
