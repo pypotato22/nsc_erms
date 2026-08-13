@@ -38,7 +38,7 @@ import { initPositions, renderPositionsPage } from './js/components/positions.js
 import { initBackup, renderBackupPage } from './js/components/backup.js';
 import { initSettings, renderSettingsPage } from './js/components/settings.js';
 import { initExport } from './js/components/export.js';
-import { setCurrentRole, clearCurrentRole } from './js/utils/authz.js';
+import { setCurrentRole, clearCurrentRole, canManageUsers } from './js/utils/authz.js';
 import { startLiveSync, stopLiveSync } from './js/utils/liveSync.js';
 
 const FONT_SIZES = [13, 14, 17, 21];
@@ -309,6 +309,12 @@ function applyRouteFromHash() {
 }
 
 function navTo(pageName, linkEl, updateHash = true) {
+  // Backup is admin/superadmin only — block deep links / hash for other roles
+  if (pageName === 'backup' && !canManageUsers()) {
+    pageName = 'employees';
+    linkEl = document.querySelector('#sidebar-nav a[data-page="employees"]') || linkEl;
+  }
+
   if (updateHash && location.hash.replace(/^#/, '') !== pageName) {
     location.hash = pageName;
   }

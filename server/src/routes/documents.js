@@ -14,18 +14,23 @@ import {
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
+import { assertAllowedBuffer, MIME } from '../services/fileMagic.js';
+import {
+  nextDocumentVersion,
+  latestActiveDocumentId,
+} from '../services/documentVersion.js';
 
 export const documentsRouter = Router({ mergeParams: true });
 
 const writeRoles = requireRole('staff', 'admin', 'superadmin');
 
 const ALLOWED_MIME = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
+  MIME.PDF,
+  MIME.JPEG,
+  MIME.PNG,
   'image/jpg',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  MIME.DOC,
+  MIME.DOCX,
 ]);
 
 function makeUpload(maxBytes) {
@@ -137,6 +142,13 @@ documentsRouter.post('/', writeRoles, async (req, res, next) => {
           throw new HttpError(400, 'file is required', 'VALIDATION');
         }
 
+        let mimeType;
+        try {
+          mimeType = assertAllowedBuffer(req.file.buffer, ALLOWED_MIME);
+        } catch (magicErr) {
+          throw new HttpError(400, magicErr.message || 'File type not allowed', 'VALIDATION');
+        }
+
         const { rows: emp } = await query(
           `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,
           [employeeId],
@@ -165,60 +177,60 @@ documentsRouter.post('/', writeRoles, async (req, res, next) => {
           displayName = `${displayName}${ext}`;
         }
 
-        const { rows: latest } = await query(
-          `SELECT id, version_number
-           FROM documents
-           WHERE employee_id = $1
-             AND document_type_id = $2
-             AND deleted_at IS NULL
-           ORDER BY version_number DESC
-           LIMIT 1`,
-          [employeeId, documentTypeId],
-        );
-
-        const versionNumber = (latest[0]?.version_number ?? 0) + 1;
-        const replacesId = latest[0]?.id ?? null;
-        const documentId = ulid();
-
-        const saved = await writeEmployeeDocument({
-          employeeId,
-          documentId,
-          originalName,
-          buffer: req.file.buffer,
-        });
-
+        let versionNumber;
+        let replacesId;
+        let documentId;
+        let saved;
         let rows;
-        try {
-          ({ rows } = await query(
-            `INSERT INTO documents (
-               id, employee_id, document_type_id, file_name, stored_name, file_path,
-               file_size, mime_type, source, version_number, replaces_id,
-               issued_date, expiry_date, remarks,
-               uploaded_by, updated_by
-             ) VALUES (
-               $1,$2,$3,$4,$5,$6,$7,$8,'upload',$9,$10,$11,$12,$13,$14,$14
-             )
-             RETURNING *`,
-            [
-              documentId,
-              employeeId,
-              documentTypeId,
-              displayName,
-              saved.storedName,
-              saved.relativePath,
-              req.file.size,
-              req.file.mimetype,
-              versionNumber,
-              replacesId,
-              issuedDate,
-              expiryDate,
-              remarks,
-              req.session.userId,
-            ],
-          ));
-        } catch (dbErr) {
-          rollbackAbsoluteFile(saved.absolutePath);
-          throw dbErr;
+        const maxAttempts = 5;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          versionNumber = await nextDocumentVersion(employeeId, documentTypeId);
+          replacesId = await latestActiveDocumentId(employeeId, documentTypeId);
+          documentId = ulid();
+
+          saved = await writeEmployeeDocument({
+            employeeId,
+            documentId,
+            originalName,
+            buffer: req.file.buffer,
+          });
+
+          try {
+            ({ rows } = await query(
+              `INSERT INTO documents (
+                 id, employee_id, document_type_id, file_name, stored_name, file_path,
+                 file_size, mime_type, source, version_number, replaces_id,
+                 issued_date, expiry_date, remarks,
+                 uploaded_by, updated_by
+               ) VALUES (
+                 $1,$2,$3,$4,$5,$6,$7,$8,'upload',$9,$10,$11,$12,$13,$14,$14
+               )
+               RETURNING *`,
+              [
+                documentId,
+                employeeId,
+                documentTypeId,
+                displayName,
+                saved.storedName,
+                saved.relativePath,
+                req.file.size,
+                mimeType,
+                versionNumber,
+                replacesId,
+                issuedDate,
+                expiryDate,
+                remarks,
+                req.session.userId,
+              ],
+            ));
+            break;
+          } catch (dbErr) {
+            rollbackAbsoluteFile(saved.absolutePath);
+            if (dbErr.code === '23505' && attempt < maxAttempts - 1) {
+              continue;
+            }
+            throw dbErr;
+          }
         }
 
         const { rows: joined } = await query(

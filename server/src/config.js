@@ -120,6 +120,12 @@ export const config = {
   tlsCertPath: process.env.TLS_CERT_PATH || '',
   tlsKeyPath: process.env.TLS_KEY_PATH || '',
   allowHttpDev,
+  /**
+   * Only enable when Express sits behind a reverse proxy that sets X-Forwarded-*.
+   * Default false so clients cannot spoof X-Forwarded-For for rate limits / audit.
+   * Set TRUST_PROXY=1 (or true / hop count) when terminating TLS at nginx/Caddy.
+   */
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   corsOrigins: parseCorsOrigins(),
   filesRoot: process.env.FILES_ROOT || path.join(projectRoot, 'storage'),
   backupsRoot:
@@ -131,3 +137,18 @@ export const config = {
   clientDist,
   projectRoot,
 };
+
+/**
+ * @param {string|undefined} raw
+ * @returns {boolean|number}
+ */
+export function parseTrustProxy(raw) {
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (!v || v === '0' || v === 'false' || v === 'no' || v === 'off') return false;
+  if (v === '1' || v === 'true' || v === 'yes' || v === 'on') return 1;
+  const n = Number(v);
+  if (Number.isInteger(n) && n > 0) return n;
+  return false;
+}

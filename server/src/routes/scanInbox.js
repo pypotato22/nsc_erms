@@ -12,6 +12,10 @@ import {
 } from '../services/scanInbox.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
+import {
+  nextDocumentVersion,
+  latestActiveDocumentId,
+} from '../services/documentVersion.js';
 
 export const scanInboxRouter = Router();
 
@@ -87,19 +91,6 @@ scanInboxRouter.post('/:fileName/assign', writeRoles, async (req, res, next) => 
     );
     if (!dtype[0]) throw new HttpError(400, 'Invalid document type', 'VALIDATION');
 
-    const { rows: latest } = await query(
-      `SELECT id, version_number
-       FROM documents
-       WHERE employee_id = $1
-         AND document_type_id = $2
-         AND deleted_at IS NULL
-       ORDER BY version_number DESC
-       LIMIT 1`,
-      [employeeId, documentTypeId],
-    );
-
-    const versionNumber = (latest[0]?.version_number ?? 0) + 1;
-    const replacesId = latest[0]?.id ?? null;
     const documentId = ulid();
 
     let claimed;
@@ -127,48 +118,62 @@ scanInboxRouter.post('/:fileName/assign', writeRoles, async (req, res, next) => 
       displayName = `${displayName}${ext}`;
     }
 
-    const { rows } = await (async () => {
-      try {
-        return await query(
-          `INSERT INTO documents (
-             id, employee_id, document_type_id, file_name, stored_name, file_path,
-             file_size, mime_type, source, scan_inbox_filename,
-             version_number, replaces_id, issued_date, expiry_date, remarks,
-             uploaded_by, updated_by
-           ) VALUES (
-             $1,$2,$3,$4,$5,$6,$7,$8,'scan_folder',$9,$10,$11,$12,$13,$14,$15,$15
-           )
-           RETURNING id`,
-          [
-            documentId,
-            employeeId,
-            documentTypeId,
-            displayName,
-            claimed.storedName,
-            claimed.relativePath,
-            claimed.fileSize,
-            claimed.mimeType,
-            claimed.originalName,
-            versionNumber,
-            replacesId,
-            issuedDate,
-            expiryDate,
-            remarks,
-            req.session.userId,
-          ],
-        );
-      } catch (dbErr) {
+    let versionNumber;
+    let replacesId;
+    let rows;
+    const maxAttempts = 5;
+    try {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        versionNumber = await nextDocumentVersion(employeeId, documentTypeId);
+        replacesId = await latestActiveDocumentId(employeeId, documentTypeId);
         try {
-          await restoreClaimedInboxFile({
-            absolutePath: claimed.absolutePath,
-            originalName: claimed.originalName,
-          });
-        } catch (restoreErr) {
-          console.error('Failed to restore inbox file after DB error:', restoreErr.message);
+          ({ rows } = await query(
+            `INSERT INTO documents (
+               id, employee_id, document_type_id, file_name, stored_name, file_path,
+               file_size, mime_type, source, scan_inbox_filename,
+               version_number, replaces_id, issued_date, expiry_date, remarks,
+               uploaded_by, updated_by
+             ) VALUES (
+               $1,$2,$3,$4,$5,$6,$7,$8,'scan_folder',$9,$10,$11,$12,$13,$14,$15,$15
+             )
+             RETURNING id`,
+            [
+              documentId,
+              employeeId,
+              documentTypeId,
+              displayName,
+              claimed.storedName,
+              claimed.relativePath,
+              claimed.fileSize,
+              claimed.mimeType,
+              claimed.originalName,
+              versionNumber,
+              replacesId,
+              issuedDate,
+              expiryDate,
+              remarks,
+              req.session.userId,
+            ],
+          ));
+          break;
+        } catch (dbErr) {
+          if (dbErr.code === '23505' && attempt < maxAttempts - 1) {
+            continue;
+          }
+          throw dbErr;
         }
-        throw dbErr;
       }
-    })();
+    } catch (dbErr) {
+      try {
+        await restoreClaimedInboxFile({
+          absolutePath: claimed.absolutePath,
+          originalName: claimed.originalName,
+        });
+      } catch (restoreErr) {
+        console.error('Failed to restore inbox file after DB error:', restoreErr.message);
+      }
+      throw dbErr;
+    }
 
     await writeAudit({
       actorUserId: req.session.userId,

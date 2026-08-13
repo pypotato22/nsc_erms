@@ -6,19 +6,51 @@ import {
   getScanInboxPath,
 } from './settings.js';
 import { isInsideRoot } from './files.js';
+import { assertAllowedBuffer, MIME } from './fileMagic.js';
 
 const ALLOWED_EXT = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']);
 
 const MIME_BY_EXT = {
-  '.pdf': 'application/pdf',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.doc': 'application/msword',
-  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.pdf': MIME.PDF,
+  '.jpg': MIME.JPEG,
+  '.jpeg': MIME.JPEG,
+  '.png': MIME.PNG,
+  '.doc': MIME.DOC,
+  '.docx': MIME.DOCX,
 };
 
+const ALLOWED_SCAN_MIME = new Set([
+  MIME.PDF,
+  MIME.JPEG,
+  MIME.PNG,
+  MIME.DOC,
+  MIME.DOCX,
+]);
+
 export { getScanInboxPath };
+
+/** Minimum age (ms) since last mtime before an inbox file is claimable. */
+export const SCAN_STABLE_MS = 1500;
+
+/**
+ * True when the file exists, is non-empty, and has not been modified recently
+ * (avoids claiming a scanner file still being written).
+ * @param {string} absPath
+ * @param {{ now?: number, stableMs?: number }} [opts]
+ */
+export function isStableFile(absPath, opts = {}) {
+  const now = opts.now ?? Date.now();
+  const stableMs = opts.stableMs ?? SCAN_STABLE_MS;
+  try {
+    const a = fs.statSync(absPath);
+    if (!a.isFile() || a.size === 0) return false;
+    const mtimeMs = a.mtimeMs ?? a.mtime.getTime();
+    if (now - mtimeMs < stableMs) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function ensureInboxDirs() {
   const inbox = await getScanInboxPath();
@@ -28,17 +60,6 @@ export async function ensureInboxDirs() {
     fs.mkdirSync(dir, { recursive: true });
   }
   return { inbox, processed, failed };
-}
-
-function isStableFile(absPath) {
-  try {
-    const a = fs.statSync(absPath);
-    // Skip directories and zero-byte placeholders still being written
-    if (!a.isFile() || a.size === 0) return false;
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export async function listInboxFiles() {
@@ -109,6 +130,13 @@ export async function claimInboxFileForEmployee({ fileName, employeeId, document
     throw Object.assign(new Error('File not found in inbox'), { code: 'NOT_FOUND' });
   }
 
+  if (!isStableFile(abs)) {
+    throw Object.assign(
+      new Error('File is still being written; wait a moment and try again'),
+      { code: 'VALIDATION' },
+    );
+  }
+
   const st = fs.statSync(abs);
   if (st.size > maxBytes) {
     throw Object.assign(new Error(`File exceeds ${maxBytes} bytes`), { code: 'TOO_LARGE' });
@@ -117,6 +145,35 @@ export async function claimInboxFileForEmployee({ fileName, employeeId, document
   const ext = path.extname(base).toLowerCase();
   if (!ALLOWED_EXT.has(ext)) {
     throw Object.assign(new Error('File type not allowed'), { code: 'VALIDATION' });
+  }
+
+  // Read a prefix for magic-byte check before moving the file
+  const fd = fs.openSync(abs, 'r');
+  let head;
+  try {
+    const len = Math.min(st.size, 8192);
+    head = Buffer.alloc(len);
+    fs.readSync(fd, head, 0, len, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+
+  let mimeType;
+  try {
+    mimeType = assertAllowedBuffer(head, ALLOWED_SCAN_MIME);
+  } catch (magicErr) {
+    throw Object.assign(new Error(magicErr.message || 'File type not allowed'), {
+      code: 'VALIDATION',
+    });
+  }
+
+  // Extension should agree with sniffed type (blocks .pdf that is really an exe, etc.)
+  const expected = MIME_BY_EXT[ext];
+  if (expected && expected !== mimeType) {
+    throw Object.assign(
+      new Error(`File extension ${ext} does not match file content`),
+      { code: 'VALIDATION' },
+    );
   }
 
   const root = await getFilesRoot();
@@ -146,7 +203,7 @@ export async function claimInboxFileForEmployee({ fileName, employeeId, document
     absolutePath: destAbs,
     inboxAbsolutePath: abs,
     fileSize: st.size,
-    mimeType: MIME_BY_EXT[ext] || 'application/octet-stream',
+    mimeType,
   };
 }
 

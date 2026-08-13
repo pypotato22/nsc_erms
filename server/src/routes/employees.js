@@ -14,6 +14,7 @@ import {
   removeEmployeeStorage,
   rollbackAbsoluteFile,
 } from '../services/files.js';
+import { assertAllowedBuffer, MIME } from '../services/fileMagic.js';
 import { writeAudit, clientIp } from '../services/audit.js';
 import { publish } from '../services/liveEvents.js';
 import {
@@ -952,6 +953,17 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
         }
         if (!req.file) throw new HttpError(400, 'photo is required', 'VALIDATION');
 
+        try {
+          assertAllowedBuffer(req.file.buffer, [
+            MIME.JPEG,
+            MIME.PNG,
+            MIME.WEBP,
+            'image/jpg',
+          ]);
+        } catch (magicErr) {
+          throw new HttpError(400, magicErr.message || 'Only JPEG/PNG/WebP photos are allowed', 'VALIDATION');
+        }
+
         const { rows: emp } = await query(
           `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,
           [req.params.id],
@@ -1056,6 +1068,17 @@ employeesRouter.post('/:id/signature', writeRoles, async (req, res, next) => {
           throw new HttpError(400, err.message || 'Upload failed', 'VALIDATION');
         }
         if (!req.file) throw new HttpError(400, 'signature is required', 'VALIDATION');
+
+        try {
+          assertAllowedBuffer(req.file.buffer, [
+            MIME.JPEG,
+            MIME.PNG,
+            MIME.WEBP,
+            'image/jpg',
+          ]);
+        } catch (magicErr) {
+          throw new HttpError(400, magicErr.message || 'Only JPEG/PNG/WebP signatures are allowed', 'VALIDATION');
+        }
 
         const { rows: emp } = await query(
           `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,

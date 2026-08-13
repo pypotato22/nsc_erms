@@ -32,8 +32,10 @@ export async function writeAudit(entry) {
   }
 }
 
+/**
+ * Client IP for audit / rate limits.
+ * Uses Express `req.ip`, which only honors X-Forwarded-For when `trust proxy` is enabled.
+ */
 export function clientIp(req) {
-  const xf = req.headers['x-forwarded-for'];
-  if (typeof xf === 'string' && xf.length) return xf.split(',')[0].trim();
-  return req.socket?.remoteAddress || null;
+  return req.ip || req.socket?.remoteAddress || null;
 }
