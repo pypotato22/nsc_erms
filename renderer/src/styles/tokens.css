@@ -1,0 +1,60 @@
+:root {
+    /* Brand */
+    --blue-900: #062b6e;
+    --blue-700: #1048b8;
+    --blue-500: #2e6fff;
+    --blue-300: #7aaeff;
+    --cyan-500: #00b4d8;
+    --cyan-300: #90e0ef;
+    /* Surfaces */
+    --bg-base: #f4f6fb;
+    --bg-surface: #ffffff;
+    --bg-hover: #eef2ff;
+    --bg-subtle: #e8eeff;
+    --bg-row: #ffffff;
+    --bg-row-alt: #f5f7fc;
+    color-scheme: light;
+    /* Text */
+    --text-1: #0d1526;
+    --text-2: #4b5875;
+    --text-3: #8a95b0;
+    /* Borders */
+    --border: #dde3f0;
+    --border-strong: #bbc5df;
+    /* State */
+    --success: #0d9373;
+    --error: #c8253c;
+    --warn: #c47a09;
+    /* Layout */
+    --sidebar-w: 232px;
+    --titlebar-h: 36px;
+    --fs: 14px;
+    /* Effects */
+    --shadow-sm: 0 1px 3px rgba(6, 43, 110, .06), 0 1px 2px rgba(6, 43, 110, .04);
+    --shadow-md: 0 4px 16px rgba(6, 43, 110, .10), 0 1px 4px rgba(6, 43, 110, .06);
+    --shadow-lg: 0 12px 40px rgba(6, 43, 110, .14), 0 4px 12px rgba(6, 43, 110, .08);
+    --transition: background .22s ease, color .22s ease, border-color .22s ease;
+}
+
+/* Dark mode */
+body.dark {
+    --bg-base: #0c1022;
+    --bg-surface: #131929;
+    --bg-hover: #1a2340;
+    --bg-subtle: #1e2a47;
+    --bg-row: #131929;
+    --bg-row-alt: #0f1528;
+    --text-1: #dde5f8;
+    --text-2: #8899c4;
+    --text-3: #4d5e88;
+    --border: #1f2d4a;
+    --border-strong: #2d3f68;
+    --blue-900: #8ab4ff;
+    --blue-700: #6699ff;
+    --blue-500: #4d88ff;
+    --blue-300: #3366cc;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, .3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, .4);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+}

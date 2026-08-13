@@ -1,6 +1,8 @@
 # Frontend (SPA)
 
-Vanilla JavaScript SPA built with Vite. No React/Vue/TypeScript.
+Vite SPA in **strangler migration** to React (JSX). Hash routing and `js/api/*` stay; React islands mount into page hosts while `main.js` still boots.
+
+Phase marker: [`renderer/src/reactReady.js`](../renderer/src/reactReady.js) (`REACT_MIGRATION_PHASE`).
 
 ## Entry and build
 
@@ -13,17 +15,34 @@ Key files:
 
 - [`renderer/index.html`](../renderer/index.html) — shell: login, setup, pages, modals
 - [`renderer/src/main.js`](../renderer/src/main.js) — bootstrap, routing, session
-- [`renderer/src/style.css`](../renderer/src/style.css)
-- [`renderer/vite.config.js`](../renderer/vite.config.js)
+- [`renderer/src/style.css`](../renderer/src/style.css) — imports `styles/tokens.css` + `styles/global.css`
+- [`renderer/vite.config.js`](../renderer/vite.config.js) — `@vitejs/plugin-react`
 
 ## Module map
 
 ```text
-renderer/src/js/
-  api/           Thin HTTP clients (one file per domain)
-  components/    Screens, tables, modals, panels
-  utils/         authz, toast, liveSync, helpers, printDocument
+renderer/src/
+  features/      React pages + dense surfaces (profile, docs, PDS viewer, wizard)
+  layouts/       AppShell / Titlebar
+  shared/        mountIsland, toast, hooks
+  styles/        Design tokens + global CSS
+  js/
+    api/         Thin HTTP clients (shared by React + vanilla)
+    components/  Thin bridges → mountIsland
+    utils/       authz, toast bridge, liveSync, helpers, printDocument, pds helpers
 ```
+
+### React migration status
+
+| Area | Status |
+|------|--------|
+| Toast, login, change password, setup | React islands |
+| Titlebar | React |
+| Employees table (list/search/sort/pager) | React |
+| Positions, departments, export, backup, trash, archived, scan inbox | React pages + bridges |
+| Settings | React |
+| PDS wizard modal / profile panel / 201 File / PDS viewer | React islands |
+| Full HashRouter AppShell | Deferred; vanilla `navTo` still owns sidebar |
 
 ### API layer
 
@@ -33,82 +52,33 @@ All JSON calls go through [`api/client.js`](../renderer/src/js/api/client.js) ex
 
 | Component | Page hash / role |
 |-----------|------------------|
-| `login.js` | Login form |
-| `changePassword.js` | Forced / Settings password change |
-| `setupWizard.js` | First-run (superadmin) |
-| `employeeTable.js` / `employeeModal.js` | Employees |
-| `profilePanel.js` / `documents.js` | Profile + 201 File |
-| `departments.js` / `positions.js` | Org catalogs |
-| `scanInbox.js` | Scan intake |
-| `trash.js` | Document trash |
-| `archivedEmployees.js` | Soft-deleted employees |
-| `backup.js` / `export.js` | Tools |
-| `settings.js` | Prefs, users, audit |
-| `titlebar.js` | Electron chrome |
+| `login.js` → React | Login form |
+| `changePassword.js` → React | Forced / Settings password change |
+| `setupWizard.js` → React | First-run (superadmin) |
+| `employeeTable.js` → React | Employees list |
+| `employeeModal.js` → React | PDS add/edit wizard |
+| `profilePanel.js` / `documents.js` → React | Profile + 201 File |
+| `pdsViewer.js` → React | PDS preview / print / downloads |
+| `departments.js` / `positions.js` → React | Org catalogs |
+| `scanInbox.js` → React | Scan intake |
+| `trash.js` → React | Document trash |
+| `archivedEmployees.js` → React | Soft-deleted employees |
+| `backup.js` / `export.js` → React | Tools |
+| `settings.js` → React | Prefs, users, audit |
+| `titlebar.js` → React | Electron chrome |
 
 ## Routing
 
-Hash SPA — no client router library. Allowed pages in `ROUTE_PAGES`:
+Hash routes (`#employees`, `#departments`, …). `main.js` `navTo` / `applyRouteFromHash` still own sidebar activation and page host visibility.
 
-`employees`, `departments`, `positions`, `scan-inbox`, `trash`, `archived-employees`, `backup`, `export`, `settings`
+## Authz UI
 
-- URLs: `#employees`, `#scan-inbox`, …
-- Sidebar links: `a[data-page=…]`
-- `hashchange` + `navTo` toggle `.page` visibility and call `render*` for the page
-
-## App state
-
-Module-level object in `main.js` (not a global store framework):
-
-```js
-const App = {
-  currentUser: null,
-  setupCompleted: false,
-  searchQuery: '',
-  currentPage: 'employees',
-  prefs: { darkMode: false, fontSize: 14 },
-  // savePrefs / loadPrefs / applyPrefs
-};
-```
-
-| Data | Storage |
-|------|---------|
-| Session user | Memory + cookie session via `/auth/me` |
-| UI prefs | `localStorage` key `nsc_erms_prefs` (legacy fallback `edurecords_prefs`) |
-| Role for UI | `setCurrentRole` → `document.body.dataset.role` |
-
-Font sizes: `13 | 14 | 17 | 21` px via CSS variable `--fs`.
-
-## Boot sequence (`DOMContentLoaded`)
-
-1. Load/apply prefs; init desktop titlebar.
-2. Init all components (wire callbacks).
-3. Wire nav + search.
-4. Restore session (`me()`); handle password gate / setup wizard.
-5. `startLiveSync` when authenticated; stop on logout.
-
-## Authz in UI
-
-[`utils/authz.js`](../renderer/src/js/utils/authz.js): `canWrite()`, `canManageUsers()`, `isSuperadmin()`. Hide/disable controls in components accordingly. Server remains authoritative.
+`body[data-role=…]` plus `.needs-admin` / `.needs-write` hide controls. Role set via `setCurrentRole` after login/session restore.
 
 ## Live sync
 
-[`utils/liveSync.js`](../renderer/src/js/utils/liveSync.js) opens `EventSource('/api/v1/events/stream')`, debounces 300ms, skips own `actorUserId`, calls handlers to refresh lists/open panels. See [data-flow.md](data-flow.md).
+SSE via `liveSync.js`; React pages re-render when `main.js` handlers call their `render*Page` bridges.
 
-## Errors and feedback
+## Prefs
 
-- `ApiError` from failed fetches
-- Toasts via [`utils/toast.js`](../renderer/src/js/utils/toast.js)
-- Inline login errors; `confirm()` for destructive actions
-
-## Extending the SPA
-
-Typical pattern for a new feature page:
-
-1. Add route page id to `ROUTE_PAGES` + sidebar link + `#page-…` in `index.html`.
-2. Add `js/api/<resource>.js` wrappers.
-3. Add `js/components/<page>.js` with `init` / `render`.
-4. Wire in `main.js` (init + `navTo` branch).
-5. Add Express route/service if the API does not exist yet.
-
-See [development.md](development.md).
+`localStorage` key `nsc_erms_prefs` (font size, etc.). React `usePrefs` + Settings page share the same key.

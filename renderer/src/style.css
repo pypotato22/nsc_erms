@@ -1,86 +1,9 @@
-*,
-*::before,
-*::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-:root {
-    /* Brand */
-    --blue-900: #062b6e;
-    --blue-700: #1048b8;
-    --blue-500: #2e6fff;
-    --blue-300: #7aaeff;
-    --cyan-500: #00b4d8;
-    --cyan-300: #90e0ef;
-    /* Surfaces */
-    --bg-base: #f4f6fb;
-    --bg-surface: #ffffff;
-    --bg-hover: #eef2ff;
-    --bg-subtle: #e8eeff;
-    --bg-row: #ffffff;
-    --bg-row-alt: #f5f7fc;
-    color-scheme: light;
-    /* Text */
-    --text-1: #0d1526;
-    --text-2: #4b5875;
-    --text-3: #8a95b0;
-    /* Borders */
-    --border: #dde3f0;
-    --border-strong: #bbc5df;
-    /* State */
-    --success: #0d9373;
-    --error: #c8253c;
-    --warn: #c47a09;
-    /* Layout */
-    --sidebar-w: 232px;
-    --titlebar-h: 36px;
-    --fs: 14px;
-    /* Effects */
-    --shadow-sm: 0 1px 3px rgba(6, 43, 110, .06), 0 1px 2px rgba(6, 43, 110, .04);
-    --shadow-md: 0 4px 16px rgba(6, 43, 110, .10), 0 1px 4px rgba(6, 43, 110, .06);
-    --shadow-lg: 0 12px 40px rgba(6, 43, 110, .14), 0 4px 12px rgba(6, 43, 110, .08);
-    --transition: background .22s ease, color .22s ease, border-color .22s ease;
-}
-
-/* Dark mode */
-body.dark {
-    --bg-base: #0c1022;
-    --bg-surface: #131929;
-    --bg-hover: #1a2340;
-    --bg-subtle: #1e2a47;
-    --bg-row: #131929;
-    --bg-row-alt: #0f1528;
-    --text-1: #dde5f8;
-    --text-2: #8899c4;
-    --text-3: #4d5e88;
-    --border: #1f2d4a;
-    --border-strong: #2d3f68;
-    --blue-900: #8ab4ff;
-    --blue-700: #6699ff;
-    --blue-500: #4d88ff;
-    --blue-300: #3366cc;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, .3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, .4);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, .5);
-    color-scheme: dark;
-}
-
-html {
-    font-size: var(--fs);
-}
-
-body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 1rem;
-    background: var(--bg-base);
-    color: var(--text-1);
-    height: 100vh;
-    overflow: hidden;
-    transition: var(--transition);
-    -webkit-font-smoothing: antialiased;
-}
+/**
+ * Legacy monolithic stylesheet.
+ * Tokens + document reset live in styles/; this file keeps the rest of the
+ * vanilla UI until each screen peels its rules into CSS Modules.
+ */
+@import './styles/global.css';
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
@@ -106,8 +29,15 @@ body {
 ─────────────────────────────────────────────────────────────── */
 #app {
     display: flex;
-    height: 100vh;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    gap: 0;
     overflow: hidden;
+    background: var(--bg-base);
 }
 
 /* ── Desktop titlebar (Electron frameless) ───────────────────── */
@@ -123,7 +53,10 @@ body {
     user-select: none;
     flex-shrink: 0;
     z-index: 10000;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
 }
 
 body.desktop-shell #desktop-titlebar {
@@ -131,7 +64,8 @@ body.desktop-shell #desktop-titlebar {
 }
 
 body.desktop-shell #app {
-    height: calc(100vh - var(--titlebar-h));
+    top: var(--titlebar-h);
+    height: auto;
 }
 
 body.desktop-shell #login-screen,
@@ -189,13 +123,18 @@ body.desktop-shell #setup-screen {
 /* ── Sidebar ──────────────────────────────────────────────────── */
 #sidebar {
     width: var(--sidebar-w);
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
     background: var(--bg-surface);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    align-self: stretch;
     transition: var(--transition);
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     z-index: 10;
 }
 
@@ -387,9 +326,16 @@ body.dark .su-logout:hover {
 /* ── Main ─────────────────────────────────────────────────────── */
 #main {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: var(--bg-base);
 }
 
 /* ── Topbar ───────────────────────────────────────────────────── */
@@ -415,8 +361,9 @@ body.dark .su-logout:hover {
 
 #content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 26px;
+    padding: 20px 24px 24px;
 }
 
 /* ── Pages ────────────────────────────────────────────────────── */
@@ -427,6 +374,7 @@ body.dark .su-logout:hover {
 
 .page.active {
     display: block;
+    min-height: 100%;
 }
 
 @keyframes pageIn {

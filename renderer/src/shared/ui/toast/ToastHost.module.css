@@ -1,0 +1,72 @@
+/* ToastHost — mirrors legacy #toast look using design tokens */
+.host {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--bg-surface);
+    color: var(--text-1);
+    padding: 11px 22px;
+    border-radius: 10px;
+    font-size: 0.8571rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: min(480px, calc(100vw - 32px));
+}
+
+.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.msg {
+    flex: 1;
+}
+
+.action {
+    border: none;
+    background: transparent;
+    color: var(--blue-700);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.action:hover {
+    color: var(--blue-500);
+}
+
+.success {
+    border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+}
+
+.error {
+    border-color: color-mix(in srgb, var(--error) 45%, var(--border));
+}
+
+.info {
+    border-color: var(--border);
+}
+
+:global(body:not(.dark)) .success {
+    background: #ecfdf5;
+}
+
+:global(body:not(.dark)) .error {
+    background: #fef2f2;
+}
+
+:global(body:not(.dark)) .info {
+    background: var(--bg-surface);
+}

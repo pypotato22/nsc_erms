@@ -225,457 +225,32 @@
 
             <div id="content">
 
-                <!-- Employees Page -->
-                <div id="page-employees" class="page active">
-                    <div class="toolbar" style="justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div class="toolbar-actions">
-                            <button id="add-emp-btn" class="btn btn-primary needs-write" >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5">
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                                Add Employee
-                            </button>
-                            <select id="filter-dept">
-                                <option value="">All Departments</option>
-                            </select>
-                            <select id="filter-status">
-                                <option value="">All Status</option>
-                                <option>Active</option>
-                                <option>Inactive</option>
-                                <option>On Leave</option>
-                            </select>
-                        </div>
-                        <input type="search" id="search-input" class="dept-filter-input"
-                            placeholder="Search employees…" autocomplete="off" />
-                    </div>
-                    <div class="card">
-                        <table id="emp-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th class="th-sort" data-sort="name" role="columnheader" aria-sort="ascending" tabindex="0">
-                                        Employee <span class="sort-marker" aria-hidden="true">▲</span>
-                                    </th>
-                                    <th class="th-sort" data-sort="contact" role="columnheader" aria-sort="none" tabindex="0">
-                                        Contact <span class="sort-marker" aria-hidden="true"></span>
-                                    </th>
-                                    <th class="th-sort" data-sort="position" role="columnheader" aria-sort="none" tabindex="0">
-                                        Position <span class="sort-marker" aria-hidden="true"></span>
-                                    </th>
-                                    <th class="th-sort" data-sort="department" role="columnheader" aria-sort="none" tabindex="0">
-                                        Department <span class="sort-marker" aria-hidden="true"></span>
-                                    </th>
-                                    <th class="th-sort" data-sort="status" role="columnheader" aria-sort="none" tabindex="0">
-                                        Status <span class="sort-marker" aria-hidden="true"></span>
-                                    </th>
-                                    <th class="th-sort" data-sort="startDate" role="columnheader" aria-sort="none" tabindex="0">
-                                        Start date <span class="sort-marker" aria-hidden="true"></span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="emp-tbody"></tbody>
-                        </table>
-                        <div id="emp-empty" class="empty" style="display:none;">No employees found.</div>
-                        <div class="pager" id="emp-pager">
-                            <button type="button" class="btn btn-sm btn-edit" id="emp-prev">Prev</button>
-                            <span class="pager-info" id="emp-page-info">—</span>
-                            <button type="button" class="btn btn-sm btn-edit" id="emp-next">Next</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Employees Page (React island: EmployeesPage) -->
+                <div id="page-employees" class="page active"></div>
 
-                <!-- Departments Page -->
-                <div id="page-departments" class="page">
-                    <div class="toolbar" style="justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <button id="add-dept-btn" class="btn btn-primary needs-write" type="button">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Add Department
-                        </button>
-                        <input type="search" id="dept-filter" class="dept-filter-input"
-                            placeholder="Search departments…" autocomplete="off" />
-                    </div>
-                    <div class="card">
-                        <table id="dept-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Department</th>
-                                    <th>Employees</th>
-                                    <th>Positions</th>
-                                    <th class="needs-write">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dept-tbody"></tbody>
-                        </table>
-                        <div id="dept-empty" class="empty" style="display:none;">No departments yet.</div>
-                    </div>
-                </div>
+                <!-- Departments Page (React island) -->
+                <div id="page-departments" class="page"></div>
 
-                <!-- Positions Page -->
-                <div id="page-positions" class="page">
-                    <div class="toolbar" style="justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <button id="add-position-btn" class="btn btn-primary needs-write" type="button">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Add Position
-                        </button>
-                        <input type="search" id="pos-filter" class="dept-filter-input"
-                            placeholder="Search positions…" autocomplete="off" />
-                    </div>
-                    <p style="font-size:0.8571rem;color:var(--text-3);margin:-4px 0 14px;">
-                        Shared catalog of job titles. Link them to departments from the Departments page.
-                    </p>
-                    <div class="card">
-                        <table id="pos-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Position</th>
-                                    <th>Employees</th>
-                                    <th>Departments</th>
-                                    <th class="needs-write">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pos-tbody"></tbody>
-                        </table>
-                        <div id="pos-empty" class="empty" style="display:none;">No positions in the catalog yet.</div>
-                    </div>
-                </div>
+                <!-- Positions Page (React island) -->
+                <div id="page-positions" class="page"></div>
 
-                <!-- Scan Inbox Page -->
-                <div id="page-scan-inbox" class="page">
-                    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
-                        <div>
-                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
-                                Files dropped here (or sent by Epson scan-to-folder) wait for assignment to an employee’s Documents.
-                            </p>
-                            <p style="font-size:0.7857rem;color:var(--text-3);margin:0;font-family:'DM Mono',monospace;" id="scan-inbox-path">—</p>
-                        </div>
-                        <button type="button" id="scan-inbox-refresh" class="btn btn-sm btn-edit">Refresh</button>
-                    </div>
-                    <div class="card" style="padding:8px 14px;">
-                        <div class="bk-list" id="scan-inbox-list"></div>
-                    </div>
-                </div>
+                <!-- Scan Inbox Page (React island) -->
+                <div id="page-scan-inbox" class="page"></div>
 
-                <!-- Trash Page -->
-                <div id="page-trash" class="page">
-                    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
-                        <div>
-                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
-                                Soft-deleted documents. Restore to put them back, or delete forever to remove the file from disk.
-                            </p>
-                        </div>
-                        <button type="button" id="trash-refresh" class="btn btn-sm btn-edit">Refresh</button>
-                    </div>
-                    <div class="card" style="padding:8px 14px;">
-                        <div class="bk-list" id="trash-list"></div>
-                        <div class="pager" id="trash-pager">
-                            <button type="button" class="btn btn-sm btn-edit" id="trash-prev">Prev</button>
-                            <span class="pager-info" id="trash-page-info">—</span>
-                            <button type="button" class="btn btn-sm btn-edit" id="trash-next">Next</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Trash Page (React island) -->
+                <div id="page-trash" class="page"></div>
 
-                <!-- Archived Employees Page -->
-                <div id="page-archived-employees" class="page">
-                    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
-                        <div>
-                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
-                                Soft-deleted employees. Restore returns them to the Employees list as Inactive, or delete forever to remove records and files.
-                            </p>
-                        </div>
-                        <button type="button" id="archived-employees-refresh" class="btn btn-sm btn-edit">Refresh</button>
-                    </div>
-                    <div class="card" style="padding:8px 14px;">
-                        <div class="bk-list" id="archived-employees-list"></div>
-                        <div class="pager" id="archived-employees-pager">
-                            <button type="button" class="btn btn-sm btn-edit" id="archived-employees-prev">Prev</button>
-                            <span class="pager-info" id="archived-employees-page-info">—</span>
-                            <button type="button" class="btn btn-sm btn-edit" id="archived-employees-next">Next</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Archived Employees Page (React island) -->
+                <div id="page-archived-employees" class="page"></div>
 
-                <!-- Backup Page -->
-                <div id="page-backup" class="page">
-                    <div class="backup-grid">
-                        <div class="backup-card needs-admin">
-                            <h4>
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)"
-                                    stroke-width="2">
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                    <polyline points="17 21 17 13 7 13 7 21" />
-                                </svg>
-                                Create Backup
-                            </h4>
-                            <p>
-                                Snapshot PostgreSQL (<code>pg_dump</code>) and a copy of <code>FILES_ROOT</code>
-                                into a zip stored on the server.
-                            </p>
-                            <p style="font-size:0.7857rem;color:var(--text-3);margin:0 0 12px;font-family:'DM Mono',monospace;"
-                                id="backup-root-path">—</p>
-                            <button id="create-backup-btn" class="btn btn-primary"
-                                style="width:100%;justify-content:center;" type="button">
-                                Create Backup Now
-                            </button>
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-                                <h4 style="margin:0;font-size:0.9286rem;">Saved backups</h4>
-                                <button type="button" id="backup-refresh" class="btn btn-sm btn-edit">Refresh</button>
-                            </div>
-                            <div class="bk-list" id="bk-list"></div>
-                        </div>
-                        <div class="backup-card">
-                            <h4>
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)"
-                                    stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
-                                Restore (ops)
-                            </h4>
-                            <p>
-                                In-app restore is disabled on purpose — restoring overwrites live data.
-                                Use a maintenance window and the steps in each archive’s <code>README.txt</code>:
-                            </p>
-                            <ol style="font-size:0.8571rem;color:var(--text-2);margin:0;padding-left:18px;line-height:1.6;">
-                                <li>Stop the NSC-ERMS API</li>
-                                <li>Restore <code>database.sql</code> with <code>psql</code></li>
-                                <li>Replace <code>FILES_ROOT</code> with the archive’s <code>files/</code> folder</li>
-                                <li>Start the API and verify login</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
+                <!-- Backup Page (React island) -->
+                <div id="page-backup" class="page"></div>
 
-                <!-- Export Page -->
-                <div id="page-export" class="page">
-                    <p style="font-size:0.9286rem;color:var(--text-2);margin-bottom:22px;">Export all employee records to
-                        your preferred format.</p>
-                    <div class="export-grid">
-                        <div id="export-csv-btn" class="export-card">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#0d9373" stroke-width="1.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="8" y1="13" x2="16" y2="13" />
-                                <line x1="8" y1="17" x2="16" y2="17" />
-                            </svg>
-                            <h4>Export to CSV</h4>
-                            <p>Open in Excel or Google Sheets</p>
-                        </div>
-                        <div id="export-html-btn" class="export-card">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#2e6fff" stroke-width="1.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <path d="M8 13h8" />
-                                <path d="M8 17h5" />
-                            </svg>
-                            <h4>Download HTML report</h4>
-                            <p>Self-contained file · open and print to PDF</p>
-                        </div>
-                        <div id="export-pdf-btn" class="export-card">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#c8253c" stroke-width="1.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <path d="M9 13h1a2 2 0 0 1 0 4H9v-4z" />
-                                <path d="M14 13h2" />
-                                <path d="M14 17h2" />
-                            </svg>
-                            <h4>Print / Save as PDF</h4>
-                            <p>Opens print dialog · choose “Save as PDF”</p>
-                        </div>
-                    </div>
-                    <p style="font-size:0.8571rem;color:var(--text-3);margin-top:16px;max-width:640px;">
-                        <strong>PDF tip:</strong> Use <em>Print / Save as PDF</em> and pick “Microsoft Print to PDF” or
-                        “Save as PDF” in the dialog. Or download the HTML report, open it in your browser, then
-                        Ctrl+P → Save as PDF.
-                    </p>
-                </div>
+                <!-- Export Page (React island) -->
+                <div id="page-export" class="page"></div>
 
-                <!-- Settings Page -->
-                <div id="page-settings" class="page">
-                    <div class="settings-wrap">
-                        <section class="settings-section">
-                            <h3 class="settings-section-title">Your preferences</h3>
-                            <div class="settings-section-grid">
-                                <div class="settings-card">
-                                    <h4>Appearance</h4>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">Dark Mode</div>
-                                            <div class="sl-desc">Switch to dark theme</div>
-                                        </div>
-                                        <div class="toggle" id="dark-toggle">
-                                            <div class="knob"></div>
-                                        </div>
-                                    </div>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">Font Size</div>
-                                            <div class="sl-desc">Adjust text size across the app</div>
-                                        </div>
-                                        <div class="fs-btns">
-                                            <button data-size="13" class="fs-btn">S</button>
-                                            <button data-size="14" class="fs-btn active">M</button>
-                                            <button data-size="17" class="fs-btn">L</button>
-                                            <button data-size="21" class="fs-btn">XL</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="settings-card">
-                                    <h4>PDS</h4>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">HTML print preview</div>
-                                            <div class="sl-desc">When off, printing waits for the official PDF instead of allowing HTML preview printing</div>
-                                        </div>
-                                        <div class="toggle on" id="pds-html-print-toggle">
-                                            <div class="knob"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="settings-card">
-                                    <h4>Account</h4>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">Password</div>
-                                            <div class="sl-desc">Update your sign-in password</div>
-                                        </div>
-                                        <button type="button" id="settings-change-pw" class="btn btn-sm btn-edit">Change password</button>
-                                    </div>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">Version</div>
-                                        </div>
-                                        <span class="settings-mono-value">v1.0.0</span>
-                                    </div>
-                                    <div class="setting-row">
-                                        <div class="sl">
-                                            <div class="sl-title">Records</div>
-                                            <div class="sl-desc" id="db-stats">—</div>
-                                        </div>
-                                        <button id="refresh" class="btn btn-sm btn-edit">Refresh</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="settings-section needs-admin">
-                            <h3 class="settings-section-title">Administration</h3>
-                            <div class="settings-section-stack">
-                                <div class="settings-card">
-                                    <h4>User Accounts</h4>
-                                    <table class="user-table" id="user-table"></table>
-                                    <button id="add-user-btn" class="btn btn-primary" style="margin-top:16px">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2.5">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg>
-                                        Add User
-                                    </button>
-                                </div>
-                                <div class="settings-card">
-                                    <h4>Audit log</h4>
-                                    <div class="audit-toolbar">
-                                        <input type="search" id="audit-q" placeholder="Search action, user, IP…" />
-                                        <select id="audit-action">
-                                            <option value="">All actions</option>
-                                            <option value="auth.login">Login</option>
-                                            <option value="auth.login_failed">Login failed</option>
-                                            <option value="auth.logout">Logout</option>
-                                            <option value="auth.change_password">Password change</option>
-                                            <option value="employee.create">Employee create</option>
-                                            <option value="employee.update">Employee update</option>
-                                            <option value="employee.delete">Employee delete</option>
-                                            <option value="employee.restore">Employee restore</option>
-                                            <option value="employee.permanent_delete">Employee permanent delete</option>
-                                            <option value="document.upload">Document upload</option>
-                                            <option value="document.soft_delete">Document trash</option>
-                                            <option value="document.restore">Document restore</option>
-                                            <option value="document.permanent_delete">Document purge</option>
-                                            <option value="backup.create">Backup create</option>
-                                            <option value="settings.storage_update">Storage paths update</option>
-                                            <option value="user.create">User create</option>
-                                            <option value="user.update">User update</option>
-                                            <option value="user.password_reset">User password reset</option>
-                                            <option value="user.delete">User delete</option>
-                                            <option value="position.create">Position create</option>
-                                            <option value="position.update">Position update</option>
-                                            <option value="position.delete">Position delete</option>
-                                        </select>
-                                        <button type="button" id="audit-refresh" class="btn btn-sm btn-edit">Refresh</button>
-                                    </div>
-                                    <div id="audit-list" class="audit-list"></div>
-                                    <div class="pager">
-                                        <button type="button" class="btn btn-sm btn-edit" id="audit-prev">Prev</button>
-                                        <span class="pager-info" id="audit-page-info">—</span>
-                                        <button type="button" class="btn btn-sm btn-edit" id="audit-next">Next</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="settings-section needs-superadmin">
-                            <h3 class="settings-section-title">Server storage</h3>
-                            <div class="settings-section-stack">
-                                <div class="settings-card">
-                                    <h4>Storage paths</h4>
-                                    <p class="settings-hint">
-                                        Absolute paths on the <strong>server</strong> machine. Changing a path does not move
-                                        existing files — new scans/backups use the new folder from then on.
-                                        <span class="desktop-only-hint" hidden>
-                                            Browse picks a folder on <em>this</em> computer — use it only when the desktop app
-                                            runs on the same machine as the API.
-                                        </span>
-                                    </p>
-                                    <div class="storage-paths-form">
-                                        <div class="fg full">
-                                            <label for="storage-files-root">Files root (read-only)</label>
-                                            <input id="storage-files-root" type="text" readonly />
-                                        </div>
-                                        <div class="fg full">
-                                            <label for="storage-scan-inbox">Scan inbox path</label>
-                                            <div class="path-field-row">
-                                                <input id="storage-scan-inbox" type="text"
-                                                    placeholder="C:\nsc-erms-files\inbox" autocomplete="off" />
-                                                <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
-                                                    id="browse-scan-inbox" hidden>Browse…</button>
-                                            </div>
-                                            <span class="field-hint" id="storage-scan-source"></span>
-                                        </div>
-                                        <div class="fg full">
-                                            <label for="storage-backups-root">Backup path</label>
-                                            <div class="path-field-row">
-                                                <input id="storage-backups-root" type="text"
-                                                    placeholder="C:\nsc-erms-backups" autocomplete="off" />
-                                                <button type="button" class="btn btn-sm btn-edit desktop-folder-btn"
-                                                    id="browse-backups-root" hidden>Browse…</button>
-                                            </div>
-                                            <span class="field-hint" id="storage-backups-source"></span>
-                                        </div>
-                                        <p class="login-err" id="storage-paths-err" hidden></p>
-                                        <div class="storage-paths-actions">
-                                            <button type="button" id="storage-paths-validate" class="btn btn-cancel">Test paths</button>
-                                            <button type="button" id="storage-paths-save" class="btn btn-primary">Save paths</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                </div>
+                <!-- Settings Page (React island) -->
+                <div id="page-settings" class="page"></div>
 
             </div><!-- /content -->
         </div><!-- /main -->
@@ -683,43 +258,10 @@
 
     <!-- ── PROFILE PANEL ───────────────────────────────────────────── -->
     <div id="panel-backdrop"></div>
-    <div id="panel">
-        <div class="panel-hdr" id="panel-header"></div>
-        <div class="panel-tabs">
-            <button data-tab="info" class="tab-btn active">Personal Info</button>
-            <button data-tab="employment" class="tab-btn">Employment</button>
-            <button data-tab="docs" class="tab-btn">Documents</button>
-        </div>
-        <div class="panel-body">
-            <div id="tab-info" class="tab-pane active"></div>
-            <div id="tab-employment" class="tab-pane"></div>
-            <div id="tab-docs" class="tab-pane"></div>
-        </div>
-    </div>
+    <div id="panel"></div>
 
     <!-- ── EMPLOYEE MODAL ──────────────────────────────────────────── -->
-    <div id="emp-overlay" class="overlay">
-        <div class="modal pds-wizard-modal">
-            <button id="close-emp-modal" class="modal-close" type="button">×</button>
-            <div class="pds-wizard-header">
-                <div>
-                    <p class="pds-form-eyebrow">CS Form No. 212 · Revised 2025</p>
-                    <h3 id="emp-modal-title">Add Employee</h3>
-                    <p class="pds-wizard-sub">Personal Data Sheet — complete each section, then set NSC assignment.</p>
-                </div>
-            </div>
-            <nav id="pds-stepper" class="pds-stepper" aria-label="PDS steps"></nav>
-            <div id="pds-wizard-body" class="pds-wizard-body"></div>
-            <div class="modal-actions pds-wizard-actions">
-                <button id="emp-modal-cancel" class="btn btn-cancel" type="button">Cancel</button>
-                <div class="pds-nav-btns">
-                    <button id="pds-back" class="btn btn-cancel" type="button">Back</button>
-                    <button id="pds-next" class="btn btn-primary" type="button">Next</button>
-                    <button id="emp-modal-save" class="btn btn-primary" type="button" hidden>Save Employee</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="emp-overlay" class="overlay"></div>
 
     <!-- ── DEPT MODAL ──────────────────────────────────────────────── -->
     <div id="dept-overlay" class="overlay">
@@ -816,27 +358,11 @@
     <div id="print-area"></div>
     <div id="toast"></div>
 
-    <!-- ── VIEW PDS (CS Form 212) ───────────────────────────────────── -->
-    <div id="pds-view-overlay" class="overlay">
-        <div class="modal pds-view-modal">
-            <button id="pds-view-close" class="modal-close" type="button" aria-label="Close">×</button>
-            <div class="pds-view-top">
-                <div>
-                    <p class="pds-form-eyebrow">CS Form No. 212 · Revised 2025</p>
-                    <h3 id="pds-view-title">Personal Data Sheet</h3>
-                </div>
-            </div>
-            <div id="pds-view-body" class="pds-view-body"></div>
-            <div class="modal-actions pds-view-actions">
-                <button id="pds-view-cancel" class="btn btn-cancel" type="button">Close</button>
-                <div class="pds-nav-btns">
-                    <button id="pds-view-download-excel" class="btn btn-cancel" type="button">Download Excel</button>
-                    <button id="pds-view-download-pdf" class="btn btn-cancel" type="button" hidden>Download PDF</button>
-                    <button id="pds-view-print" class="btn btn-primary" type="button">Print</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- React strangler islands mount here (Phase 2+). Hidden until used. -->
+    <div id="react-root" hidden></div>
+
+    <!-- ── VIEW PDS (CS Form 212) — React island host ─────────────── -->
+    <div id="pds-view-overlay" class="overlay"></div>
 
     <!-- ── SCAN INBOX ASSIGN ───────────────────────────────────────── -->
     <div id="scan-assign-overlay" class="overlay">
@@ -880,100 +406,11 @@
         </div>
     </div>
 
-    <!-- ── DOCUMENT UPLOAD ─────────────────────────────────────────── -->
-    <div id="doc-overlay" class="overlay">
-        <div class="modal doc-upload-modal">
-            <button id="close-doc-modal" class="modal-close" type="button">×</button>
-            <h3>Upload document</h3>
-            <p class="modal-lead">
-                PDF, Word, or image. Each upload for the same type becomes a new version.
-            </p>
-            <div class="doc-upload-form">
-                <div class="fg">
-                    <label for="doc-type">Document type *</label>
-                    <select id="doc-type"></select>
-                    <div id="doc-type-hint" class="field-hint" hidden></div>
-                </div>
-                <div class="fg">
-                    <label>File *</label>
-                    <div class="doc-file-picker">
-                        <input type="file" id="doc-file" class="doc-file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                        <button type="button" id="doc-file-browse" class="fab fab-upload">Choose file</button>
-                        <div id="doc-file-meta" class="doc-file-selected" hidden></div>
-                    </div>
-                    <div class="field-hint">Accepted: PDF, DOC, DOCX, JPG, PNG</div>
-                </div>
-                <div class="fg">
-                    <label for="doc-display-name">Display name *</label>
-                    <input type="text" id="doc-display-name" placeholder="e.g. NBI Clearance 2026" />
-                    <div class="field-hint">Shown in the Documents list</div>
-                </div>
-                <div class="form-grid">
-                    <div class="fg">
-                        <label for="doc-issued">Issued date</label>
-                        <input type="date" id="doc-issued" />
-                    </div>
-                    <div class="fg">
-                        <label for="doc-expiry">Expiry date</label>
-                        <input type="date" id="doc-expiry" />
-                    </div>
-                </div>
-                <div class="fg">
-                    <label for="doc-remarks">Remarks</label>
-                    <textarea id="doc-remarks" rows="2" placeholder="Optional notes"></textarea>
-                </div>
-            </div>
-            <div class="login-err" id="doc-err"></div>
-            <div class="modal-actions">
-                <button id="doc-modal-cancel" class="btn btn-cancel" type="button">Cancel</button>
-                <button id="doc-modal-save" class="btn btn-primary" type="button">Upload</button>
-            </div>
-        </div>
-    </div>
+    <!-- ── DOCUMENT UPLOAD (React island host) ─────────────────────── -->
+    <div id="doc-overlay" class="overlay"></div>
 
-    <!-- ── ATTACH FROM SCAN INBOX (profile) ────────────────────────── -->
-    <div id="doc-inbox-overlay" class="overlay">
-        <div class="modal" style="width:520px;">
-            <button id="close-doc-inbox-modal" class="modal-close" type="button">×</button>
-            <h3>Attach from Scan Inbox</h3>
-            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
-                Assign a pending scanned file to
-                <strong id="doc-inbox-employee-name">this employee</strong>’s Documents.
-            </p>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Inbox file *</label>
-                <select id="doc-inbox-file"></select>
-                <div id="doc-inbox-file-meta" style="font-size:0.7857rem;color:var(--text-3);margin-top:6px;"></div>
-            </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Display name *</label>
-                <input type="text" id="doc-inbox-display" placeholder="e.g. NBI Clearance 2026" />
-            </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Document type *</label>
-                <select id="doc-inbox-type"></select>
-            </div>
-            <div class="form-grid" style="margin-bottom:4px;">
-                <div class="fg">
-                    <label>Issued date</label>
-                    <input type="date" id="doc-inbox-issued" />
-                </div>
-                <div class="fg">
-                    <label>Expiry date</label>
-                    <input type="date" id="doc-inbox-expiry" />
-                </div>
-            </div>
-            <div class="fg" style="margin-bottom:13px;">
-                <label>Remarks</label>
-                <textarea id="doc-inbox-remarks" placeholder="Optional notes"></textarea>
-            </div>
-            <div class="login-err" id="doc-inbox-err" style="margin-top:4px;"></div>
-            <div class="modal-actions">
-                <button id="doc-inbox-cancel" class="btn btn-cancel" type="button">Cancel</button>
-                <button id="doc-inbox-save" class="btn btn-primary" type="button">Attach to Documents</button>
-            </div>
-        </div>
-    </div>
+    <!-- ── ATTACH FROM SCAN INBOX (React island host) ──────────────── -->
+    <div id="doc-inbox-overlay" class="overlay"></div>
 
     <!-- -- CHANGE PASSWORD ------------------------------------------- -->
     <div id="pw-overlay" class="overlay">

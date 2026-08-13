@@ -1,0 +1,13 @@
+/* Titlebar uses legacy #desktop-titlebar / .tb-* rules from style.css.
+   Module keeps the host visible when React mounts. */
+.bar {
+    display: flex;
+}
+
+.drag {
+    flex: 1;
+}
+
+.controls {
+    display: flex;
+}

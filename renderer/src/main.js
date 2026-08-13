@@ -1,8 +1,16 @@
+import { createElement } from 'react';
 import { getEl, getInitials } from './js/utils/helpers.js';
 import { showToast } from './js/utils/toast.js';
+import { mountIsland } from './shared/lib/mountIsland.js';
+import { ToastHost } from './shared/ui/toast/ToastHost.jsx';
+import { REACT_MIGRATION_PHASE } from './reactReady.js';
 
 import { me, logout as apiLogout } from './js/api/auth.js';
 import { ApiError } from './js/api/client.js';
+
+if (typeof console !== 'undefined' && console.debug) {
+  console.debug(`[nsc-erms] react migration phase ${REACT_MIGRATION_PHASE} (vanilla boot)`);
+}
 
 import { initLogin, normalizeUser } from './js/components/login.js';
 import { initDesktopTitlebar } from './js/components/titlebar.js';
@@ -19,9 +27,15 @@ import {
   renderEmployeeTable,
   refreshFilterDropdowns,
   resetEmployeePage,
+  clearEmployeeSearch,
 } from './js/components/employeeTable.js';
 import { initEmployeeModal } from './js/components/employeeModal.js';
-import { initProfilePanel, closeProfilePanel, refreshOpenProfileForLiveSync } from './js/components/profilePanel.js';
+import {
+  initProfilePanel,
+  closeProfilePanel,
+  refreshOpenProfileForLiveSync,
+  refreshPanelHeader,
+} from './js/components/profilePanel.js';
 import { initPdsViewer } from './js/components/pdsViewer.js';
 import { initDocuments, refreshOpenDocsTabForLiveSync } from './js/components/documents.js';
 import { initScanInbox, renderScanInboxPage } from './js/components/scanInbox.js';
@@ -99,17 +113,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   App.applyPrefs();
   initDesktopTitlebar();
 
+  // React islands: toast host (portals to body)
+  document.getElementById('toast')?.remove();
+  mountIsland('react-root', createElement(ToastHost));
+
   const getSearchQuery = () => App.searchQuery;
 
   initLogin(handleLogin);
   initChangePassword(afterPasswordChanged);
   initPasswordToggles();
   initSetupWizard(afterSetupComplete);
-  initEmployeeTable();
+  initEmployeeTable((q) => {
+    App.searchQuery = q;
+  });
   initEmployeeModal(getSearchQuery);
   initProfilePanel(getSearchQuery);
   initPdsViewer(() => App.prefs);
-  initDocuments();
+  initDocuments(() => {
+    refreshPanelHeader().catch(() => {});
+  });
   initScanInbox();
   initTrash();
   initArchivedEmployees(getSearchQuery);
@@ -124,7 +146,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initExport();
 
   wireNavigation();
-  wireSearch();
   wireLogout();
   window.addEventListener('hashchange', () => {
     if (getEl('app').style.display === 'flex') applyRouteFromHash();
@@ -328,8 +349,8 @@ function navTo(pageName, linkEl, updateHash = true) {
   const clone = linkEl.cloneNode(true);
   clone.querySelectorAll('.nav-badge,.nav-section-label').forEach((e) => e.remove());
   getEl('page-title').textContent = clone.textContent.trim();
-  getEl('search-input').value = '';
   App.searchQuery = '';
+  clearEmployeeSearch();
   resetEmployeePage();
 
   closeProfilePanel();
@@ -343,22 +364,6 @@ function navTo(pageName, linkEl, updateHash = true) {
   if (pageName === 'employees') {
     renderEmployeeTable().catch(() => {});
   }
-}
-
-function wireSearch() {
-  let timer = null;
-  getEl('search-input').addEventListener('input', (e) => {
-    App.searchQuery = e.target.value;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      resetEmployeePage();
-      renderEmployeeTable(App.searchQuery).catch(showLoadError);
-    }, 250);
-  });
-}
-
-function showLoadError(err) {
-  showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
 }
 
 function wireLogout() {
