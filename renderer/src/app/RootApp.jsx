@@ -13,6 +13,7 @@ import { showToast } from '../js/utils/toast.js';
 import { setCurrentRole, clearCurrentRole } from '../js/utils/authz.js';
 import { startLiveSync, stopLiveSync } from '../js/utils/liveSync.js';
 import { emitAppEvent } from '../shared/lib/appEvents.js';
+import { IDLE_LOGOUT_MS, useIdleLogout } from '../shared/hooks/useIdleLogout.js';
 
 import { initEmployeeModal } from '../js/components/employeeModal.js';
 import {
@@ -186,8 +187,8 @@ export function RootApp() {
     setScreen('app');
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    if (!confirm('Log out?')) return;
+  const signOut = useCallback(async ({ confirmFirst = false, message = 'Signed out.' } = {}) => {
+    if (confirmFirst && !confirm('Log out?')) return;
     try {
       await apiLogout();
     } catch {
@@ -202,8 +203,16 @@ export function RootApp() {
     setUser(null);
     setLoginNotice('');
     setScreen('login');
-    showToast('Signed out.', 'info');
+    showToast(message, 'info');
   }, []);
+
+  const handleLogout = useCallback(() => signOut({ confirmFirst: true }), [signOut]);
+
+  useIdleLogout({
+    enabled: screen === 'app' || screen === 'password' || screen === 'setup',
+    timeoutMs: IDLE_LOGOUT_MS,
+    onIdle: () => signOut({ message: 'Signed out due to inactivity.' }),
+  });
 
   const handlePageChange = useCallback((page) => {
     pageRef.current = page;

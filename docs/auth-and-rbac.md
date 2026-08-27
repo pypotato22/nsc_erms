@@ -34,6 +34,8 @@ From [`server/src/app.js`](../server/src/app.js):
 | `maxAge` | 8 hours |
 | Secret | `SESSION_SECRET` from `.env` |
 
+The SPA also signs the user out after **15 minutes of no mouse/keyboard activity** (client idle timer in [`useIdleLogout`](../renderer/src/shared/hooks/useIdleLogout.js)). That idle timer does not change the 8-hour cookie `maxAge`.
+
 `trust proxy` is enabled (`1`) for correct client IPs behind reverse proxies.
 
 Production requires a strong `SESSION_SECRET` (length ≥ 32, not a known default). See [configuration.md](configuration.md).
