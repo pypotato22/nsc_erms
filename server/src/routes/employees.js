@@ -10,6 +10,7 @@ import {
   absoluteFromRelative,
   writeEmployeePhoto,
   writeEmployeeSignature,
+  writeEmployeeThumbmark,
   removeStoredFile,
   removeEmployeeStorage,
   rollbackAbsoluteFile,
@@ -56,6 +57,7 @@ const EMPLOYEE_LIST_SQL = `
     e.address,
     e.profile_picture_path,
     e.signature_path,
+    e.thumbmark_path,
     e.remarks,
     e.pds,
     ea.id AS assignment_id,
@@ -107,6 +109,10 @@ function mapEmployee(row, { includePds = true } = {}) {
     signaturePath: row.signature_path,
     signatureUrl: row.signature_path
       ? `/api/v1/employees/${row.id}/signature`
+      : null,
+    thumbmarkPath: row.thumbmark_path,
+    thumbmarkUrl: row.thumbmark_path
+      ? `/api/v1/employees/${row.id}/thumbmark`
       : null,
     remarks: row.remarks,
     assignment: row.assignment_id
@@ -225,6 +231,7 @@ employeesRouter.get('/', async (req, res, next) => {
     e.address,
     e.profile_picture_path,
     e.signature_path,
+    e.thumbmark_path,
     e.remarks,
     ea.id AS assignment_id,
     ea.start_date,
@@ -831,7 +838,7 @@ employeesRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
 employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
   try {
     const { rows: empRows } = await query(
-      `SELECT id, employee_no, first_name, last_name, profile_picture_path, signature_path
+      `SELECT id, employee_no, first_name, last_name, profile_picture_path, signature_path, thumbmark_path
        FROM employees
        WHERE id = $1 AND deleted_at IS NOT NULL`,
       [req.params.id],
@@ -866,11 +873,13 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
     let fileRemovedCount = 0;
     let photoRemoved = false;
     let signatureRemoved = false;
+    let thumbmarkRemoved = false;
     try {
       storageRemoved = await removeEmployeeStorage(emp.id);
       fileRemovedCount = docs.length;
       photoRemoved = Boolean(emp.profile_picture_path);
       signatureRemoved = Boolean(emp.signature_path);
+      thumbmarkRemoved = Boolean(emp.thumbmark_path);
     } catch (err) {
       console.error('Failed to remove employee storage dir:', err.message);
       for (const doc of docs) {
@@ -894,6 +903,13 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
       } catch (e) {
         console.error('Failed to remove employee signature:', e.message);
       }
+      try {
+        if (emp.thumbmark_path) {
+          thumbmarkRemoved = await removeStoredFile(emp.thumbmark_path);
+        }
+      } catch (e) {
+        console.error('Failed to remove employee thumbmark:', e.message);
+      }
     }
 
     await writeAudit({
@@ -908,6 +924,7 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
         fileRemovedCount,
         photoRemoved,
         signatureRemoved,
+        thumbmarkRemoved,
         storageRemoved,
       },
       ip: clientIp(req),
@@ -925,6 +942,7 @@ employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
       fileRemovedCount,
       photoRemoved,
       signatureRemoved,
+      thumbmarkRemoved,
       storageRemoved,
     });
   } catch (err) {
@@ -1155,6 +1173,123 @@ employeesRouter.get('/:id/signature', async (req, res, next) => {
       );
       await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Signature missing on disk', 'NOT_FOUND');
+    }
+    res.sendFile(abs);
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.post('/:id/thumbmark', writeRoles, async (req, res, next) => {
+  try {
+    const maxBytes = await getMaxUploadBytes();
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: maxBytes },
+      fileFilter(_req, file, cb) {
+        if (file.mimetype !== 'image/png') {
+          return cb(new Error('Only PNG thumbmarks are allowed'));
+        }
+        cb(null, true);
+      },
+    }).single('thumbmark');
+
+    upload(req, res, async (err) => {
+      try {
+        if (err) {
+          throw new HttpError(400, err.message || 'Upload failed', 'VALIDATION');
+        }
+        if (!req.file) throw new HttpError(400, 'thumbmark is required', 'VALIDATION');
+
+        try {
+          assertAllowedBuffer(req.file.buffer, [MIME.PNG]);
+        } catch (magicErr) {
+          throw new HttpError(400, magicErr.message || 'Only PNG thumbmarks are allowed', 'VALIDATION');
+        }
+
+        const { rows: emp } = await query(
+          `SELECT id, thumbmark_path FROM employees WHERE id = $1 AND deleted_at IS NULL`,
+          [req.params.id],
+        );
+        if (!emp[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+        const previousPath = emp[0].thumbmark_path;
+
+        const saved = await writeEmployeeThumbmark({
+          employeeId: req.params.id,
+          buffer: req.file.buffer,
+        });
+
+        let rows;
+        try {
+          ({ rows } = await query(
+            `UPDATE employees
+             SET thumbmark_path = $2, updated_at = NOW(), updated_by = $3
+             WHERE id = $1
+             RETURNING id, thumbmark_path`,
+            [req.params.id, saved.relativePath, req.session.userId],
+          ));
+        } catch (dbErr) {
+          rollbackAbsoluteFile(saved.absolutePath);
+          throw dbErr;
+        }
+
+        if (previousPath && previousPath !== saved.relativePath) {
+          try {
+            await removeStoredFile(previousPath);
+          } catch (removeErr) {
+            console.error('Failed to remove previous thumbmark:', removeErr.message);
+          }
+        }
+
+        await writeAudit({
+          actorUserId: req.session.userId,
+          action: 'employee.thumbmark_upload',
+          entityType: 'employee',
+          entityId: req.params.id,
+          ip: clientIp(req),
+        });
+
+        await invalidatePdsPdfCache(req.params.id);
+
+        publish('employees.changed', {
+          action: 'thumbmark',
+          employeeId: req.params.id,
+          actorUserId: req.session.userId,
+        });
+        res.json({
+          employeeId: rows[0].id,
+          thumbmarkPath: rows[0].thumbmark_path,
+          thumbmarkUrl: `/api/v1/employees/${rows[0].id}/thumbmark`,
+        });
+      } catch (e) {
+        next(e);
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.get('/:id/thumbmark', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT thumbmark_path FROM employees WHERE id = $1`,
+      [req.params.id],
+    );
+    const pathRel = rows[0]?.thumbmark_path;
+    if (!pathRel) throw new HttpError(404, 'No thumbmark', 'NOT_FOUND');
+
+    const root = await getFilesRoot();
+    const abs = absoluteFromRelative(root, pathRel);
+    if (!fs.existsSync(abs)) {
+      await query(
+        `UPDATE employees
+         SET thumbmark_path = NULL, updated_at = NOW()
+         WHERE id = $1 AND thumbmark_path IS NOT NULL`,
+        [req.params.id],
+      );
+      await invalidatePdsPdfCache(req.params.id);
+      throw new HttpError(404, 'Thumbmark missing on disk', 'NOT_FOUND');
     }
     res.sendFile(abs);
   } catch (err) {

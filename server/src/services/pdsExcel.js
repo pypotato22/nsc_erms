@@ -5,6 +5,7 @@ import { coercePdsFromRow, normalizePds } from './pds.js';
 import { applyPdsFormCheckboxes } from './pdsExcelCheckboxes.js';
 import { embedC4PhotoFromEmployee } from './pdsExcelPhoto.js';
 import { embedC4SignatureFromEmployee } from './pdsExcelSignature.js';
+import { embedC4ThumbmarkFromEmployee } from './pdsExcelThumbmark.js';
 import { addContinuationSheets } from './pdsExcelContinuation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -169,6 +170,9 @@ export async function buildFilledPdsWorkbook(employee, options = {}) {
   }
   if (!options.skipSignature && employee?.signaturePath) {
     out = await embedC4SignatureFromEmployee(out, employee);
+  }
+  if (!options.skipThumbmark && employee?.thumbmarkPath) {
+    out = await embedC4ThumbmarkFromEmployee(out, employee);
   }
   return out;
 }

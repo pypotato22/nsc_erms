@@ -27,6 +27,32 @@ function SignaturePreview({ src }) {
   );
 }
 
+function ThumbmarkPreview({ src }) {
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
+
+  if (!src || broken) {
+    return (
+      <div id="thumb-preview" className="sig-placeholder">
+        No right thumb captured
+      </div>
+    );
+  }
+  return (
+    <img
+      id="thumb-preview"
+      className="pds-thumbmark"
+      src={src}
+      alt="Right thumbmark"
+      data-emp-thumbmark=""
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 function QBlock({ label, value, onChange }) {
   const item = value || { answer: '', details: '' };
   return (
@@ -106,6 +132,11 @@ export function OtherStep({
   patchDeclaration,
   signatureSrc,
   onPickSignature,
+  thumbmarkSrc,
+  thumbNote,
+  capturingThumb,
+  onCaptureThumb,
+  onCancelThumb,
 }) {
   const o = other;
   const [listText, setListText] = useState(() => ({
@@ -311,26 +342,54 @@ export function OtherStep({
             onChange={(value) => patchDeclaration({ dateAccomplished: value })}
           />
         </div>
-        <div className="sig-wrap needs-write">
-          <SignaturePreview src={signatureSrc} />
-          <label className="pic-lbl" htmlFor="sig-input">
-            Upload Digital Signature
-          </label>
-          <input
-            type="file"
-            id="sig-input"
-            accept="image/png,image/jpeg,image/webp,image/*"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onPickSignature(file);
-              e.target.value = '';
-            }}
-          />
+        <div className="pds-sign-row needs-write">
+          <div className="sig-wrap">
+            <SignaturePreview src={signatureSrc} />
+            <label className="pic-lbl" htmlFor="sig-input">
+              Upload Digital Signature
+            </label>
+            <input
+              type="file"
+              id="sig-input"
+              accept="image/png,image/jpeg,image/webp,image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onPickSignature(file);
+                e.target.value = '';
+              }}
+            />
+          </div>
+          <div className="sig-wrap">
+            <ThumbmarkPreview src={thumbmarkSrc} />
+            <div className="sig-actions">
+              <button
+                type="button"
+                className="pic-lbl"
+                onClick={onCaptureThumb}
+                disabled={capturingThumb}
+              >
+                {capturingThumb ? 'Waiting for right thumb…' : 'Capture right thumb'}
+              </button>
+              {capturingThumb ? (
+                <button type="button" className="pic-lbl" onClick={onCancelThumb}>
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+            {thumbNote ? (
+              <p
+                className={`thumb-note${/^(Right thumb captured|Place your right thumb)/.test(thumbNote) ? '' : ' error'}`}
+              >
+                {thumbNote}
+              </p>
+            ) : null}
+          </div>
         </div>
         <p className="pds-hint">
           Upload a signature image (PNG with transparent background preferred). It is placed in the
-          PDS “Sign inside the box” area. Right thumbmark remains blank for wet-ink signing.
+          PDS “Sign inside the box” area. The right thumb is captured from the U.are.U 4500 and
+          printed in that box.
         </p>
       </div>
     </>

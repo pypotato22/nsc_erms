@@ -13,6 +13,7 @@ import { buildFilledPdsWorkbook } from '../services/pdsExcel.js';
 import { C1_CTRL, C4_YN, isCtrlChecked, isVmlChecked } from '../services/pdsExcelCheckboxes.js';
 import { embedC4Photo } from '../services/pdsExcelPhoto.js';
 import { embedC4Signature } from '../services/pdsExcelSignature.js';
+import { embedC4Thumbmark } from '../services/pdsExcelThumbmark.js';
 import { normalizePds } from '../services/pds.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -512,6 +513,33 @@ async function main() {
     expect: 'Employee Photo',
     actual: drawingSig.includes('Employee Photo') ? 'Employee Photo' : 'missing',
     ok: drawingSig.includes('Employee Photo'),
+  });
+
+  const withThumb = await embedC4Thumbmark(withSignature, iconBuf);
+  const zipThumb = await JSZip.loadAsync(withThumb);
+  const drawingThumb = await zipThumb.file('xl/drawings/drawing2.xml').async('string');
+  checks.push({
+    sheet: 'C4',
+    addr: 'thumbmark.media',
+    expect: 'image3.png',
+    actual: zipThumb.file('xl/media/image3.png') ? 'image3.png' : 'missing',
+    ok: Boolean(zipThumb.file('xl/media/image3.png')),
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'thumbmark.anchor',
+    expect: '99003',
+    actual: drawingThumb.includes('id="99003"') ? '99003' : 'missing',
+    ok: drawingThumb.includes('name="Employee Thumbmark"') && drawingThumb.includes('id="99003"'),
+  });
+  checks.push({
+    sheet: 'C4',
+    addr: 'thumbmark.kept',
+    expect: 'photo+signature',
+    actual: drawingThumb.includes('Employee Photo') && drawingThumb.includes('Employee Signature')
+      ? 'photo+signature'
+      : 'missing',
+    ok: drawingThumb.includes('Employee Photo') && drawingThumb.includes('Employee Signature'),
   });
 
   const failed = checks.filter((c) => !c.ok);

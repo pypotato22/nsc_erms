@@ -350,6 +350,14 @@ Streams the photo file (auth required). Soft-deleted employees allowed.
 
 Streams the signature file (auth required). Soft-deleted employees allowed.
 
+### `POST /employees/:id/thumbmark`
+
+**Write.** Multipart field `thumbmark` (PNG). Updates `thumbmark_path`. The desktop app captures this image from the U.are.U 4500. Embedded into PDS C4 right-thumb box (K58:L64). Invalidates PDS PDF cache. Replaces the previous file when the stored path changes.
+
+### `GET /employees/:id/thumbmark`
+
+Streams the thumbmark file (auth required). Soft-deleted employees allowed.
+
 SSE: `employees.changed` with `action` like `created` / updates / deletes.
 
 ---

@@ -87,6 +87,18 @@ export async function writeEmployeeSignature({ employeeId, originalName, buffer 
   return { root, storedName, relativePath: relative, absolutePath: abs };
 }
 
+export async function writeEmployeeThumbmark({ employeeId, buffer }) {
+  const { root, dir } = await ensureEmployeePhotoDir(employeeId);
+  const storedName = 'thumbmark.png';
+  const abs = path.join(dir, storedName);
+  fs.writeFileSync(abs, buffer);
+  const relative = path
+    .relative(root, abs)
+    .split(path.sep)
+    .join('/');
+  return { root, storedName, relativePath: relative, absolutePath: abs };
+}
+
 /** Permanently remove a file under FILES_ROOT. Returns true if deleted. */
 export async function removeStoredFile(relativePath) {
   if (!relativePath) return false;
@@ -112,7 +124,7 @@ export function rollbackAbsoluteFile(absolutePath) {
 }
 
 /**
- * Remove an employee's storage directory (photo, signature + documents folder).
+ * Remove an employee's storage directory (photo, signature, thumbmark + documents folder).
  * Safe if the directory is missing.
  */
 export async function removeEmployeeStorage(employeeId) {

@@ -23,4 +23,8 @@ contextBridge.exposeInMainWorld('nscDesktop', {
    * Path is on this desktop machine — only use when Electron runs on the API host.
    */
   pickFolder: (options) => ipcRenderer.invoke('dialog:pick-folder', options || {}),
+  captureRightThumb: () => ipcRenderer.invoke('thumb:capture'),
+  cancelRightThumb: () => ipcRenderer.invoke('thumb:cancel'),
+  prepareThumbCapture: () => ipcRenderer.invoke('thumb:prepare'),
+  restoreThumbCapture: () => ipcRenderer.invoke('thumb:restore'),
 });

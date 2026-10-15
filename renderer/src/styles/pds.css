@@ -569,6 +569,50 @@ body.dark .pds-view-banner-loading {
     padding: 6px 10px;
 }
 
+.pds-thumbmark {
+    width: 120px;
+    height: 150px;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 6px;
+}
+
+.pds-sign-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.sig-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+button.pic-lbl {
+    font-family: inherit;
+}
+
+button.pic-lbl:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.thumb-note {
+    margin: 0;
+    max-width: 280px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text-2);
+}
+
+.thumb-note.error {
+    color: var(--error);
+}
+
 .sig-placeholder {
     min-width: 200px;
     min-height: 56px;

@@ -11,6 +11,8 @@ Source of truth: SQL migrations under [`db/migrations/`](../db/migrations/). App
 | [`003_employee_no_nullable.sql`](../db/migrations/003_employee_no_nullable.sql) | `employees.employee_no` nullable (UNIQUE allows many NULLs) |
 | [`004_employee_pds.sql`](../db/migrations/004_employee_pds.sql) | `employees.pds` JSONB (CS Form 212 payload) |
 | [`005_employee_signature.sql`](../db/migrations/005_employee_signature.sql) | `employees.signature_path` for PDS digital signature |
+| [`006_document_version_unique.sql`](../db/migrations/006_document_version_unique.sql) | Unique document version |
+| [`007_employee_thumbmark.sql`](../db/migrations/007_employee_thumbmark.sql) | `employees.thumbmark_path` for the PDS right thumbmark |
 
 Tracking table: `schema_migrations (id TEXT PK, applied_at)`.
 
@@ -77,6 +79,7 @@ erDiagram
 | `birth_date`, contact, `email`, `address` | |
 | `profile_picture_path` | Relative path under FILES_ROOT |
 | `signature_path` | Relative path for digital signature (PDS C4 embed) |
+| `thumbmark_path` | Relative path for the right-thumb PNG (PDS C4 embed) |
 | `pds` | JSONB CS Form 212 payload (migration 004) |
 | `is_archived`, `deleted_at` | Soft-delete / archive |
 | `created_by`, `updated_by` | FK → `users` |

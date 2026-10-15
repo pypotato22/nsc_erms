@@ -189,6 +189,48 @@ ipcMain.handle('window:is-maximized', (event) => {
 
 ipcMain.handle('boot:get-state', () => bootState);
 
+ipcMain.handle('thumb:prepare', () => {
+  const win = BrowserWindow.getFocusedWindow() || mainWindow;
+  if (win && !win.isDestroyed()) win.blur();
+  return { ok: true };
+});
+
+ipcMain.handle('thumb:restore', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.focus();
+  return { ok: true };
+});
+
+ipcMain.handle('thumb:capture', async () => {
+  if (process.platform !== 'win32') {
+    return { ok: false, message: 'Right-thumb capture needs the U.are.U 4500 on Windows.' };
+  }
+  try {
+    const { captureRightThumb } = await import('./fingerprint/session.js');
+    const result = await captureRightThumb();
+    if (result?.ok && result.image?.png) {
+      return { ok: true, pngBase64: result.image.png };
+    }
+    return {
+      ok: false,
+      message: result?.message || 'The right thumb was not captured.',
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err?.message || 'The fingerprint reader could not be opened.',
+    };
+  }
+});
+
+ipcMain.handle('thumb:cancel', async () => {
+  try {
+    const { cancelCapture } = await import('./fingerprint/session.js');
+    return { ok: true, canceled: Boolean(cancelCapture()) };
+  } catch (err) {
+    return { ok: false, message: err?.message || 'Could not cancel the capture.' };
+  }
+});
+
 ipcMain.handle('dialog:pick-folder', async (event, options = {}) => {
   const win = windowFromEvent(event);
   const title =

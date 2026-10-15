@@ -8,8 +8,12 @@ import {
 import {
   employeePhotoUrl,
   employeeSignatureUrl,
+  employeeThumbmarkUrl,
   uploadEmployeePhoto,
   uploadEmployeeSignature,
+  uploadEmployeeThumbmark,
+  captureFingerprintImage,
+  cancelFingerprintImage,
 } from '../../js/api/documents.js';
 import { ApiError } from '../../js/api/client.js';
 import { getInitials, getToday } from '../../js/utils/helpers.js';
@@ -105,26 +109,47 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [signatureFile, setSignatureFile] = useState(null);
   const [signatureUrl, setSignatureUrl] = useState(null);
+  const [thumbmarkFile, setThumbmarkFile] = useState(null);
+  const [thumbmarkUrl, setThumbmarkUrl] = useState(null);
+  const [capturingThumb, setCapturingThumb] = useState(false);
+  const [thumbNote, setThumbNote] = useState('');
 
   const bodyRef = useRef(null);
   const openToken = useRef(0);
   const photoUrlRef = useRef(null);
   const signatureUrlRef = useRef(null);
+  const thumbmarkUrlRef = useRef(null);
+  const thumbmarkFileRef = useRef(null);
+  const captureGen = useRef(0);
+  const capturingRef = useRef(false);
 
   const revokePreviews = useCallback(() => {
     if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
     if (signatureUrlRef.current) URL.revokeObjectURL(signatureUrlRef.current);
+    if (thumbmarkUrlRef.current?.startsWith('blob:')) URL.revokeObjectURL(thumbmarkUrlRef.current);
     photoUrlRef.current = null;
     signatureUrlRef.current = null;
+    thumbmarkUrlRef.current = null;
+    thumbmarkFileRef.current = null;
     setPhotoUrl(null);
     setSignatureUrl(null);
+    setThumbmarkUrl(null);
     setPhotoFile(null);
     setSignatureFile(null);
+    setThumbmarkFile(null);
+    setThumbNote('');
   }, []);
 
   useEffect(() => {
     if (!open) {
       openToken.current += 1;
+      if (capturingRef.current) {
+        captureGen.current += 1;
+        capturingRef.current = false;
+        cancelFingerprintImage().catch(() => {});
+        window.nscDesktop?.cancelRightThumb?.();
+      }
+      setCapturingThumb(false);
       revokePreviews();
       setStep(1);
       setEmployee(null);
@@ -294,6 +319,63 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
     setSignatureUrl(url);
   }
 
+  function fileFromPngBase64(pngBase64) {
+    const clean = String(pngBase64).replace(/^data:image\/png;base64,/, '').replace(/\s/g, '');
+    const binary = atob(clean);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    if (bytes.length < 8 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
+      throw new Error('The reader did not return a thumb picture.');
+    }
+    return { file: new File([bytes], 'thumbmark.png', { type: 'image/png' }), dataUrl: `data:image/png;base64,${clean}` };
+  }
+
+  function applyThumbPng(pngBase64) {
+    const { file, dataUrl } = fileFromPngBase64(pngBase64);
+    if (thumbmarkUrlRef.current?.startsWith('blob:')) URL.revokeObjectURL(thumbmarkUrlRef.current);
+    thumbmarkUrlRef.current = dataUrl;
+    thumbmarkFileRef.current = file;
+    setThumbmarkFile(file);
+    setThumbmarkUrl(dataUrl);
+  }
+
+  async function captureThumb() {
+    const gen = captureGen.current;
+    capturingRef.current = true;
+    setThumbNote('Place your right thumb on the reader. Leave the prompt in front.');
+    setCapturingThumb(true);
+    try {
+      await window.nscDesktop?.prepareThumbCapture?.();
+      const result = await captureFingerprintImage();
+      if (gen !== captureGen.current) return;
+      if (!result?.ok || !result.pngBase64) {
+        const message = result?.message || 'The right thumb was not captured.';
+        setThumbNote(message);
+        showToast(message, 'error');
+        return;
+      }
+      applyThumbPng(result.pngBase64);
+      setThumbNote('Right thumb captured. Save the employee to keep it.');
+    } catch (err) {
+      if (gen !== captureGen.current) return;
+      const message = err?.message || 'The right thumb was not captured.';
+      setThumbNote(message);
+      showToast(message, 'error');
+    } finally {
+      if (gen === captureGen.current) capturingRef.current = false;
+      await window.nscDesktop?.restoreThumbCapture?.();
+      if (gen === captureGen.current) setCapturingThumb(false);
+    }
+  }
+
+  function cancelThumb() {
+    captureGen.current += 1;
+    capturingRef.current = false;
+    setCapturingThumb(false);
+    setThumbNote('Capture canceled.');
+    cancelFingerprintImage().catch(() => {});
+  }
+
   const photoSrc =
     photoUrl ||
     (employee && (employee.photoUrl || employee.profilePicturePath)
@@ -304,6 +386,12 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
     signatureUrl ||
     (employee && (employee.signatureUrl || employee.signaturePath)
       ? employee.signatureUrl || employeeSignatureUrl(employee.id)
+      : null);
+
+  const thumbmarkSrc =
+    thumbmarkUrl ||
+    (employee && (employee.thumbmarkUrl || employee.thumbmarkPath)
+      ? employee.thumbmarkUrl || employeeThumbmarkUrl(employee.id)
       : null);
 
   const photoInitials =
@@ -382,11 +470,16 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
       }
       if (photoFile && employeeId) await uploadEmployeePhoto(employeeId, photoFile);
       if (signatureFile && employeeId) await uploadEmployeeSignature(employeeId, signatureFile);
+      const thumbFile = thumbmarkFileRef.current;
+      if (thumbFile && employeeId) await uploadEmployeeThumbmark(employeeId, thumbFile);
       onClose();
       emitAppEvent('employees.refresh', { q: getSearchQuery?.() || '' });
       emitAppEvent('employees.refreshFilters');
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Save failed.', 'error');
+      showToast(
+        err instanceof ApiError ? err.message : (err?.message || 'Save failed.'),
+        'error',
+      );
     } finally {
       setSaving(false);
     }
@@ -440,6 +533,11 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
             patchDeclaration={patchDeclaration}
             signatureSrc={signatureSrc}
             onPickSignature={pickSignature}
+            thumbmarkSrc={thumbmarkSrc}
+            thumbNote={thumbNote}
+            capturingThumb={capturingThumb}
+            onCaptureThumb={captureThumb}
+            onCancelThumb={cancelThumb}
           />
         );
       case 9:

@@ -38,7 +38,11 @@
     "files": [
       "electron/**/*",
       "!electron/config.json",
-      "package.json"
+      "package.json",
+      "node_modules/koffi/**/*"
+    ],
+    "asarUnpack": [
+      "**/node_modules/koffi/**"
     ],
     "extraFiles": [
       {
@@ -67,6 +71,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "koffi": "^2.16.3"
   },
   "devDependencies": {
     "electron": "^37.2.0",

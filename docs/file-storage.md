@@ -14,6 +14,7 @@ FILES_ROOT/
     {employeeId}/
       photo.jpg          # or .png — profile photo
       signature.png      # or .jpg — digital signature for PDS C4
+      thumbmark.png      # right thumb from the U.are.U 4500
       documents/
         {documentId}_{sanitizedOriginalName}
   inbox/                 # default scan inbox when SCAN_INBOX_PATH empty
@@ -30,6 +31,7 @@ Relative paths stored in DB (e.g. `employees/01…/documents/01…_file.pdf`) us
 | Document | `writeEmployeeDocument` | Stored name `{ulid}_{safeOriginal}` |
 | Photo | `writeEmployeePhoto` | Fixed `photo{ext}` under employee dir |
 | Signature | `writeEmployeeSignature` | Fixed `signature{ext}` under employee dir; embedded in PDS C4 F60:I62 |
+| Thumbmark | `writeEmployeeThumbmark` | Fixed `thumbmark.png` under employee dir; embedded in PDS C4 K58:L64 |
 | Size | `MAX_UPLOAD_BYTES` / `max_upload_bytes` | Default **31457280** (30 MB); DB check matches |
 | MIME (documents) | Route allowlist | PDF, JPEG/PNG, DOC, DOCX |
 

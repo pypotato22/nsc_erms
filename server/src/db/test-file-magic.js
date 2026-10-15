@@ -116,9 +116,10 @@ test('documents route uses assertAllowedBuffer + stores sniffed mime', () => {
   assert(/mimeType,\s*\n\s*versionNumber/.test(docs) || docs.includes('mimeType,'));
 });
 
-test('employees photo/signature use assertAllowedBuffer', () => {
+test('employees photo/signature/thumbmark use assertAllowedBuffer', () => {
   assert(emps.includes('assertAllowedBuffer'));
-  assert((emps.match(/assertAllowedBuffer/g) || []).length >= 2);
+  assert((emps.match(/assertAllowedBuffer/g) || []).length >= 3);
+  assert(emps.includes('/:id/thumbmark'));
 });
 
 test('scan claim uses assertAllowedBuffer', () => {

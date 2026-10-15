@@ -59,6 +59,9 @@ async function main() {
   const signature = demoEmployee({ signaturePath: 'employees/x/signature.png' });
   ok('key changes with signature path', pdsPdfCacheKey(signature) !== key1);
 
+  const thumbmark = demoEmployee({ thumbmarkPath: 'employees/x/thumbmark.png' });
+  ok('key changes with thumbmark path', pdsPdfCacheKey(thumbmark) !== key1);
+
   await invalidatePdsPdfCache(emp.id);
   const miss = await getCachedPdsPdf(emp);
   ok('miss before put', miss === null);

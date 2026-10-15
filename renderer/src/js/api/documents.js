@@ -102,3 +102,32 @@ export async function uploadEmployeeSignature(employeeId, file) {
 export function employeeSignatureUrl(employeeId) {
   return `/api/v1/employees/${employeeId}/signature`;
 }
+
+export async function uploadEmployeeThumbmark(employeeId, file) {
+  const form = new FormData();
+  form.append('thumbmark', file);
+  const res = await fetch(`/api/v1/employees/${employeeId}/thumbmark`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data?.error?.message || 'Thumbmark upload failed');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+export function employeeThumbmarkUrl(employeeId) {
+  return `/api/v1/employees/${employeeId}/thumbmark`;
+}
+
+export function captureFingerprintImage() {
+  return api('/fingerprint/capture', { method: 'POST', body: '{}' });
+}
+
+export function cancelFingerprintImage() {
+  return api('/fingerprint/cancel', { method: 'POST', body: '{}' });
+}

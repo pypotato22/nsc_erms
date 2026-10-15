@@ -325,7 +325,11 @@ export function buildCs212Html(employee, opts = {}) {
         </td>
         <td class="cs212-sig-cell">
           <div class="cs212-sig-label">Right Thumbmark</div>
-          <div class="cs212-sig-area"></div>
+          <div class="cs212-sig-area">${
+            employee?.thumbmarkUrl || employee?.thumbmarkPath
+              ? `<img src="${escapeHtml(employee.thumbmarkUrl || `/api/v1/employees/${encodeURIComponent(employee.id)}/thumbmark`)}" alt="Right thumbmark" class="cs212-signature-img"/>`
+              : ''
+          }</div>
         </td>
         <td class="cs212-sig-cell">
           <div class="cs212-sig-label">PHOTO</div>

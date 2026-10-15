@@ -23,6 +23,7 @@ import { backupsRouter } from './routes/backups.js';
 import { settingsRouter } from './routes/settings.js';
 import { auditRouter } from './routes/audit.js';
 import { eventsRouter } from './routes/events.js';
+import { fingerprintRouter } from './routes/fingerprint.js';
 
 const PgSession = connectPgSimple(session);
 
@@ -87,6 +88,7 @@ export function createApp() {
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/users', usersRouter);
   app.use('/api/v1/events', eventsRouter);
+  app.use('/api/v1/fingerprint', fingerprintRouter);
 
   // Prefer renderer/dist (Vite build); falls back to renderer/ when dist is missing
   app.use(express.static(config.clientDist, { index: false }));
