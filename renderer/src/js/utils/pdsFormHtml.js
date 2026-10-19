@@ -8,7 +8,7 @@ function v(value) {
 
 function plain(value) {
   const s = value == null ? '' : String(value).trim();
-  return s || 'N/A';
+  return s ? escapeHtml(s) : 'N/A';
 }
 
 function fmtDate(value) {

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getFilesRoot } from './settings.js';
+import { MIME, sniffMime } from './fileMagic.js';
 
 const SAFE_NAME = /[^a-zA-Z0-9._-]+/g;
 
@@ -61,10 +62,38 @@ export async function writeEmployeeDocument({
   return { root, storedName, relativePath: relative, absolutePath: abs };
 }
 
-export async function writeEmployeePhoto({ employeeId, originalName, buffer }) {
+const IMAGE_EXT_BY_MIME = {
+  [MIME.JPEG]: '.jpg',
+  [MIME.PNG]: '.png',
+  [MIME.WEBP]: '.webp',
+};
+
+/** Stored image extension comes from the sniffed type, never the uploaded file name. */
+function imageExt(mimeType) {
+  const ext = IMAGE_EXT_BY_MIME[mimeType];
+  if (!ext) throw new Error('Unsupported image type');
+  return ext;
+}
+
+/**
+ * Image MIME type from a stored file's magic bytes, or null when it is not an image.
+ * Used to serve photos/signatures with a fixed Content-Type instead of one from the extension.
+ */
+export function sniffStoredImageMime(absPath) {
+  const fd = fs.openSync(absPath, 'r');
+  try {
+    const head = Buffer.alloc(16);
+    const read = fs.readSync(fd, head, 0, head.length, 0);
+    const mime = sniffMime(head.subarray(0, read));
+    return IMAGE_EXT_BY_MIME[mime] ? mime : null;
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+export async function writeEmployeePhoto({ employeeId, mimeType, buffer }) {
   const { root, dir } = await ensureEmployeePhotoDir(employeeId);
-  const ext = path.extname(sanitizeFileName(originalName)) || '.jpg';
-  const storedName = `photo${ext}`;
+  const storedName = `photo${imageExt(mimeType)}`;
   const abs = path.join(dir, storedName);
   fs.writeFileSync(abs, buffer);
   const relative = path
@@ -74,10 +103,9 @@ export async function writeEmployeePhoto({ employeeId, originalName, buffer }) {
   return { root, storedName, relativePath: relative, absolutePath: abs };
 }
 
-export async function writeEmployeeSignature({ employeeId, originalName, buffer }) {
+export async function writeEmployeeSignature({ employeeId, mimeType, buffer }) {
   const { root, dir } = await ensureEmployeePhotoDir(employeeId);
-  const ext = path.extname(sanitizeFileName(originalName)) || '.png';
-  const storedName = `signature${ext}`;
+  const storedName = `signature${imageExt(mimeType)}`;
   const abs = path.join(dir, storedName);
   fs.writeFileSync(abs, buffer);
   const relative = path

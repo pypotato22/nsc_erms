@@ -14,6 +14,7 @@ import {
   removeStoredFile,
   removeEmployeeStorage,
   rollbackAbsoluteFile,
+  sniffStoredImageMime,
 } from '../services/files.js';
 import { assertAllowedBuffer, MIME } from '../services/fileMagic.js';
 import { writeAudit, clientIp } from '../services/audit.js';
@@ -137,6 +138,17 @@ function mapEmployee(row, { includePds = true } = {}) {
     mapped.pds = coercePdsFromRow(row.pds, row);
   }
   return mapped;
+}
+
+/**
+ * Serve a stored photo/signature/thumbmark with a Content-Type from its magic bytes.
+ * sendFile would otherwise pick the type from the extension (e.g. a legacy photo.html).
+ */
+function sendStoredImage(res, abs) {
+  const mimeType = sniffStoredImageMime(abs);
+  if (!mimeType) throw new HttpError(404, 'Stored image is not a valid image', 'NOT_FOUND');
+  res.type(mimeType);
+  res.sendFile(abs);
 }
 
 async function getEmployeeRow(id) {
@@ -971,8 +983,9 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
         }
         if (!req.file) throw new HttpError(400, 'photo is required', 'VALIDATION');
 
+        let mimeType;
         try {
-          assertAllowedBuffer(req.file.buffer, [
+          mimeType = assertAllowedBuffer(req.file.buffer, [
             MIME.JPEG,
             MIME.PNG,
             MIME.WEBP,
@@ -990,7 +1003,7 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
 
         const saved = await writeEmployeePhoto({
           employeeId: req.params.id,
-          originalName: req.file.originalname,
+          mimeType,
           buffer: req.file.buffer,
         });
 
@@ -1060,7 +1073,7 @@ employeesRouter.get('/:id/photo', async (req, res, next) => {
       await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Photo missing on disk', 'NOT_FOUND');
     }
-    res.sendFile(abs);
+    sendStoredImage(res, abs);
   } catch (err) {
     next(err);
   }
@@ -1087,8 +1100,9 @@ employeesRouter.post('/:id/signature', writeRoles, async (req, res, next) => {
         }
         if (!req.file) throw new HttpError(400, 'signature is required', 'VALIDATION');
 
+        let mimeType;
         try {
-          assertAllowedBuffer(req.file.buffer, [
+          mimeType = assertAllowedBuffer(req.file.buffer, [
             MIME.JPEG,
             MIME.PNG,
             MIME.WEBP,
@@ -1106,7 +1120,7 @@ employeesRouter.post('/:id/signature', writeRoles, async (req, res, next) => {
 
         const saved = await writeEmployeeSignature({
           employeeId: req.params.id,
-          originalName: req.file.originalname,
+          mimeType,
           buffer: req.file.buffer,
         });
 
@@ -1174,7 +1188,7 @@ employeesRouter.get('/:id/signature', async (req, res, next) => {
       await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Signature missing on disk', 'NOT_FOUND');
     }
-    res.sendFile(abs);
+    sendStoredImage(res, abs);
   } catch (err) {
     next(err);
   }
@@ -1291,7 +1305,7 @@ employeesRouter.get('/:id/thumbmark', async (req, res, next) => {
       await invalidatePdsPdfCache(req.params.id);
       throw new HttpError(404, 'Thumbmark missing on disk', 'NOT_FOUND');
     }
-    res.sendFile(abs);
+    sendStoredImage(res, abs);
   } catch (err) {
     next(err);
   }
