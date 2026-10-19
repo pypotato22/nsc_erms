@@ -445,3 +445,177 @@ body.desktop-shell .settings-hint .desktop-only-hint {
     font-size: 0.8571rem;
     color: var(--red-500, #d64545);
 }
+
+/* ── Scan inbox: preview, rename, options ───────────────────── */
+.scan-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    align-items: flex-end;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.scan-options .fg { min-width: 220px; }
+
+.scan-options .scan-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8571rem;
+    color: var(--text-2);
+    padding-bottom: 8px;
+}
+
+.scan-name-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.scan-name-btn:hover { text-decoration: underline; }
+
+.scan-preview-modal {
+    width: min(1100px, 94vw);
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+}
+
+.scan-preview-modal .scan-preview-title {
+    margin: 0 0 2px;
+    max-width: calc(100% - 48px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+}
+
+.scan-preview-body {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    height: 60vh;
+    margin: 4px 0 12px;
+}
+
+.scan-viewer {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-base);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.scan-viewer-frame {
+    flex: 1;
+    width: 100%;
+    border: 0;
+    background: #fff;
+}
+
+.scan-viewer-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.scan-viewer-zoom {
+    min-width: 44px;
+    text-align: center;
+    font-size: 0.7857rem;
+    color: var(--text-2);
+}
+
+.scan-viewer-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 8px;
+}
+
+.scan-viewer-scroll img { display: block; }
+
+.scan-viewer-msg {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    font-size: 0.8571rem;
+    color: var(--text-2);
+}
+
+.scan-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 34px;
+    height: 54px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-base);
+    color: var(--text-1);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: .9;
+}
+
+.scan-nav:disabled { opacity: .3; cursor: default; }
+.scan-nav-prev { left: 8px; }
+.scan-nav-next { right: 8px; }
+
+.scan-assign-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.scan-assign-body .scan-viewer { height: 56vh; min-height: 360px; }
+
+@media (max-width: 900px) {
+    .scan-assign-body { grid-template-columns: minmax(0, 1fr); }
+}
+
+.scan-rename-overlay { z-index: 300; }
+
+.scan-rename-field {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.scan-rename-field input { flex: 1; min-width: 0; }
+
+.scan-rename-ext {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-base);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8571rem;
+    color: var(--text-2);
+}

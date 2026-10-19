@@ -228,3 +228,80 @@ export async function restoreClaimedInboxFile({ absolutePath, originalName }) {
   const { inbox } = await ensureInboxDirs();
   return restoreClaimedToInbox(inbox, absolutePath, originalName);
 }
+
+// ── Preview + rename ────────────────────────────────────────────────────────
+
+const MAX_STEM_LENGTH = 150;
+const ILLEGAL_NAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/;
+const RESERVED_WINDOWS_NAMES = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i;
+
+function validationError(message) {
+  return Object.assign(new Error(message), { code: 'VALIDATION' });
+}
+
+/**
+ * Validate a user-supplied new name and return the final inbox file name.
+ * The original extension is always kept (a typed extension that matches is
+ * ignored; the extension of a scan can't be changed from the UI).
+ */
+export function buildRenamedInboxName(currentName, requestedName) {
+  const ext = path.extname(currentName);
+  let stem = String(requestedName ?? '').trim();
+  if (ext && stem.toLowerCase().endsWith(ext.toLowerCase())) {
+    stem = stem.slice(0, -ext.length);
+  }
+  // Windows silently strips trailing dots/spaces; reject instead of surprising users.
+  stem = stem.replace(/[. ]+$/, '').trim();
+
+  if (!stem) throw validationError('File name is required');
+  if (stem.length > MAX_STEM_LENGTH) {
+    throw validationError(`File name must be ${MAX_STEM_LENGTH} characters or fewer`);
+  }
+  if (ILLEGAL_NAME_CHARS.test(stem)) {
+    throw validationError('File name cannot contain  < > : " / \\ | ? *');
+  }
+  if (RESERVED_WINDOWS_NAMES.test(stem)) {
+    throw validationError('That file name is reserved by Windows');
+  }
+  return `${stem}${ext}`;
+}
+
+/** Rename a file inside the inbox. Returns { name } (the new file name). */
+export async function renameInboxFile(fileName, requestedName) {
+  const { inbox } = await ensureInboxDirs();
+  const { base, abs } = resolveInboxFile(inbox, fileName);
+  if (!fs.existsSync(abs)) {
+    throw Object.assign(new Error('File not found'), { code: 'NOT_FOUND' });
+  }
+  if (!isStableFile(abs)) {
+    throw validationError('File is still being written; wait a moment and try again');
+  }
+
+  const nextName = buildRenamedInboxName(base, requestedName);
+  if (nextName === base) return { name: base, unchanged: true };
+
+  const { abs: destAbs } = resolveInboxFile(inbox, nextName);
+  const caseOnlyChange = nextName.toLowerCase() === base.toLowerCase();
+  if (!caseOnlyChange && fs.existsSync(destAbs)) {
+    throw Object.assign(new Error(`A file named "${nextName}" already exists in the inbox`), {
+      code: 'EXISTS',
+    });
+  }
+  fs.renameSync(abs, destAbs);
+  return { name: nextName, unchanged: false };
+}
+
+/** Resolve an inbox file for streaming to the preview pane. */
+export async function getInboxFileForRead(fileName) {
+  const { inbox } = await ensureInboxDirs();
+  const { base, abs } = resolveInboxFile(inbox, fileName);
+  const ext = path.extname(base).toLowerCase();
+  if (!ALLOWED_EXT.has(ext) || !fs.existsSync(abs)) {
+    throw Object.assign(new Error('File not found'), { code: 'NOT_FOUND' });
+  }
+  return {
+    base,
+    abs,
+    mimeType: MIME_BY_EXT[ext] || 'application/octet-stream',
+  };
+}

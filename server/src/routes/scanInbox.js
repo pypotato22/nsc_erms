@@ -6,6 +6,8 @@ import { HttpError } from '../middleware/errors.js';
 import {
   listInboxFiles,
   rejectInboxFile,
+  renameInboxFile,
+  getInboxFileForRead,
   claimInboxFileForEmployee,
   restoreClaimedInboxFile,
   ensureInboxDirs,
@@ -29,6 +31,83 @@ scanInboxRouter.get('/', async (_req, res, next) => {
     const { inboxPath, files } = await listInboxFiles();
     res.json({ inboxPath, files });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Stream an inbox file for the in-app preview (inline) or download (?download=1).
+ * Content-Type comes from our own extension map, never from file contents.
+ */
+scanInboxRouter.get('/:fileName/file', async (req, res, next) => {
+  try {
+    const fileName = decodeURIComponent(req.params.fileName);
+    const { base, abs, mimeType } = await getInboxFileForRead(fileName);
+    const asDownload = String(req.query.download || '') === '1';
+    const disposition = `${asDownload ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(base)}`;
+    res.sendFile(
+      abs,
+      {
+        dotfiles: 'allow',
+        cacheControl: false,
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Disposition': disposition,
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      },
+      (err) => {
+        if (err && !res.headersSent) next(err);
+      },
+    );
+  } catch (err) {
+    if (err.code === 'NOT_FOUND') {
+      return next(new HttpError(404, 'File not found in inbox', 'NOT_FOUND'));
+    }
+    if (err.message === 'Invalid file name' || err.message === 'Invalid file path') {
+      return next(new HttpError(400, err.message, 'VALIDATION'));
+    }
+    next(err);
+  }
+});
+
+scanInboxRouter.post('/:fileName/rename', writeRoles, async (req, res, next) => {
+  try {
+    const fileName = decodeURIComponent(req.params.fileName);
+    const newName = String(req.body?.newName ?? '');
+    const result = await renameInboxFile(fileName, newName);
+
+    if (!result.unchanged) {
+      await writeAudit({
+        actorUserId: req.session.userId,
+        action: 'scan.rename',
+        entityType: 'scan_inbox',
+        entityId: fileName,
+        meta: { from: fileName, to: result.name },
+        ip: clientIp(req),
+      });
+      publish('scan.changed', {
+        action: 'renamed',
+        actorUserId: req.session.userId,
+      });
+    }
+
+    res.json({ ok: true, name: result.name });
+  } catch (err) {
+    if (err.code === 'NOT_FOUND') {
+      return next(new HttpError(404, 'File not found in inbox', 'NOT_FOUND'));
+    }
+    if (err.code === 'EXISTS') return next(new HttpError(409, err.message, 'CONFLICT'));
+    if (err.code === 'VALIDATION') return next(new HttpError(400, err.message, 'VALIDATION'));
+    if (err.message === 'Invalid file name' || err.message === 'Invalid file path') {
+      return next(new HttpError(400, err.message, 'VALIDATION'));
+    }
+    if (err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'EACCES') {
+      return next(
+        new HttpError(409, 'File is in use by another program; close it and try again', 'FILE_BUSY'),
+      );
+    }
     next(err);
   }
 });
