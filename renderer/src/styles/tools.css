@@ -619,3 +619,80 @@ body.desktop-shell .settings-hint .desktop-only-hint {
     font-size: 0.8571rem;
     color: var(--text-2);
 }
+
+/* ── Employee combobox ──────────────────────────────────────── */
+.combo { position: relative; }
+
+.combo-input { width: 100%; padding-right: 34px; }
+
+.combo-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 0;
+    color: var(--text-3);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.combo-caret { pointer-events: none; }
+button.combo-btn:hover { color: var(--text-1); }
+
+.combo-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+}
+
+.combo-opt {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 0.8929rem;
+    color: var(--text-1);
+    cursor: pointer;
+}
+
+.combo-opt.active { background: var(--bg-base); }
+.combo-opt.selected .combo-name { font-weight: 700; }
+
+.combo-no {
+    flex: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7857rem;
+    color: var(--text-3);
+}
+
+.combo-mark {
+    background: rgba(250, 204, 21, .35);
+    color: inherit;
+    border-radius: 2px;
+}
+
+.combo-empty,
+.combo-count {
+    padding: 8px 10px;
+    font-size: 0.7857rem;
+    color: var(--text-3);
+}
+
+.combo-count { text-align: right; border-top: 1px solid var(--border); }

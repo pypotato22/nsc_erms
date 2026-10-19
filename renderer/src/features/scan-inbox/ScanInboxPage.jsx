@@ -12,6 +12,7 @@ import { formatFileSize } from '../../js/utils/helpers.js';
 import { showToast } from '../../js/utils/toast.js';
 import { canWrite } from '../../js/utils/authz.js';
 import { onAppEvent } from '../../shared/lib/appEvents.js';
+import { EmployeeCombobox } from './EmployeeCombobox.jsx';
 import { ScanFileViewer } from './ScanFileViewer.jsx';
 import { ScanPreviewModal } from './ScanPreviewModal.jsx';
 import { ScanRenameDialog } from './ScanRenameDialog.jsx';
@@ -356,15 +357,11 @@ export function ScanInboxPage() {
                   </p>
                   <div className="fg" style={{ marginBottom: 10 }}>
                     <label>Employee *</label>
-                    <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
-                      <option value="">Select employee</option>
-                      {employees.map((e) => (
-                        <option key={e.id} value={e.id}>
-                          {e.lastName}, {e.firstName}
-                          {e.employeeNo ? ` (${e.employeeNo})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <EmployeeCombobox
+                      employees={employees}
+                      value={employeeId}
+                      onChange={setEmployeeId}
+                    />
                   </div>
                   <div className="fg" style={{ marginBottom: 10 }}>
                     <label>Document type *</label>
