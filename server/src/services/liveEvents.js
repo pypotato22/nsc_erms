@@ -58,3 +58,8 @@ export function publish(eventType, payload = {}) {
     }
   }
 }
+
+/** Number of connected live-sync clients (lets background watchers idle when nobody is listening). */
+export function clientCount() {
+  return clients.size;
+}

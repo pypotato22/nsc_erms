@@ -474,7 +474,6 @@ body.desktop-shell .settings-hint .desktop-only-hint {
     text-align: left;
     cursor: pointer;
     color: inherit;
-    font: inherit;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
