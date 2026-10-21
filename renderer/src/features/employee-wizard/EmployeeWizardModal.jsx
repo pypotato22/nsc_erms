@@ -29,6 +29,7 @@ import { VoluntaryStep } from './steps/VoluntaryStep.jsx';
 import { LearningStep } from './steps/LearningStep.jsx';
 import { OtherStep } from './steps/OtherStep.jsx';
 import { AssignmentStep } from './steps/AssignmentStep.jsx';
+import { ThumbCaptureDialog } from './ThumbCaptureDialog.jsx';
 
 const LAST_STEP = WIZARD_STEPS.length;
 
@@ -113,6 +114,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
   const [thumbmarkUrl, setThumbmarkUrl] = useState(null);
   const [capturingThumb, setCapturingThumb] = useState(false);
   const [thumbNote, setThumbNote] = useState('');
+  const [thumbDialog, setThumbDialog] = useState(null); // { phase, startedAt, message, preview }
 
   const bodyRef = useRef(null);
   const openToken = useRef(0);
@@ -150,6 +152,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
         window.nscDesktop?.cancelRightThumb?.();
       }
       setCapturingThumb(false);
+      setThumbDialog(null);
       revokePreviews();
       setStep(1);
       setEmployee(null);
@@ -344,6 +347,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
     capturingRef.current = true;
     setThumbNote('Place your right thumb on the reader. Leave the prompt in front.');
     setCapturingThumb(true);
+    setThumbDialog({ phase: 'waiting', startedAt: Date.now() });
     try {
       await window.nscDesktop?.prepareThumbCapture?.();
       const result = await captureFingerprintImage();
@@ -351,16 +355,17 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
       if (!result?.ok || !result.pngBase64) {
         const message = result?.message || 'The right thumb was not captured.';
         setThumbNote(message);
-        showToast(message, 'error');
+        setThumbDialog({ phase: 'error', message });
         return;
       }
       applyThumbPng(result.pngBase64);
       setThumbNote('Right thumb captured. Save the employee to keep it.');
+      setThumbDialog({ phase: 'done', preview: `data:image/png;base64,${result.pngBase64}` });
     } catch (err) {
       if (gen !== captureGen.current) return;
       const message = err?.message || 'The right thumb was not captured.';
       setThumbNote(message);
-      showToast(message, 'error');
+      setThumbDialog({ phase: 'error', message });
     } finally {
       if (gen === captureGen.current) capturingRef.current = false;
       await window.nscDesktop?.restoreThumbCapture?.();
@@ -372,8 +377,24 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
     captureGen.current += 1;
     capturingRef.current = false;
     setCapturingThumb(false);
+    setThumbDialog(null);
     setThumbNote('Capture canceled.');
     cancelFingerprintImage().catch(() => {});
+    window.nscDesktop?.restoreThumbCapture?.();
+  }
+
+  function retryThumb() {
+    setThumbDialog(null);
+    captureThumb();
+  }
+
+  // The form behind the capture dialog must stay open until the capture ends.
+  function requestClose() {
+    if (capturingRef.current) {
+      showToast('Finish or cancel the fingerprint capture first.', 'error');
+      return;
+    }
+    onClose();
   }
 
   const photoSrc =
@@ -558,12 +579,23 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
 
   return (
     <div className="modal pds-wizard-modal">
+      {thumbDialog && (
+        <ThumbCaptureDialog
+          phase={thumbDialog.phase}
+          startedAt={thumbDialog.startedAt}
+          message={thumbDialog.message}
+          previewSrc={thumbDialog.preview}
+          onCancel={cancelThumb}
+          onRetry={retryThumb}
+          onDone={() => setThumbDialog(null)}
+        />
+      )}
       <button
         id="close-emp-modal"
         className="modal-close"
         type="button"
         aria-label="Close"
-        onClick={onClose}
+        onClick={requestClose}
       >
         ×
       </button>
@@ -597,7 +629,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
         {loading ? <p className="pds-hint">Loading…</p> : renderStep()}
       </div>
       <div className="modal-actions pds-wizard-actions">
-        <button id="emp-modal-cancel" className="btn btn-cancel" type="button" onClick={onClose}>
+        <button id="emp-modal-cancel" className="btn btn-cancel" type="button" onClick={requestClose}>
           Cancel
         </button>
         <div className="pds-nav-btns">

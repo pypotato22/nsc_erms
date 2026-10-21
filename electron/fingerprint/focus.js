@@ -66,6 +66,7 @@ export function acquireReaderFocus() {
   nudge();
 
   return {
+    hwnd,
     nudge,
     release() {
       if (attachedTo) {

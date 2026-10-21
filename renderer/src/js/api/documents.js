@@ -128,6 +128,10 @@ export function captureFingerprintImage() {
   return api('/fingerprint/capture', { method: 'POST', body: '{}' });
 }
 
+export function getFingerprintStatus() {
+  return api('/fingerprint/status');
+}
+
 export function cancelFingerprintImage() {
   return api('/fingerprint/cancel', { method: 'POST', body: '{}' });
 }

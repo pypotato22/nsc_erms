@@ -189,13 +189,42 @@ ipcMain.handle('window:is-maximized', (event) => {
 
 ipcMain.handle('boot:get-state', () => bootState);
 
+// While the fingerprint reader is capturing, Windows must keep the small
+// "Place your right thumb" prompt in the foreground. A click on this window would
+// take the focus away, the reader session then stalls and the prompt shows
+// "Not responding". So during a capture the main window:
+//   - is not focusable (clicks no longer activate it; buttons like Cancel still work), and
+//   - cannot be closed.
+// A safety timer restores everything if the renderer never reports back.
+let thumbCaptureActive = false;
+let thumbCaptureGuardTimer = null;
+const THUMB_GUARD_MAX_MS = 45_000;
+
+function setThumbCaptureActive(active) {
+  thumbCaptureActive = active;
+  clearTimeout(thumbCaptureGuardTimer);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.setFocusable(!active);
+    } catch {
+      /* not supported on this platform */
+    }
+  }
+  if (active) {
+    thumbCaptureGuardTimer = setTimeout(() => setThumbCaptureActive(false), THUMB_GUARD_MAX_MS);
+    thumbCaptureGuardTimer.unref?.();
+  }
+}
+
 ipcMain.handle('thumb:prepare', () => {
+  setThumbCaptureActive(true);
   const win = BrowserWindow.getFocusedWindow() || mainWindow;
   if (win && !win.isDestroyed()) win.blur();
   return { ok: true };
 });
 
 ipcMain.handle('thumb:restore', () => {
+  setThumbCaptureActive(false);
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.focus();
   return { ok: true };
 });
@@ -223,6 +252,7 @@ ipcMain.handle('thumb:capture', async () => {
 });
 
 ipcMain.handle('thumb:cancel', async () => {
+  setThumbCaptureActive(false);
   try {
     const { cancelCapture } = await import('./fingerprint/session.js');
     return { ok: true, canceled: Boolean(cancelCapture()) };
@@ -326,6 +356,12 @@ async function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!thumbCaptureActive) return;
+    // Don't let the app be closed from under a running fingerprint capture.
+    event.preventDefault();
   });
 
   mainWindow.on('closed', () => {

@@ -333,8 +333,13 @@ const BLOCKED_PICTURE =
  * Foreground prompt first, then a system-pool raw capture of the U.are.U 4500.
  * A locate-only result is never treated as a saved thumb picture.
  */
-export function captureRightThumbOnReader(onSession) {
+export function captureRightThumbOnReader(onSession, onWindow) {
   const focus = acquireReaderFocus();
+  try {
+    onWindow?.(focus.hwnd ? String(koffi.address(focus.hwnd)) : null);
+  } catch {
+    /* focus monitoring is optional */
+  }
   try {
     focus.nudge();
     const listed = enumerateSensors();

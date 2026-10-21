@@ -4,9 +4,14 @@ import { captureRightThumbOnReader } from './winbio.js';
 parentPort.on('message', (message) => {
   if (message?.type !== 'capture') return;
   try {
-    const result = captureRightThumbOnReader((handle) => {
-      parentPort.postMessage({ type: 'session', handle });
-    });
+    const result = captureRightThumbOnReader(
+      (handle) => {
+        parentPort.postMessage({ type: 'session', handle });
+      },
+      (hwnd) => {
+        parentPort.postMessage({ type: 'window', hwnd });
+      },
+    );
     parentPort.postMessage({ type: 'result', result });
   } catch (error) {
     parentPort.postMessage({

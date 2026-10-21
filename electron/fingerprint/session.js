@@ -6,6 +6,70 @@ const CANCELED = 0x80098004;
 
 let active = null;
 
+// If the small "Place your right thumb" prompt loses the foreground, Windows stops
+// feeding it messages (it is blocked inside the reader call) and it ends up "Not
+// responding". Detect that early and cancel the reader session cleanly instead.
+const FOCUS_POLL_MS = 250;
+const FOCUS_LOST_GRACE_MS = 1500;
+let foregroundReader; // undefined = not tried yet, null = unavailable
+
+async function loadForegroundReader() {
+  if (foregroundReader !== undefined) return foregroundReader;
+  try {
+    if (process.platform !== 'win32') throw new Error('Windows only');
+    const { default: koffi } = await import('koffi');
+    const user32 = koffi.load('user32.dll');
+    const getForeground = user32.func('void *GetForegroundWindow()');
+    foregroundReader = () => {
+      const win = getForeground();
+      return win ? koffi.address(win) : 0n;
+    };
+  } catch {
+    foregroundReader = null;
+  }
+  return foregroundReader;
+}
+
+async function watchFocus(job, hwndText) {
+  if (!hwndText) return;
+  const readForeground = await loadForegroundReader();
+  if (!readForeground || job.settled) return;
+  let target;
+  try {
+    target = BigInt(hwndText);
+  } catch {
+    return;
+  }
+  let seenInFront = false;
+  let lostSince = 0;
+  job.focusTimer = setInterval(() => {
+    if (job.settled) return;
+    let inFront;
+    try {
+      inFront = readForeground() === target;
+    } catch {
+      return;
+    }
+    if (inFront) {
+      seenInFront = true;
+      lostSince = 0;
+      return;
+    }
+    if (!seenInFront) return; // never got focus: leave the normal timeout in charge
+    if (!lostSince) {
+      lostSince = Date.now();
+      return;
+    }
+    if (Date.now() - lostSince >= FOCUS_LOST_GRACE_MS) {
+      clearInterval(job.focusTimer);
+      job.focusLost = true;
+      job.cancelled = true;
+      if (job.handle != null) cancelSession(job.handle);
+    }
+  }, FOCUS_POLL_MS);
+  job.focusTimer.unref?.();
+}
+
 export function cancelCapture() {
   if (!active) return false;
   active.cancelled = true;
@@ -33,6 +97,8 @@ function runCapture() {
       timedOut: false,
       timer: null,
       settled: false,
+      focusLost: false,
+      focusTimer: null,
     };
     active = job;
 
@@ -40,6 +106,7 @@ function runCapture() {
       if (job.settled) return;
       job.settled = true;
       clearTimeout(job.timer);
+      clearInterval(job.focusTimer);
       if (active === job) active = null;
       worker.terminate().catch(() => {});
       let next = withoutPicture(result);
@@ -49,6 +116,15 @@ function runCapture() {
           ok: false,
           image: null,
           message: 'No thumb was placed on the reader within 25 seconds.',
+        };
+      }
+      if (job.focusLost && !next.ok) {
+        next = {
+          ...next,
+          ok: false,
+          image: null,
+          message:
+            'The capture stopped because the fingerprint prompt lost focus. Keep it in front while scanning, then try again.',
         };
       }
       resolve(next);
@@ -61,6 +137,10 @@ function runCapture() {
     }, CAPTURE_TIMEOUT_MS);
 
     worker.on('message', (message) => {
+      if (message.type === 'window') {
+        watchFocus(job, message.hwnd).catch(() => {});
+        return;
+      }
       if (message.type === 'session') {
         job.handle = message.handle;
         if (job.cancelled) cancelSession(job.handle);
