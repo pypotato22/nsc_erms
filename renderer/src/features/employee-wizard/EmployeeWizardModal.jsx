@@ -345,7 +345,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
   async function captureThumb() {
     const gen = captureGen.current;
     capturingRef.current = true;
-    setThumbNote('Place your right thumb on the reader. Leave the prompt in front.');
+    setThumbNote('Place your right thumb on the reader.');
     setCapturingThumb(true);
     setThumbDialog({ phase: 'waiting', startedAt: Date.now() });
     try {
@@ -388,7 +388,7 @@ export function EmployeeWizardModal({ open, empId, getSearchQuery, onClose }) {
     captureThumb();
   }
 
-  // The form behind the capture dialog must stay open until the capture ends.
+  // The form behind the capture dialog stays open until the capture ends.
   function requestClose() {
     if (capturingRef.current) {
       showToast('Finish or cancel the fingerprint capture first.', 'error');

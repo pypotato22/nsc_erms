@@ -124,7 +124,7 @@ function runCapture() {
           ok: false,
           image: null,
           message:
-            'The capture stopped because the fingerprint prompt lost focus. Keep it in front while scanning, then try again.',
+            'The capture stopped because the app lost focus. Keep this window in front while scanning, then try again.',
         };
       }
       resolve(next);

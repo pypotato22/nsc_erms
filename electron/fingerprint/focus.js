@@ -18,6 +18,21 @@ const SetWindowPos = user32.func(
   'int SetWindowPos(void *hwnd, void *after, int x, int y, int width, int height, uint32 flags)',
 );
 const GetSystemMetrics = user32.func('int GetSystemMetrics(int index)');
+const SetLayeredWindowAttributes = user32.func(
+  'int SetLayeredWindowAttributes(void *hwnd, uint32 crKey, uint8 alpha, uint32 flags)',
+);
+
+// Windows only lets the reader capture while this process owns the foreground
+// window, so a small helper window is still created. By default it is invisible and
+// click-through (nobody sees or touches it); the app window and its capture dialog
+// are the only things on screen. Set FINGERPRINT_SHOW_PROMPT=1 to bring back the
+// old visible "Place your right thumb" window if capture ever misbehaves.
+const SHOW_PROMPT = /^(1|true|yes)$/i.test(process.env.FINGERPRINT_SHOW_PROMPT || '');
+const WS_EX_TOPMOST = 0x00000008;
+const WS_EX_TRANSPARENT = 0x00000020; // clicks pass through to the window below
+const WS_EX_TOOLWINDOW = 0x00000080; // no taskbar button / Alt-Tab entry
+const WS_EX_LAYERED = 0x00080000;
+const LWA_ALPHA = 0x00000002;
 
 const HWND_TOPMOST = 0xFFFFFFFFFFFFFFFFn;
 const SWP_SHOWWINDOW = 0x0040;
@@ -32,9 +47,14 @@ export function acquireReaderFocus() {
   const screenH = GetSystemMetrics(1) || 800;
   const x = Math.max(0, Math.floor((screenW - width) / 2));
   const y = Math.max(0, Math.floor((screenH - height) / 3));
-  const style = (0x80000000 | 0x10000000 | 0x00c00000 | 0x00080000) >>> 0;
+  const style = SHOW_PROMPT
+    ? (0x80000000 | 0x10000000 | 0x00c00000 | 0x00080000) >>> 0
+    : (0x80000000 | 0x10000000) >>> 0; // POPUP | VISIBLE, no caption or border
+  const exStyle = SHOW_PROMPT
+    ? WS_EX_TOPMOST
+    : (WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW) >>> 0;
   const hwnd = CreateWindowExW(
-    0x00000008,
+    exStyle,
     'Static',
     'Place your right thumb on the U.are.U 4500',
     style,
@@ -47,6 +67,9 @@ export function acquireReaderFocus() {
     null,
     null,
   );
+
+  // Practically invisible (1/255 opacity) but still a real, active window.
+  if (!SHOW_PROMPT && hwnd) SetLayeredWindowAttributes(hwnd, 0, 1, LWA_ALPHA);
 
   const foreground = GetForegroundWindow();
   const pid = [0];

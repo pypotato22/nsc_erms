@@ -168,6 +168,7 @@ async function showConnectionScreen(lastUrl, error, checking = false) {
 }
 
 ipcMain.handle('window:minimize', (event) => {
+  if (thumbCaptureActive) return; // keep the window up while the fingerprint reader is scanning
   windowFromEvent(event)?.minimize();
 });
 
@@ -206,6 +207,14 @@ function setThumbCaptureActive(active) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     try {
       mainWindow.setFocusable(!active);
+      // Keep the app window visible, in front of other programs, and never minimized
+      // while the reader is capturing. showInactive/restore-before-prepare so we never
+      // take the foreground away from the reader's helper window.
+      if (active) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        if (!mainWindow.isVisible()) mainWindow.showInactive();
+      }
+      mainWindow.setAlwaysOnTop(active);
     } catch {
       /* not supported on this platform */
     }
